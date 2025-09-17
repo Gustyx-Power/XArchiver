@@ -164,10 +164,10 @@ abstract class SendTelegramMessageTask : DefaultTask() {
 
         val kotlinVersion = project.getKotlinPluginVersion() ?: "N/A"
         // --- Progress message for build ---
-        fun sendTelegramMessage(text: String, parseMode: String = "MarkdownV2", disableNotification: Boolean = false): Int? {
+        fun sendTelegramMessage(text: String, disableNotification: Boolean = false): Int? {
             val url = "https://botapi.arasea.dpdns.org/bot${telegramBotToken.get()}/sendMessage"
             val jsonPayload = """
-            {\n  \"chat_id\": \"${telegramChatId.get()}\",\n  \"text\": \"${text.replace("\"", "\\\"")}\",\n  \"parse_mode\": \"$parseMode\",\n  \"disable_notification\": $disableNotification\n}\n""".trimIndent()
+            {\n  \"chat_id\": \"${telegramChatId.get()}\",\n  \"text\": \"${text.replace("\"", "\\\"")}\",\n  \"disable_notification\": $disableNotification\n}\n""".trimIndent()
             HttpClients.createDefault().use { httpClient ->
                 val post = HttpPost(url)
                 post.entity = StringEntity(jsonPayload, "UTF-8")
@@ -179,10 +179,10 @@ abstract class SendTelegramMessageTask : DefaultTask() {
                 return idRegex.find(responseBody)?.groupValues?.get(1)?.toIntOrNull()
             }
         }
-        fun editTelegramMessage(messageId: Int, text: String, parseMode: String = "MarkdownV2") {
+        fun editTelegramMessage(messageId: Int, text: String) {
             val url = "https://botapi.arasea.dpdns.org/bot${telegramBotToken.get()}/editMessageText"
             val jsonPayload = """
-            {\n  \"chat_id\": \"${telegramChatId.get()}\",\n  \"message_id\": $messageId,\n  \"text\": \"${text.replace("\"", "\\\"")}\",\n  \"parse_mode\": \"$parseMode\"\n}\n""".trimIndent()
+            {\n  \"chat_id\": \"${telegramChatId.get()}\",\n  \"message_id\": $messageId,\n  \"text\": \"${text.replace("\"", "\\\"")}\"\n}\n""".trimIndent()
             HttpClients.createDefault().use { httpClient ->
                 val post = HttpPost(url)
                 post.entity = StringEntity(jsonPayload, "UTF-8")
@@ -316,57 +316,44 @@ abstract class SendTelegramMessageTask : DefaultTask() {
             "N/A" // Fallback
         }
 
-        fun escapeMarkdownV2(text: String): String {
-            val escapeChars = "_*[]()~`>#+-=|{}.!"
-            return text.map { char ->
-                if (escapeChars.contains(char)) {
-                    "\\$char"
-                } else {
-                    char.toString()
-                }
-            }.joinToString("")
-        }
-
-
         val buildChangelog = changelog.getOrElse("")
 
-        var message = "[Build Status] ${escapeMarkdownV2(project.name)} \\- $buildStatus* 🚀\n\n" +
-                "📦 App: ${escapeMarkdownV2(currentProjectName)}\n" +
-                "🏷️ Version: ${escapeMarkdownV2(currentAppVersion)}\n" +
-                "🆔 Package: ${escapeMarkdownV2(currentAppPackage)}\n" +
-                "📅 Time: ${escapeMarkdownV2(Date().toString())}\n\n" +
+        var message = "[Build Status] ${project.name} - $buildStatus* 🚀\n\n" +
+                "📦 App: ${currentProjectName}\n" +
+                "🏷️ Version: ${currentAppVersion}\n" +
+                "🆔 Package: ${currentAppPackage}\n" +
+                "📅 Time: ${Date().toString()}\n\n" +
                 "[Build Environment]\n" +
-                "  \\OS: ${escapeMarkdownV2("$osName ($osArch)")}\n" +
-                "  \\Kernel: ${escapeMarkdownV2(kernelInfo)}\n" +
-                "  \\Processor:\n ${escapeMarkdownV2(processor)}\n" +
-                "  \\RAM:\n Total: ${escapeMarkdownV2(totalRamGb)}\n Free: ${escapeMarkdownV2(freeRamGb)}\n Used: ${escapeMarkdownV2(usedRamGb)}\n" +
-                "  \\Storage:\n Total: ${escapeMarkdownV2(totalStorageGb)}\n Free: ${escapeMarkdownV2(freeStorageGb)}\n" +
-                "  \\Android Studio: ${escapeMarkdownV2("Narwhal Feature Drop")}\n" +
-                "  \\Kotlin: ${escapeMarkdownV2(kotlinVersion)}\n" +
-                "  \\Java: ${escapeMarkdownV2(javaVersion)}\n" +
-                "  \\Gradle (Kotlin DSL): ${escapeMarkdownV2(gradleVersion)}\n\n" +
+                "  OS: $osName ($osArch)\n" +
+                "  Kernel: $kernelInfo\n" +
+                "  Processor:\n $processor\n" +
+                "  RAM:\n Total: $totalRamGb\n Free: $freeRamGb\n Used: $usedRamGb\n" +
+                "  Storage:\n Total: $totalStorageGb\n Free: $freeStorageGb\n" +
+                "  Android Studio: Narwhal Feature Drop\n" +
+                "  Kotlin: $kotlinVersion\n" +
+                "  Java: $javaVersion\n" +
+                "  Gradle (Kotlin DSL): $gradleVersion\n\n" +
                 "[App SDK Information]\n" +
-                "  \\Min SDK: ${escapeMarkdownV2("$minSdkVersion (Android $minSdkCodename)")}\n" +
-                "  \\Target SDK: ${escapeMarkdownV2("$targetSdkVersionInt (Android $targetSdkVersionName)")}\n"
+                "  Min SDK: $minSdkVersion (Android $minSdkCodename)\n" +
+                "  Target SDK: $targetSdkVersionInt (Android $targetSdkVersionName)\n"
 
 
         if (buildChangelog.isNotBlank()) {
-            message += "\n*Changelog*:\n${escapeMarkdownV2(buildChangelog)}\n"
+            message += "\nChangelog:\n$buildChangelog\n"
         }
 
         if (buildStatus == "FAILED") {
             val failedTasks = project.gradle.taskGraph.allTasks.filter { it.state.failure != null }
             if (failedTasks.isNotEmpty()) {
                 val errorDetails = failedTasks.joinToString(separator = "\n") { task ->
-                    val taskName = escapeMarkdownV2(task.path)
-                    val errorMessage = escapeMarkdownV2(
+                    val taskName = task.path
+                    val errorMessage =
                         task.state.failure?.message?.lines()?.firstOrNull()?.trim() ?: "No specific error message"
-                    )
-                    "  \\- Task `$taskName` failed: $errorMessage"
+                    "  - Task `$taskName` failed: $errorMessage"
                 }
-                message += "\n\n⚠️ *Error Details:*\n$errorDetails"
+                message += "\n\n⚠️ Error Details:\n$errorDetails"
             } else {
-                message += "\n\n⚠️ *Build failed. Check build logs for details.*"
+                message += "\n\n⚠️ Build failed. Check build logs for details."
             }
         }
 
@@ -380,7 +367,7 @@ abstract class SendTelegramMessageTask : DefaultTask() {
 
 
         if (buildMsgId != null) {
-            editTelegramMessage(buildMsgId, if (buildStatus == "SUCCESS") "✅ Build finished successfully!" else "❌ Build failed!", parseMode = "MarkdownV2")
+            editTelegramMessage(buildMsgId, if (buildStatus == "SUCCESS") "✅ Build finished successfully!" else "❌ Build failed!")
         }
 
         HttpClients.custom().setDefaultRequestConfig(requestConfig).build().use { httpClient ->
@@ -388,8 +375,7 @@ abstract class SendTelegramMessageTask : DefaultTask() {
             val jsonPayload = """
             {
                 "chat_id": "${telegramChatId.get().replace("\"", "\\\"")}",
-                "text": "${message.replace("\"", "\\\"")}",
-                "parse_mode": "MarkdownV2"
+                "text": "${message.replace("\"", "\\\"")}"
             }
             """.trimIndent()
             post.entity = StringEntity(jsonPayload, "UTF-8")
@@ -526,7 +512,7 @@ val uploadReleaseApkToTelegram by tasks.registering(UploadApkToTelegramTask::cla
     // Daripada mencoba menghubungkan output task secara dinamis,
     // kita secara eksplisit menunjuk ke LOKASI FILE yang kita tahu akan dibuat.
     val versionName = android.defaultConfig.versionName ?: "unknown-version"
-    val outputApkPath = layout.projectDirectory.file("dist/XKM-$versionName.apk")
+    val outputApkPath = layout.projectDirectory.file("dist/XArchiver-$versionName.apk")
 
     // .set() sekarang menerima referensi file yang valid dan "lazy".
     apkFile.set(outputApkPath)
