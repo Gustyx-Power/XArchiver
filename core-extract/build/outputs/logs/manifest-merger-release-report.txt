@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml:2:13-83
+INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml:2:13-83
+	package
+		INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml
+	xmlns:android
+		ADDED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml:2:23-81
+uses-sdk
+INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml reason: use-sdk injection requested
+INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml
+INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml
+	android:targetSdkVersion
+		INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml
+	android:minSdkVersion
+		INJECTED from /home/gustyxpower/Documents/Project/XMS/XArchiver/core-extract/build/intermediates/tmp/ProcessLibraryManifest/release/tempAndroidManifest13661186435025950057.xml

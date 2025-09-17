@@ -1,0 +1,22 @@
+<libraries>
+  <library
+      name="org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1@jar"
+      jars="/home/gustyxpower/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm/1.8.1/bb0e192bd7c2b6b8217440d36e9758e377e450/kotlinx-coroutines-core-jvm-1.8.1.jar"
+      resolved="org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1"/>
+  <library
+      name="org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1@jar"
+      jars="/home/gustyxpower/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlinx/kotlinx-coroutines-android/1.8.1/73e2acdd18df99dd4849d99f188dff529fc0afe0/kotlinx-coroutines-android-1.8.1.jar"
+      resolved="org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"/>
+  <library
+      name="com.squareup.okio:okio-jvm:3.9.0@jar"
+      jars="/home/gustyxpower/.gradle/caches/modules-2/files-2.1/com.squareup.okio/okio-jvm/3.9.0/eaa4f7858a1e80908b1a2e861e662edd7c6cbbb5/okio-jvm-3.9.0.jar"
+      resolved="com.squareup.okio:okio-jvm:3.9.0"/>
+  <library
+      name="org.jetbrains.kotlin:kotlin-stdlib:1.9.25@jar"
+      jars="/home/gustyxpower/.gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/1.9.25/f700a2f2b8f0d6d0fde48f56d894dc722fb029d7/kotlin-stdlib-1.9.25.jar"
+      resolved="org.jetbrains.kotlin:kotlin-stdlib:1.9.25"/>
+  <library
+      name="org.jetbrains:annotations:23.0.0@jar"
+      jars="/home/gustyxpower/.gradle/caches/modules-2/files-2.1/org.jetbrains/annotations/23.0.0/8cc20c07506ec18e0834947b84a864bfc094484e/annotations-23.0.0.jar"
+      resolved="org.jetbrains:annotations:23.0.0"/>
+</libraries>
