@@ -56,7 +56,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.8"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     kotlinOptions {
@@ -72,27 +72,36 @@ dependencies {
     implementation(project(":core-storage"))
     implementation(project(":core-archive"))
     implementation(project(":core-extract"))
+    implementation(libs.androidx.foundation)
 
     // Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
+    implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
     // Activity + Lifecycle
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
+    // Navigation (Compose)
+    implementation("androidx.navigation:navigation-compose:2.6.0")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     // Okio
     implementation("com.squareup.okio:okio:3.9.0")
+    // Add DocumentFile support
+    implementation("androidx.documentfile:documentfile:1.0.1")
 }
 
 tasks.register("sendTelegramMessage", SendTelegramMessageTask::class) {
