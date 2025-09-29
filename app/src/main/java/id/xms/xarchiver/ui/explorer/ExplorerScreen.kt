@@ -17,12 +17,17 @@ import androidx.navigation.NavController
 import id.xms.xarchiver.core.FileService
 import id.xms.xarchiver.core.FileItem
 import id.xms.xarchiver.core.humanReadable
-import java.io.File
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import id.xms.xarchiver.core.install.ApkInstaller
 import java.util.*
 import androidx.compose.material.ripple.rememberRipple
+import java.io.File
 
 @Composable
 fun ExplorerScreen(path: String, navController: NavController) {
+
+    val context = LocalContext.current
     // load file listing when path changes
     var files by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     LaunchedEffect(path) {
@@ -50,6 +55,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             Text("${file.size.humanReadable()} • ${Date(file.lastModified).toLocaleString()}")
                         }
                     },
+
                     leadingContent = {
                         Icon(
                             imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
@@ -63,11 +69,15 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
                         ) {
                             if (file.isDirectory) {
-                                // navigate into directory (encode path)
                                 navController.navigate("explorer/${Uri.encode(file.path)}")
                             } else {
-                                // TODO: open file / archive viewer
+                                if (file.name.endsWith(".apk", ignoreCase = true)) {
+                                    ApkInstaller.installApk(context, File(file.path))
+                                } else {
+                                    // TODO: open file viewer / archive viewer
+                                }
                             }
+
                         }
                 )
                 Divider()
@@ -114,6 +124,8 @@ private fun TopAppBarWithBreadcrumb(
         actions = {}
     )
 }
+
+
 
 @Composable
 private fun BreadcrumbChip(label: String, pathForClick: String, onClick: (String) -> Unit) {
