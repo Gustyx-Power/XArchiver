@@ -1,5 +1,6 @@
 package id.xms.xarchiver.ui.home
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -11,14 +12,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.material3.*
 
+@SuppressLint("SdCardPath")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
     Scaffold(topBar = { SmallTopAppBar(title = { Text("XArchiver") }) }) { padding ->
         LazyColumn(contentPadding = padding) {
-            item {
-                // klik card -> buka /sdcard (encoded)
-                StorageCard(viewModel.storage) {
+            items(viewModel.storages.size) { index ->
+                val storage = viewModel.storages[index]
+                StorageCard(storage) {
                     navController.navigate("explorer/${Uri.encode("/sdcard")}")
                 }
             }

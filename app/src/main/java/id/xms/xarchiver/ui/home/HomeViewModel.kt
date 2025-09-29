@@ -1,13 +1,12 @@
 package id.xms.xarchiver.ui.home
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import id.xms.xarchiver.core.*
 
-class HomeViewModel : ViewModel() {
-    var storage = StorageInfo(
-        used = 185L * 1024 * 1024 * 1024,
-        total = 256L * 1024 * 1024 * 1024
-    )
+class HomeViewModel(app: Application) : AndroidViewModel(app) {
+
+    var storages: List<StorageInfo> = StorageUtils.getAllStorage(app)
 
     var categories = listOf(
         Category("Images", "image", 1704),

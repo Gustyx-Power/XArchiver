@@ -1,6 +1,5 @@
 package id.xms.xarchiver.core
 
-data class StorageInfo(val used: Long, val total: Long)
 data class Category(val name: String, val icon: String, val count: Int)
 data class Shortcut(val name: String, val icon: String)
 data class FileItem(
@@ -10,6 +9,14 @@ data class FileItem(
     val size: Long,
     val lastModified: Long
 )
+
+data class StorageInfo(
+    val used: Long,
+    val total: Long,
+    val label: String,
+    val path: String
+)
+
 
 fun Long.humanReadable(): String {
     val kb = this / 1024.0
