@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
@@ -33,6 +34,30 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+private val SolidDarkColorScheme = darkColorScheme(
+    primary = Color.Black,
+    secondary = Color.Black,
+    background = Color.Black,
+    surface = Color.Black,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onBackground = Color.White,
+    onSurface = Color.White,
+    tertiary = Pink80
+)
+
+private val SolidLightColorScheme = lightColorScheme(
+    primary = Color.White,
+    secondary = Color.White,
+    background = Color.White,
+    surface = Color.White,
+    onPrimary = Color.Black,
+    onSecondary = Color.Black,
+    onBackground = Color.Black,
+    onSurface = Color.Black,
+    tertiary = Pink40
+)
+
 @Composable
 fun XArchiverTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -45,7 +70,9 @@ fun XArchiverTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
+        // Fallback to solid colors if dynamicColor is false
+        !dynamicColor && darkTheme -> SolidDarkColorScheme
+        !dynamicColor && !darkTheme -> SolidLightColorScheme
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
