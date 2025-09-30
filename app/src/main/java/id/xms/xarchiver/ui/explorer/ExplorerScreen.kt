@@ -1,7 +1,6 @@
 package id.xms.xarchiver.ui.explorer
 
 import android.net.Uri
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -17,74 +16,179 @@ import androidx.navigation.NavController
 import id.xms.xarchiver.core.FileService
 import id.xms.xarchiver.core.FileItem
 import id.xms.xarchiver.core.humanReadable
-import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import id.xms.xarchiver.core.install.ApkInstaller
 import java.util.*
 import androidx.compose.material.ripple.rememberRipple
 import java.io.File
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 
 @Composable
 fun ExplorerScreen(path: String, navController: NavController) {
-
     val context = LocalContext.current
-    // load file listing when path changes
     var files by remember { mutableStateOf<List<FileItem>>(emptyList()) }
+    var pendingApk by remember { mutableStateOf<File?>(null) } // state dialog
+    var selectedFile by remember { mutableStateOf<FileItem?>(null) }
+    var renamingFile by remember { mutableStateOf<FileItem?>(null) }
+    var deletingFile by remember { mutableStateOf<FileItem?>(null) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var renameText by remember { mutableStateOf("") }
+
     LaunchedEffect(path) {
         files = FileService.listDirectory(path)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBarWithBreadcrumb(path = path, onCrumbClick = { crumbPath ->
-                // navigate to selected crumb (encode path)
-                navController.navigate("explorer/${Uri.encode(crumbPath)}") {
-                    launchSingleTop = true
-                }
-            }, onBack = {
-                navController.navigateUp()
-            })
-        }
-    ) { padding ->
-        LazyColumn(modifier = Modifier.padding(padding)) {
-            items(files) { file ->
-                ListItem(
-                    headlineContent = { Text(file.name) },
-                    supportingContent = {
-                        if (!file.isDirectory) {
-                            Text("${file.size.humanReadable()} • ${Date(file.lastModified).toLocaleString()}")
+    Box(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+        Scaffold(
+            topBar = {
+                TopAppBarWithBreadcrumb(
+                    path = path,
+                    onCrumbClick = { crumbPath ->
+                        navController.navigate("explorer/${Uri.encode(crumbPath)}") {
+                            launchSingleTop = true
                         }
                     },
-
-                    leadingContent = {
-                        Icon(
-                            imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier
-                        .fillParentMaxWidth()
-                        .clickable(
-                            indication = rememberRipple(),
-                            interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-                        ) {
-                            if (file.isDirectory) {
-                                navController.navigate("explorer/${Uri.encode(file.path)}")
-                            } else {
-                                if (file.name.endsWith(".apk", ignoreCase = true)) {
-                                    ApkInstaller.installApk(context, File(file.path))
-                                } else {
-                                    // TODO: open file viewer / archive viewer
-                                }
-                            }
-
-                        }
+                    onBack = { navController.navigateUp() }
                 )
-                Divider()
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { padding ->
+            LazyColumn(modifier = Modifier.padding(padding)) {
+                items(files) { file ->
+                    ListItem(
+                        headlineContent = { Text(file.name, color = MaterialTheme.colorScheme.onBackground) },
+                        supportingContent = {
+                            if (!file.isDirectory) {
+                                Text("${file.size.humanReadable()} • ${Date(file.lastModified).toLocaleString()}", color = MaterialTheme.colorScheme.onBackground)
+                            }
+                        },
+                        leadingContent = {
+                            Icon(
+                                imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        modifier = Modifier
+                            .combinedClickable(
+                                indication = rememberRipple(),
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                onClick = {
+                                    if (file.isDirectory) {
+                                        navController.navigate("explorer/${Uri.encode(file.path)}")
+                                    } else if (file.name.endsWith(".apk", ignoreCase = true)) {
+                                        pendingApk = File(file.path)
+                                    } else {
+                                        // TODO: open archive viewer / file viewer
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!file.isDirectory) {
+                                        selectedFile = file
+                                    }
+                                }
+                            )
+                    )
+                    Divider()
+                }
             }
+        }
+
+        // Dialog for file actions
+        selectedFile?.let { file ->
+            AlertDialog(
+                onDismissRequest = { selectedFile = null },
+                title = { Text("File Options") },
+                text = { Text("Choose an action for \"${file.name}\"") },
+                confirmButton = {
+                    Row {
+                        TextButton(onClick = {
+                            renamingFile = file
+                            renameText = file.name
+                            showRenameDialog = true
+                            selectedFile = null
+                        }) { Text("Rename") }
+                        Spacer(Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            deletingFile = file
+                            showDeleteDialog = true
+                            selectedFile = null
+                        }) { Text("Delete") }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { selectedFile = null }) { Text("Cancel") }
+                }
+            )
+        }
+        // Rename dialog
+        if (showRenameDialog && renamingFile != null) {
+            AlertDialog(
+                onDismissRequest = { showRenameDialog = false; renamingFile = null },
+                title = { Text("Rename File") },
+                text = {
+                    OutlinedTextField(
+                        value = renameText,
+                        onValueChange = { renameText = it },
+                        label = { Text("New name") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (renameText.isNotBlank()) {
+                            FileService.renameFile(renamingFile!!.path, renameText)
+                            files = FileService.listDirectory(path)
+                        }
+                        showRenameDialog = false
+                        renamingFile = null
+                    }) { Text("Rename") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRenameDialog = false; renamingFile = null }) { Text("Cancel") }
+                }
+            )
+        }
+        // Delete dialog
+        if (showDeleteDialog && deletingFile != null) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false; deletingFile = null },
+                title = { Text("Delete File") },
+                text = { Text("Are you sure you want to delete this file?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        FileService.deleteFile(deletingFile!!.path)
+                        files = FileService.listDirectory(path)
+                        showDeleteDialog = false
+                        deletingFile = null
+                    }) { Text("Delete") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false; deletingFile = null }) { Text("Cancel") }
+                }
+            )
+        }
+        // APK install dialog (unchanged)
+        pendingApk?.let { apkFile ->
+            AlertDialog(
+                onDismissRequest = { pendingApk = null },
+                title = { Text("Install APK") },
+                text = { Text("Do you want to install \"${apkFile.name}\"?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        ApkInstaller.installApk(context, apkFile)
+                        pendingApk = null
+                    }) { Text("Install") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingApk = null }) { Text("Cancel") }
+                }
+            )
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,7 +216,7 @@ private fun TopAppBarWithBreadcrumb(
                 } else {
                     // first crumb maybe "/sdcard" etc.
                     parts.forEachIndexed { index, part ->
-                        acc = acc + "/" + part
+                        acc = "$acc/$part"
                         BreadcrumbChip(part, acc) { onCrumbClick(it) }
                         if (index < parts.size - 1) {
                             Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.padding(horizontal = 6.dp))
