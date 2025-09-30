@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import id.xms.xarchiver.ui.explorer.ExplorerScreen
 import id.xms.xarchiver.ui.home.HomeScreen
+import id.xms.xarchiver.ui.theme.XArchiverTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +38,9 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            AppContent()
+            XArchiverTheme(dynamicColor = true) {
+                AppContent()
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ package id.xms.xarchiver.ui.home
 
 import android.annotation.SuppressLint
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,8 +17,11 @@ import androidx.compose.material3.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
-    Scaffold(topBar = { SmallTopAppBar(title = { Text("XArchiver") }) }) { padding ->
-        LazyColumn(contentPadding = padding) {
+    Scaffold(
+        topBar = { SmallTopAppBar(title = { Text("XArchiver", color = MaterialTheme.colorScheme.onBackground) }) },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
+        LazyColumn(contentPadding = padding, modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             items(viewModel.storages.size) { index ->
                 val storage = viewModel.storages[index]
                 StorageCard(storage) {
