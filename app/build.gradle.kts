@@ -12,6 +12,7 @@ import kotlin.text.substringAfterLast
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
 }
 
 android {
@@ -56,7 +57,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+        kotlinCompilerExtensionVersion = "2.0.0"
     }
 
     kotlinOptions {
@@ -69,10 +70,14 @@ android {
 }
 
 dependencies {
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.core:core-ktx:1.12.0")
     implementation(project(":core-storage"))
     implementation(project(":core-archive"))
     implementation(project(":core-extract"))
     implementation(libs.androidx.foundation)
+    implementation(libs.material)
+    implementation(libs.litert)
 
     // Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
