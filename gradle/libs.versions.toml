@@ -11,6 +11,7 @@ composeBom = "2024.09.00"
 foundation = "1.9.1"
 material = "1.13.0"
 litert = "2.0.2"
+material3 = "1.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -30,6 +31,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
+material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

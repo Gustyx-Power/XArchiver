@@ -75,6 +75,7 @@ dependencies {
     implementation(project(":core-storage"))
     implementation(project(":core-archive"))
     implementation(project(":core-extract"))
+    implementation(project(":core-root"))
     implementation(libs.androidx.foundation)
     implementation(libs.material)
     implementation(libs.litert)
