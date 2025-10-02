@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 object RootService {
     suspend fun ensureRoot(): Boolean = withContext(Dispatchers.IO) {
         try {
-            Shell.getShell()            // trigger dialog root manager
+            Shell.getShell()
             Shell.isAppGrantedRoot()
         } catch (_: Throwable) { false }
     }
