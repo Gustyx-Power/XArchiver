@@ -12,4 +12,9 @@
 /captures
 .externalNativeBuild
 .cxx
+/core-archive
+/core-extract
+/core-storage
+/app/build
+/app/dist
 local.properties
