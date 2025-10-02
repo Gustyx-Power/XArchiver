@@ -3,8 +3,7 @@ package id.xms.xarchiver.ui.home
 import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,20 +17,38 @@ import androidx.compose.material3.*
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
     Scaffold(
-        topBar = { SmallTopAppBar(title = { Text("XArchiver", color = MaterialTheme.colorScheme.onBackground) }) },
+        topBar = { TopAppBar(title = { Text("XArchiver", color = MaterialTheme.colorScheme.onBackground) }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(contentPadding = padding, modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
+        LazyColumn(modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(padding)) {
             items(viewModel.storages.size) { index ->
                 val storage = viewModel.storages[index]
-                StorageCard(storage) {
+                StorageCard(storage, {
                     navController.navigate("explorer/${Uri.encode("/sdcard")}")
-                }
+                }, Modifier)
             }
             item { Spacer(Modifier.height(8.dp)) }
-            item { CategoryGrid(viewModel.categories) }
+            item {
+                Text("Categories", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 12.dp))
+            }
             item { Spacer(Modifier.height(8.dp)) }
-            item { ShortcutList(viewModel.shortcuts) }
+            item {
+                CategoryGrid(
+                    viewModel.categories,
+                    onCategoryClick = { category ->
+                        // Handle category click, e.g., navigate or show details
+                    },
+                    modifier = Modifier
+                        .padding(horizontal = 12.dp)
+                        .height(280.dp) // Fix: set fixed height to avoid infinite constraints
+                )
+            }
+            item { Spacer(Modifier.height(8.dp)) }
+            item {
+                ShortcutList(viewModel.shortcuts, onShortcutClick = { shortcut ->
+                    // Handle shortcut click, e.g., navigate or show details
+                })
+            }
         }
     }
 }
