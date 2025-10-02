@@ -19,10 +19,14 @@ import id.xms.xarchiver.core.humanReadable
 import androidx.compose.ui.platform.LocalContext
 import id.xms.xarchiver.core.install.ApkInstaller
 import java.util.*
-import androidx.compose.material.ripple.rememberRipple
 import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile // ktlint-disable no-wildcard-imports
+import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.HorizontalDivider
+import java.text.SimpleDateFormat
 
 @Composable
 fun ExplorerScreen(path: String, navController: NavController) {
@@ -61,19 +65,19 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         headlineContent = { Text(file.name, color = MaterialTheme.colorScheme.onBackground) },
                         supportingContent = {
                             if (!file.isDirectory) {
-                                Text("${file.size.humanReadable()} • ${Date(file.lastModified).toLocaleString()}", color = MaterialTheme.colorScheme.onBackground)
+                                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+                                Text("${file.size.humanReadable()} • ${dateFormat.format(Date(file.lastModified))}", color = MaterialTheme.colorScheme.onBackground)
                             }
                         },
                         leadingContent = {
                             Icon(
-                                imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
+                                imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
                         modifier = Modifier
                             .combinedClickable(
-                                indication = rememberRipple(),
                                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
                                 onClick = {
                                     if (file.isDirectory) {
@@ -91,7 +95,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 }
                             )
                     )
-                    Divider()
+                    HorizontalDivider()
                 }
             }
         }
@@ -198,12 +202,12 @@ private fun TopAppBarWithBreadcrumb(
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-    SmallTopAppBar(
+    TopAppBar(
         title = {
             Row(Modifier.horizontalScroll(scrollState)) {
                 // back icon (go up one level)
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
 
                 // Build crumbs
