@@ -25,6 +25,16 @@ object FileService {
 
     fun deleteFile(path: String): Boolean {
         val file = File(path)
-        return file.exists() && file.delete()
+        return if (file.exists()) {
+            if (file.isDirectory) {
+                // For directories, delete recursively
+                file.deleteRecursively()
+            } else {
+                // For files, delete normally
+                file.delete()
+            }
+        } else {
+            false
+        }
     }
 }
