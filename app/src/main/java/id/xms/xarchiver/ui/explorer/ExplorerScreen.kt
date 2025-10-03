@@ -17,20 +17,26 @@ import id.xms.xarchiver.core.FileService
 import id.xms.xarchiver.core.FileItem
 import id.xms.xarchiver.core.humanReadable
 import androidx.compose.ui.platform.LocalContext
+import id.xms.xarchiver.core.archive.ArchiveManager
 import id.xms.xarchiver.core.install.ApkInstaller
 import java.util.*
 import java.io.File
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile // ktlint-disable no-wildcard-imports
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material3.HorizontalDivider
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExplorerScreen(path: String, navController: NavController) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val archiveManager = remember { ArchiveManager(context) }
+
     var files by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var pendingApk by remember { mutableStateOf<File?>(null) } // state dialog
     var selectedFile by remember { mutableStateOf<FileItem?>(null) }
@@ -85,13 +91,28 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                     } else if (file.name.endsWith(".apk", ignoreCase = true)) {
                                         pendingApk = File(file.path)
                                     } else {
-                                        // TODO: open archive viewer / file viewer
+                                        // Check if this is an archive file we can open
+                                        val fileExtension = file.name.substringAfterLast('.', "").lowercase()
+                                        val archiveExtensions = listOf("zip", "rar", "7z", "tar", "gz", "tgz", "jar", "apk", "aar", "xapk")
+
+                                        if (archiveExtensions.contains(fileExtension)) {
+                                            // Navigate to archive explorer
+                                            navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                                        } else {
+                                            // For files that don't match known extensions, check if they might be archives
+                                            scope.launch {
+                                                if (archiveManager.isArchiveFile(file.path)) {
+                                                    navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                                                } else {
+                                                    // Handle regular files (future file viewer implementation)
+                                                }
+                                            }
+                                        }
                                     }
                                 },
                                 onLongClick = {
-                                    if (!file.isDirectory) {
-                                        selectedFile = file
-                                    }
+                                    // Allow long click on both files AND directories
+                                    selectedFile = file
                                 }
                             )
                     )
@@ -100,30 +121,146 @@ fun ExplorerScreen(path: String, navController: NavController) {
             }
         }
 
-        // Dialog for file actions
+        // Dialog for file/directory actions
         selectedFile?.let { file ->
             AlertDialog(
                 onDismissRequest = { selectedFile = null },
-                title = { Text("File Options") },
-                text = { Text("Choose an action for \"${file.name}\"") },
-                confirmButton = {
-                    Row {
-                        TextButton(onClick = {
-                            renamingFile = file
-                            renameText = file.name
-                            showRenameDialog = true
-                            selectedFile = null
-                        }) { Text("Rename") }
-                        Spacer(Modifier.width(8.dp))
-                        TextButton(onClick = {
-                            deletingFile = file
-                            showDeleteDialog = true
-                            selectedFile = null
-                        }) { Text("Delete") }
+                title = {
+                    Text(
+                        text = if (file.isDirectory) "Folder Options" else "File Options",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Choose an action for ${if (file.isDirectory) "folder" else "file"} \"${file.name}\"",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Rename option
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    renamingFile = file
+                                    renameText = file.name
+                                    showRenameDialog = true
+                                    selectedFile = null
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Rename",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Delete option
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    deletingFile = file
+                                    showDeleteDialog = true
+                                    selectedFile = null
+                                },
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Delete",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+
+                        // Extract option for archive files (only for files, not directories)
+                        if (!file.isDirectory) {
+                            val fileExtension = file.name.substringAfterLast('.', "").lowercase()
+                            val archiveExtensions = listOf("zip", "rar", "7z", "tar", "gz", "tgz", "jar", "apk", "aar",
+                                "xapk", "xz", "bz2","iso","payload","bin","img","tar.gz","tar.xz","tar.bz2","tar.zst","zst"
+                            , "cpio","ar","deb","rpm","dmg","payload.bin")
+
+                            if (archiveExtensions.contains(fileExtension)) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedFile = null
+                                            navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                                        },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    ),
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Unarchive,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = "Extract Archive",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
+                confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = { selectedFile = null }) { Text("Cancel") }
+                    TextButton(onClick = { selectedFile = null }) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
@@ -131,26 +268,63 @@ fun ExplorerScreen(path: String, navController: NavController) {
         if (showRenameDialog && renamingFile != null) {
             AlertDialog(
                 onDismissRequest = { showRenameDialog = false; renamingFile = null },
-                title = { Text("Rename File") },
+                title = {
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Rename ${if (renamingFile!!.isDirectory) "Folder" else "File"}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
                 text = {
-                    OutlinedTextField(
-                        value = renameText,
-                        onValueChange = { renameText = it },
-                        label = { Text("New name") }
-                    )
+                    Column {
+                        Text(
+                            text = "Enter a new name for the ${if (renamingFile!!.isDirectory) "folder" else "file"}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = renameText,
+                            onValueChange = { renameText = it },
+                            label = { Text("New name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        )
+                    }
                 },
                 confirmButton = {
-                    TextButton(onClick = {
-                        if (renameText.isNotBlank()) {
-                            FileService.renameFile(renamingFile!!.path, renameText)
-                            files = FileService.listDirectory(path)
-                        }
-                        showRenameDialog = false
-                        renamingFile = null
-                    }) { Text("Rename") }
+                    Button(
+                        onClick = {
+                            if (renameText.isNotBlank()) {
+                                FileService.renameFile(renamingFile!!.path, renameText)
+                                files = FileService.listDirectory(path)
+                            }
+                            showRenameDialog = false
+                            renamingFile = null
+                        },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Rename")
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showRenameDialog = false; renamingFile = null }) { Text("Cancel") }
+                    TextButton(
+                        onClick = { showRenameDialog = false; renamingFile = null },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
@@ -158,35 +332,192 @@ fun ExplorerScreen(path: String, navController: NavController) {
         if (showDeleteDialog && deletingFile != null) {
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false; deletingFile = null },
-                title = { Text("Delete File") },
-                text = { Text("Are you sure you want to delete this file?") },
+                title = {
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Delete ${if (deletingFile!!.isDirectory) "Folder" else "File"}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = if (deletingFile!!.isDirectory) {
+                                "Are you sure you want to delete this folder and all its contents?"
+                            } else {
+                                "Are you sure you want to delete this file?"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                            ),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    if (deletingFile!!.isDirectory) Icons.Default.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "\"${deletingFile!!.name}\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (deletingFile!!.isDirectory) {
+                            Text(
+                                text = "⚠️ This will permanently delete the folder and all files inside it.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        } else {
+                            Text(
+                                text = "This action cannot be undone.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
                 confirmButton = {
-                    TextButton(onClick = {
-                        FileService.deleteFile(deletingFile!!.path)
-                        files = FileService.listDirectory(path)
-                        showDeleteDialog = false
-                        deletingFile = null
-                    }) { Text("Delete") }
+                    Button(
+                        onClick = {
+                            FileService.deleteFile(deletingFile!!.path)
+                            files = FileService.listDirectory(path)
+                            showDeleteDialog = false
+                            deletingFile = null
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error
+                        ),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Delete", color = MaterialTheme.colorScheme.onError)
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showDeleteDialog = false; deletingFile = null }) { Text("Cancel") }
+                    TextButton(
+                        onClick = { showDeleteDialog = false; deletingFile = null },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
-        // APK install dialog (unchanged)
+        // APK install dialog
         pendingApk?.let { apkFile ->
             AlertDialog(
                 onDismissRequest = { pendingApk = null },
-                title = { Text("Install APK") },
-                text = { Text("Do you want to install \"${apkFile.name}\"?") },
+                title = {
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Android,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Install APK",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Do you want to install this application?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            ),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.InsertDriveFile,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(
+                                        text = apkFile.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = "APK Package",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "⚠️ Only install applications from trusted sources.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                },
                 confirmButton = {
-                    TextButton(onClick = {
-                        ApkInstaller.installApk(context, apkFile)
-                        pendingApk = null
-                    }) { Text("Install") }
+                    Button(
+                        onClick = {
+                            ApkInstaller.installApk(context, apkFile)
+                            pendingApk = null
+                        },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Install")
+                    }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingApk = null }) { Text("Cancel") }
+                    TextButton(
+                        onClick = { pendingApk = null },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Cancel")
+                    }
                 }
             )
         }
@@ -196,7 +527,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TopAppBarWithBreadcrumb(
+fun TopAppBarWithBreadcrumb(
     path: String,
     onCrumbClick: (String) -> Unit,
     onBack: () -> Unit
