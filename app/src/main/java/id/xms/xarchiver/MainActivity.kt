@@ -15,9 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import id.xms.xarchiver.ui.archive.ArchiveExplorerScreen
 import id.xms.xarchiver.ui.explorer.ExplorerScreen
+import id.xms.xarchiver.ui.explorer.RootExplorerScreen
 import id.xms.xarchiver.ui.home.HomeScreen
 import id.xms.xarchiver.ui.theme.XArchiverTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,15 +53,48 @@ private fun AppContent() {
     MaterialTheme {
         val navController = rememberNavController()
 
+        fun explorerRoute(path: String) = "explorer/${Uri.encode(path)}"
+        fun rootExplorerRoute(path: String) = "root_explorer/${Uri.encode(path)}"
+        fun archiveExplorerRoute(path: String) = "archive_explorer/${Uri.encode(path)}"
+
         NavHost(navController = navController, startDestination = "home") {
-            composable("home") {
-                HomeScreen(navController)
-            }
-            // explorer route: pass encoded path as single segment to allow slashes
+            composable("home") { HomeScreen(navController) }
+
             composable("explorer/{encodedPath}") { backStackEntry ->
-                val encoded = backStackEntry.arguments?.getString("encodedPath") ?: Uri.encode("/sdcard")
-                val path = Uri.decode(encoded)
+                val path = Uri.decode(
+                    backStackEntry.arguments?.getString("encodedPath") ?: Uri.encode("/sdcard")
+                )
                 ExplorerScreen(path = path, navController = navController)
+            }
+
+            composable("root_explorer/{encodedPath}") { backStackEntry ->
+                val path = Uri.decode(
+                    backStackEntry.arguments?.getString("encodedPath") ?: Uri.encode("/")
+                )
+                RootExplorerScreen(path = path, navController = navController)
+            }
+
+            // Add Archive Explorer route
+            composable("archive_explorer/{encodedArchivePath}") { backStackEntry ->
+                val archivePath = Uri.decode(
+                    backStackEntry.arguments?.getString("encodedArchivePath") ?: ""
+                )
+                ArchiveExplorerScreen(archivePath = archivePath, navController = navController)
+            }
+
+            // Add Nested Archive Explorer route
+            composable("archive_explorer/{encodedArchivePath}/{encodedNestedPath}") { backStackEntry ->
+                val archivePath = Uri.decode(
+                    backStackEntry.arguments?.getString("encodedArchivePath") ?: ""
+                )
+                val nestedPath = Uri.decode(
+                    backStackEntry.arguments?.getString("encodedNestedPath") ?: ""
+                )
+                ArchiveExplorerScreen(
+                    archivePath = archivePath,
+                    nestedPath = nestedPath,
+                    navController = navController
+                )
             }
         }
     }
