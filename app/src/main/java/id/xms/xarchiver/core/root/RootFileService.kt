@@ -9,14 +9,15 @@ object RootFileService {
     suspend fun listDirectory(path: String): List<FileItem> = withContext(Dispatchers.IO) {
         val dir = SuFile.open(path)
         if (!dir.exists() || !dir.isDirectory) return@withContext emptyList()
-        dir.listFiles()?.map {
+        dir.listFiles()?.map { f ->
             FileItem(
-                name = it.name ?: "",
-                path = it.absolutePath,
-                isDirectory = it.isDirectory,
-                size = it.length(),
-                lastModified = it.lastModified()
+                name = f.name ?: "",
+                path = f.absolutePath,
+                isDirectory = f.isDirectory,
+                size = f.length(),
+                lastModified = f.lastModified()
             )
-        }?.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenBy { it.name }) ?: emptyList()
+        }?.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenBy { it.name })
+            ?: emptyList()
     }
 }

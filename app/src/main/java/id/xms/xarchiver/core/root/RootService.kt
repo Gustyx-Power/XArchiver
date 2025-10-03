@@ -5,14 +5,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 object RootService {
-    suspend fun ensureRoot(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            Shell.getShell()
-            Shell.isAppGrantedRoot()
-        } catch (_: Throwable) { false }
-    }
 
-    fun isGranted(): Boolean = try {
-        Shell.isAppGrantedRoot()
-    } catch (_: Throwable) { false }
+    suspend fun ensureRoot(): Boolean = withContext(Dispatchers.IO) {
+        runCatching {
+            Shell.getShell()
+            Shell.isAppGrantedRoot() == true
+        }.getOrDefault(false)
+    }
+    fun isGranted(): Boolean =
+        runCatching { Shell.isAppGrantedRoot() == true }
+            .getOrDefault(false)
 }
