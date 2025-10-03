@@ -80,6 +80,12 @@ dependencies {
     implementation(libs.material)
     implementation(libs.litert)
     implementation(libs.material3)
+    implementation(libs.io)
+    implementation(libs.androidx.uiautomator.shell)
+
+    // Apache Commons Compress for archive handling (needed for UI classes too)
+    implementation("org.apache.commons:commons-compress:1.26.1")
+    implementation("commons-io:commons-io:2.15.1")
 
     // Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
