@@ -11,9 +11,9 @@ class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            XArchiverTheme(dynamicColor = true) {
+            XArchiverTheme {
                 SplashScreen {
-                    startActivity(Intent(this, MainActivity::class.java))
+                    startActivity(Intent(this@SplashActivity, MainActivity::class.java))
                     finish()
                 }
             }
