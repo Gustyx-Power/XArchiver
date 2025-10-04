@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            XArchiverTheme(dynamicColor = true) {
+            XArchiverTheme {
                 AppContent()
             }
         }
