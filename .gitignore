@@ -1,6 +1,5 @@
 *.iml
 .gradle
-/local.properties
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -17,4 +16,4 @@
 /core-storage
 /app/build
 /app/dist
-local.properties
+
