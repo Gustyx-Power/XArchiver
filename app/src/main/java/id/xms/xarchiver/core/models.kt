@@ -1,7 +1,17 @@
 package id.xms.xarchiver.core
 
-data class Category(val name: String, val icon: String, val count: Int)
-data class Shortcut(val name: String, val icon: String)
+data class Category(
+    val name: String,
+    val icon: String,
+    val count: Int,
+    val mimeTypes: List<String> = emptyList()
+)
+
+data class Shortcut(
+    val name: String,
+    val icon: String,
+    val path: String
+)
 data class FileItem(
     val name: String,
     val path: String,
