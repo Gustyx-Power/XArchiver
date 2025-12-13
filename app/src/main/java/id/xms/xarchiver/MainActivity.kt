@@ -16,6 +16,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import id.xms.xarchiver.ui.archive.ArchiveExplorerScreen
+import id.xms.xarchiver.ui.explorer.CategoryExplorerScreen
 import id.xms.xarchiver.ui.explorer.ExplorerScreen
 import id.xms.xarchiver.ui.explorer.RootExplorerScreen
 import id.xms.xarchiver.ui.home.HomeScreen
@@ -59,6 +60,14 @@ private fun AppContent() {
 
         NavHost(navController = navController, startDestination = "home") {
             composable("home") { HomeScreen(navController) }
+
+            // Category Explorer route
+            composable("category_explorer/{categoryName}") { backStackEntry ->
+                val categoryName = Uri.decode(
+                    backStackEntry.arguments?.getString("categoryName") ?: "Images"
+                )
+                CategoryExplorerScreen(categoryName = categoryName, navController = navController)
+            }
 
             composable("explorer/{encodedPath}") { backStackEntry ->
                 val path = Uri.decode(
