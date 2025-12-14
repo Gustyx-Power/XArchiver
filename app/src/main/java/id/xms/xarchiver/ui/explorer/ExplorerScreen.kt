@@ -551,7 +551,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                     showQuickExtractDialog = null
                                     scope.launch {
                                         extractionProgress = ExtractionProgress(
-                                            ExtractionState.STARTED, "Starting...", 0
+                                            0, "Starting...", ExtractionState.STARTED
                                         )
                                         archiveManager.extractArchive(
                                             file.path, 
@@ -654,7 +654,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            "${progress.extractedCount} / ${progress.totalCount} files",
+                            "${progress.percentage}% complete",
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
