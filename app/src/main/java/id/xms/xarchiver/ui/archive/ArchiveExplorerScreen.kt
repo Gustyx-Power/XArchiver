@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -98,28 +99,100 @@ fun ArchiveExplorerScreen(
         }
     }
 
+    // Current folder prefix for navigation within archive
+    var currentPrefix by remember { mutableStateOf("") }
+    
+    // Filter entries to show only items in current folder
+    val filteredEntries = remember(archiveEntries, currentPrefix) {
+        val immediateItems = mutableListOf<ArchiveEntry>()
+        val processedNames = mutableSetOf<String>()
+        
+        for (entry in archiveEntries) {
+            val name = entry.name
+            
+            // Skip if not in current prefix
+            if (currentPrefix.isNotEmpty() && !name.startsWith(currentPrefix)) continue
+            
+            // Get relative path from current prefix
+            val relativePath = if (currentPrefix.isNotEmpty()) {
+                name.removePrefix(currentPrefix)
+            } else {
+                name
+            }
+            
+            // Skip empty paths
+            if (relativePath.isEmpty() || relativePath == "/") continue
+            
+            // Check if this is a direct child or nested deeper
+            val parts = relativePath.trimEnd('/').split("/")
+            
+            if (parts.size == 1 && parts[0].isNotEmpty()) {
+                // Direct child file or folder - check for duplicates
+                val normalizedName = name.trimEnd('/')
+                if (normalizedName !in processedNames) {
+                    processedNames.add(normalizedName)
+                    immediateItems.add(entry)
+                }
+            } else if (parts.isNotEmpty() && parts[0].isNotEmpty()) {
+                // This is inside a subfolder - add virtual folder entry if not already added
+                val folderName = parts[0]
+                val folderPath = currentPrefix + folderName
+                
+                if (folderPath !in processedNames) {
+                    processedNames.add(folderPath)
+                    // Find the actual folder entry or create a virtual one
+                    val existingFolder = archiveEntries.find { 
+                        it.name.trimEnd('/') == folderPath
+                    }
+                    if (existingFolder != null) {
+                        immediateItems.add(existingFolder)
+                    } else {
+                        // Create virtual folder entry
+                        immediateItems.add(VirtualFolderEntry(folderPath + "/"))
+                    }
+                }
+            }
+        }
+        
+        // Sort: folders first, then files, alphabetically
+        immediateItems.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
                         Text(
-                            text = "Archive Explorer",
+                            text = File(archivePath).name,
                             style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Text(
-                            text = File(currentPath.substringBefore(":")).name +
-                                  (if (nestedPath != null) " > ${File(nestedPath).name}" else ""),
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (currentPrefix.isNotEmpty()) {
+                            Text(
+                                text = "/" + currentPrefix.trimEnd('/'),
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { 
+                        if (currentPrefix.isNotEmpty()) {
+                            // Go up one directory level
+                            val parts = currentPrefix.trimEnd('/').split("/")
+                            currentPrefix = if (parts.size > 1) {
+                                parts.dropLast(1).joinToString("/") + "/"
+                            } else {
+                                ""
+                            }
+                        } else {
+                            navController.popBackStack() 
+                        }
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -143,43 +216,51 @@ fun ArchiveExplorerScreen(
         ) {
             if (viewModel.isLoading.value) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (archiveEntries.isEmpty()) {
+            } else if (filteredEntries.isEmpty()) {
                 Text(
-                    text = "No entries found in this archive",
+                    text = if (currentPrefix.isEmpty()) "No entries found in this archive" else "Empty folder",
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(
-                        items = archiveEntries,
-                        key = { entry -> entry.name }
-                    ) { entry ->
+                    itemsIndexed(
+                        items = filteredEntries,
+                        key = { index, entry -> "${index}_${entry.name.trimEnd('/')}" }
+                    ) { _, entry ->
                         ArchiveEntryItem(
                             entry = entry,
                             onClick = {
-                                // If it's a directory, we do nothing for now
-                                if (!entry.isDirectory) {
+                                if (entry.isDirectory) {
+                                    // Navigate into folder
+                                    currentPrefix = entry.name.let { 
+                                        if (it.endsWith("/")) it else "$it/" 
+                                    }
+                                } else {
                                     val entryName = entry.name
-                                    val extension = entryName.substringAfterLast('.', "")
+                                    val extension = entryName.substringAfterLast('.', "").lowercase()
 
                                     // If the entry looks like it might be an archive file itself
-                                    if (listOf("zip", "rar", "7z", "tar", "gz", "jar", "apk").contains(extension)) {
+                                    if (extension in listOf("zip", "rar", "7z", "tar", "gz", "jar", "apk")) {
                                         // Navigate to view the nested archive
                                         val encodedArchivePath = Uri.encode(archivePath)
                                         val encodedEntryPath = Uri.encode(entry.name)
                                         navController.navigate("archive_explorer/$encodedArchivePath/$encodedEntryPath")
                                     } else {
-                                        // View the file content
+                                        // Extract and open the file
                                         scope.launch {
-                                            val extractedPath = viewModel.viewArchiveEntry(archivePath, entry.name)
-                                            if (extractedPath != null) {
-                                                // TODO: Open the file with a file viewer
-                                                Toast.makeText(context, "Opening: ${entry.name}", Toast.LENGTH_SHORT).show()
-                                                // You can integrate with your file viewing mechanism here
-                                            } else {
-                                                snackbarHostState.showSnackbar("Failed to extract ${entry.name}")
+                                            try {
+                                                Toast.makeText(context, "Extracting ${entry.name}...", Toast.LENGTH_SHORT).show()
+                                                val extractedPath = viewModel.viewArchiveEntry(archivePath, entry.name)
+                                                if (extractedPath != null) {
+                                                    Toast.makeText(context, "Extracted to: $extractedPath", Toast.LENGTH_LONG).show()
+                                                    // TODO: Open with appropriate viewer based on extension
+                                                } else {
+                                                    snackbarHostState.showSnackbar("Failed to extract ${entry.name}")
+                                                }
+                                            } catch (e: Exception) {
+                                                snackbarHostState.showSnackbar("Error: ${e.message}")
                                             }
                                         }
                                     }
@@ -476,8 +557,10 @@ fun ArchiveEntryItem(
                 .weight(1f)
                 .padding(start = 16.dp)
         ) {
+            // Fix: Handle folder names with trailing slash
+            val displayName = entry.name.trimEnd('/').substringAfterLast('/')
             Text(
-                text = entry.name.substringAfterLast('/'),
+                text = if (displayName.isNotEmpty()) displayName else entry.name.trimEnd('/'),
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -507,4 +590,14 @@ private fun formatFileSize(size: Long): String {
     val units = arrayOf("B", "KB", "MB", "GB", "TB")
     val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
     return String.format("%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
+}
+
+/**
+ * Virtual folder entry for folders that don't have explicit entries in the archive
+ */
+private class VirtualFolderEntry(private val folderPath: String) : ArchiveEntry {
+    override fun getName(): String = folderPath
+    override fun getSize(): Long = 0
+    override fun isDirectory(): Boolean = true
+    override fun getLastModifiedDate(): java.util.Date? = null
 }
