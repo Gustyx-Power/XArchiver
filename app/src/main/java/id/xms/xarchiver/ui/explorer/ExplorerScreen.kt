@@ -1,48 +1,42 @@
 package id.xms.xarchiver.ui.explorer
 
 import android.net.Uri
+import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import id.xms.xarchiver.core.FileService
-import id.xms.xarchiver.core.FileItem
-import id.xms.xarchiver.core.humanReadable
-import androidx.compose.ui.platform.LocalContext
-import id.xms.xarchiver.core.archive.ArchiveManager
-import id.xms.xarchiver.core.install.ApkInstaller
-import java.util.*
-import java.io.File
-import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.clickable
-import id.xms.xarchiver.ui.theme.*
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import id.xms.xarchiver.core.*
+import id.xms.xarchiver.core.archive.ArchiveManager
+import id.xms.xarchiver.core.install.ApkInstaller
+import id.xms.xarchiver.ui.components.PathNavigationBar
+import id.xms.xarchiver.ui.components.PropertiesDialog
+import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
-// Create a global date formatter to avoid recreating it
 private val dateFormatter = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.getDefault())
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,36 +45,217 @@ fun ExplorerScreen(path: String, navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val archiveManager = remember { ArchiveManager(context) }
-
+    val selectionManager = remember { SelectionManager() }
+    val bookmarksManager = remember { BookmarksManager(context) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    
     var files by remember { mutableStateOf<List<FileItem>>(emptyList()) }
-    var pendingApk by remember { mutableStateOf<File?>(null) }
-    var selectedFile by remember { mutableStateOf<FileItem?>(null) }
-    var renamingFile by remember { mutableStateOf<FileItem?>(null) }
-    var deletingFile by remember { mutableStateOf<FileItem?>(null) }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var renameText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
-
+    var showFabMenu by remember { mutableStateOf(false) }
+    
+    // Dialogs
+    var pendingApk by remember { mutableStateOf<File?>(null) }
+    var showPropertiesDialog by remember { mutableStateOf<String?>(null) }
+    var showRenameDialog by remember { mutableStateOf<FileItem?>(null) }
+    var showDeleteDialog by remember { mutableStateOf<List<String>?>(null) }
+    var showNewFolderDialog by remember { mutableStateOf(false) }
+    var showNewFileDialog by remember { mutableStateOf(false) }
+    var showActionDialog by remember { mutableStateOf<FileItem?>(null) }
+    
+    // Clipboard info
+    val hasClipboard = FileOperationsManager.hasClipboardContent()
+    val clipboardCount = FileOperationsManager.getClipboardCount()
+    val clipboardOp = FileOperationsManager.getClipboardOperation()
+    
+    // Selection mode
+    val isSelecting = selectionManager.isSelecting
+    val selectedCount = selectionManager.selectedCount
+    
+    // Refresh function
+    fun refreshFiles() {
+        files = FileService.listDirectory(path)
+    }
+    
     LaunchedEffect(path) {
         isLoading = true
-        files = FileService.listDirectory(path)
+        refreshFiles()
         isLoading = false
+        selectionManager.clearSelection()
     }
-
-    // Optimize: Use simple background color instead of gradient
+    
     Scaffold(
         topBar = {
-            TopAppBarWithBreadcrumb(
-                path = path,
-                onCrumbClick = { crumbPath ->
-                    navController.navigate("explorer/${Uri.encode(crumbPath)}") {
-                        launchSingleTop = true
-                    }
-                },
-                onBack = { navController.navigateUp() }
-            )
+            if (isSelecting) {
+                // Selection mode top bar
+                TopAppBar(
+                    title = { Text("$selectedCount selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { selectionManager.clearSelection() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Cancel Selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { 
+                            selectionManager.selectAll(files.map { it.path })
+                        }) {
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select All")
+                        }
+                        IconButton(onClick = {
+                            selectionManager.reverseSelection(files.map { it.path })
+                        }) {
+                            Icon(Icons.Default.FlipToBack, contentDescription = "Reverse Selection")
+                        }
+                        if (selectedCount == 1) {
+                            IconButton(onClick = {
+                                selectionManager.selectSameType(
+                                    files.map { it.path },
+                                    selectionManager.selectedPaths.first()
+                                )
+                            }) {
+                                Icon(Icons.Default.FilterList, contentDescription = "Select Same Type")
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            } else {
+                // Normal navigation bar
+                PathNavigationBar(
+                    currentPath = path,
+                    onNavigate = { newPath ->
+                        navController.navigate("explorer/${Uri.encode(newPath)}") {
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = { navController.navigateUp() }
+                )
+            }
         },
+        bottomBar = {
+            // Bottom action bar when selecting
+            AnimatedVisibility(
+                visible = isSelecting,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it })
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 8.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        BottomActionButton(
+                            icon = Icons.Default.ContentCopy,
+                            label = "Copy",
+                            onClick = {
+                                FileOperationsManager.copyToClipboard(selectionManager.selectedPaths)
+                                selectionManager.clearSelection()
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("${selectionManager.selectedCount} items copied")
+                                }
+                            }
+                        )
+                        BottomActionButton(
+                            icon = Icons.Default.ContentCut,
+                            label = "Cut",
+                            onClick = {
+                                FileOperationsManager.cutToClipboard(selectionManager.selectedPaths)
+                                selectionManager.clearSelection()
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("${selectionManager.selectedCount} items cut")
+                                }
+                            }
+                        )
+                        BottomActionButton(
+                            icon = Icons.Default.Delete,
+                            label = "Delete",
+                            onClick = {
+                                showDeleteDialog = selectionManager.selectedPaths.toList()
+                            }
+                        )
+                        BottomActionButton(
+                            icon = Icons.Default.Share,
+                            label = "Share",
+                            onClick = {
+                                ShareUtils.shareMultipleFiles(context, selectionManager.selectedPaths)
+                                selectionManager.clearSelection()
+                            }
+                        )
+                    }
+                }
+            }
+        },
+        floatingActionButton = {
+            if (!isSelecting) {
+                Column(horizontalAlignment = Alignment.End) {
+                    // FAB Menu Items
+                    AnimatedVisibility(
+                        visible = showFabMenu,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        ) {
+                            if (hasClipboard) {
+                                ExtendedFloatingActionButton(
+                                    onClick = {
+                                        showFabMenu = false
+                                        scope.launch {
+                                            FileOperationsManager.pasteFiles(path).collect { progress ->
+                                                // Show progress (could add a dialog)
+                                            }
+                                            refreshFiles()
+                                            snackbarHostState.showSnackbar("Paste complete")
+                                        }
+                                    },
+                                    icon = { Icon(Icons.Default.ContentPaste, null) },
+                                    text = { Text("Paste ($clipboardCount)") },
+                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                )
+                            }
+                            ExtendedFloatingActionButton(
+                                onClick = {
+                                    showFabMenu = false
+                                    showNewFolderDialog = true
+                                },
+                                icon = { Icon(Icons.Default.CreateNewFolder, null) },
+                                text = { Text("New Folder") },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
+                            ExtendedFloatingActionButton(
+                                onClick = {
+                                    showFabMenu = false
+                                    showNewFileDialog = true
+                                },
+                                icon = { Icon(Icons.Default.NoteAdd, null) },
+                                text = { Text("New File") },
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        }
+                    }
+                    
+                    // Main FAB
+                    FloatingActionButton(
+                        onClick = { showFabMenu = !showFabMenu }
+                    ) {
+                        Icon(
+                            if (showFabMenu) Icons.Default.Close else Icons.Default.Add,
+                            contentDescription = "Menu"
+                        )
+                    }
+                }
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
@@ -89,112 +264,206 @@ fun ExplorerScreen(path: String, navController: NavController) {
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if (isLoading) {
-                items(6) { index ->
-                    OptimizedFileItemSkeleton()
+                items(6) { FileItemSkeleton() }
+            } else if (files.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 64.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.FolderOff,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "Empty folder",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
                 }
             } else {
                 itemsIndexed(
                     items = files,
                     key = { _, file -> file.path }
-                ) { index, file ->
-                    OptimizedFileItem(
+                ) { _, file ->
+                    FileItemCard(
                         file = file,
-                        dateFormatter = dateFormatter,
+                        isSelected = selectionManager.isSelected(file.path),
+                        isSelectionMode = isSelecting,
                         onClick = {
-                            if (file.isDirectory) {
-                                navController.navigate("explorer/${Uri.encode(file.path)}")
-                            } else if (file.name.endsWith(".apk", ignoreCase = true)) {
-                                pendingApk = File(file.path)
+                            if (isSelecting) {
+                                selectionManager.toggleSelection(file.path)
                             } else {
-                                // Check if this is an archive file we can open
-                                val fileExtension = file.name.substringAfterLast('.', "").lowercase()
-                                val archiveExtensions = listOf("zip", "rar", "7z", "tar", "gz", "tgz", "jar", "apk", "aar", "xapk")
-
-                                if (archiveExtensions.contains(fileExtension)) {
-                                    navController.navigate("archive_explorer/${Uri.encode(file.path)}")
-                                } else {
-                                    scope.launch {
-                                        if (archiveManager.isArchiveFile(file.path)) {
-                                            navController.navigate("archive_explorer/${Uri.encode(file.path)}")
-                                        } else {
-                                            // Handle regular files (future file viewer implementation)
-                                        }
-                                    }
-                                }
+                                handleFileClick(
+                                    file = file,
+                                    navController = navController,
+                                    archiveManager = archiveManager,
+                                    scope = scope,
+                                    onApkClick = { pendingApk = it }
+                                )
                             }
                         },
                         onLongClick = {
-                            selectedFile = file
+                            if (!isSelecting) {
+                                selectionManager.toggleSelection(file.path)
+                            } else {
+                                showActionDialog = file
+                            }
                         }
                     )
                 }
             }
         }
-
-        // Enhanced Dialog for file/directory actions
-        selectedFile?.let { file ->
-            EnhancedActionDialog(
+        
+        // Dialogs
+        showActionDialog?.let { file ->
+            FileActionDialog(
                 file = file,
-                onDismiss = { selectedFile = null },
+                onDismiss = { showActionDialog = null },
+                onCopy = {
+                    FileOperationsManager.copyToClipboard(listOf(file.path))
+                    showActionDialog = null
+                    scope.launch { snackbarHostState.showSnackbar("Copied to clipboard") }
+                },
+                onCut = {
+                    FileOperationsManager.cutToClipboard(listOf(file.path))
+                    showActionDialog = null
+                    scope.launch { snackbarHostState.showSnackbar("Cut to clipboard") }
+                },
                 onRename = {
-                    renamingFile = file
-                    renameText = file.name
-                    showRenameDialog = true
-                    selectedFile = null
+                    showRenameDialog = file
+                    showActionDialog = null
                 },
                 onDelete = {
-                    deletingFile = file
-                    showDeleteDialog = true
-                    selectedFile = null
+                    showDeleteDialog = listOf(file.path)
+                    showActionDialog = null
                 },
-                onExtract = {
-                    selectedFile = null
-                    navController.navigate("archive_explorer/${Uri.encode(file.path)}")
-                }
-            )
-        }
-
-        // Enhanced Rename dialog
-        if (showRenameDialog && renamingFile != null) {
-            EnhancedRenameDialog(
-                file = renamingFile!!,
-                initialName = renameText,
-                onNameChange = { renameText = it },
-                onConfirm = {
-                    if (renameText.isNotBlank()) {
-                        FileService.renameFile(renamingFile!!.path, renameText)
-                        files = FileService.listDirectory(path)
+                onShare = {
+                    ShareUtils.shareFile(context, file.path)
+                    showActionDialog = null
+                },
+                onProperties = {
+                    showPropertiesDialog = file.path
+                    showActionDialog = null
+                },
+                onBookmark = {
+                    scope.launch {
+                        val isNowBookmarked = bookmarksManager.toggleBookmark(file.path)
+                        snackbarHostState.showSnackbar(
+                            if (isNowBookmarked) "Added to bookmarks" else "Removed from bookmarks"
+                        )
                     }
-                    showRenameDialog = false
-                    renamingFile = null
+                    showActionDialog = null
                 },
-                onDismiss = {
-                    showRenameDialog = false
-                    renamingFile = null
-                }
+                onExtract = if (!file.isDirectory && isArchiveExtension(file.name)) {
+                    {
+                        showActionDialog = null
+                        navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                    }
+                } else null
             )
         }
-
-        // Enhanced Delete dialog
-        if (showDeleteDialog && deletingFile != null) {
-            EnhancedDeleteDialog(
-                file = deletingFile!!,
+        
+        showPropertiesDialog?.let { filePath ->
+            PropertiesDialog(
+                filePath = filePath,
+                onDismiss = { showPropertiesDialog = null }
+            )
+        }
+        
+        showRenameDialog?.let { file ->
+            RenameDialog(
+                currentName = file.name,
+                onConfirm = { newName ->
+                    scope.launch {
+                        val result = FileOperationsManager.renameFile(file.path, newName)
+                        when (result) {
+                            is FileOperationResult.Success -> {
+                                refreshFiles()
+                                snackbarHostState.showSnackbar("Renamed successfully")
+                            }
+                            is FileOperationResult.Error -> {
+                                snackbarHostState.showSnackbar(result.message)
+                            }
+                        }
+                    }
+                    showRenameDialog = null
+                },
+                onDismiss = { showRenameDialog = null }
+            )
+        }
+        
+        showDeleteDialog?.let { paths ->
+            DeleteConfirmDialog(
+                count = paths.size,
                 onConfirm = {
-                    FileService.deleteFile(deletingFile!!.path)
-                    files = FileService.listDirectory(path)
-                    showDeleteDialog = false
-                    deletingFile = null
+                    scope.launch {
+                        val result = FileOperationsManager.deleteFiles(paths)
+                        selectionManager.clearSelection()
+                        refreshFiles()
+                        when (result) {
+                            is FileOperationResult.Success -> {
+                                snackbarHostState.showSnackbar(result.message)
+                            }
+                            is FileOperationResult.Error -> {
+                                snackbarHostState.showSnackbar(result.message)
+                            }
+                        }
+                    }
+                    showDeleteDialog = null
                 },
-                onDismiss = {
-                    showDeleteDialog = false
-                    deletingFile = null
-                }
+                onDismiss = { showDeleteDialog = null }
             )
         }
-
-        // Enhanced APK install dialog
+        
+        if (showNewFolderDialog) {
+            NewItemDialog(
+                title = "New Folder",
+                placeholder = "Folder name",
+                onConfirm = { name ->
+                    scope.launch {
+                        val result = FileOperationsManager.createFolder(path, name)
+                        refreshFiles()
+                        when (result) {
+                            is FileOperationResult.Success -> snackbarHostState.showSnackbar("Folder created")
+                            is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                        }
+                    }
+                    showNewFolderDialog = false
+                },
+                onDismiss = { showNewFolderDialog = false }
+            )
+        }
+        
+        if (showNewFileDialog) {
+            NewItemDialog(
+                title = "New File",
+                placeholder = "filename.txt",
+                onConfirm = { name ->
+                    scope.launch {
+                        val result = FileOperationsManager.createFile(path, name)
+                        refreshFiles()
+                        when (result) {
+                            is FileOperationResult.Success -> snackbarHostState.showSnackbar("File created")
+                            is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                        }
+                    }
+                    showNewFileDialog = false
+                },
+                onDismiss = { showNewFileDialog = false }
+            )
+        }
+        
         pendingApk?.let { apkFile ->
-            EnhancedApkInstallDialog(
+            ApkInstallDialog(
                 apkFile = apkFile,
                 onInstall = {
                     ApkInstaller.installApk(context, apkFile)
@@ -207,29 +476,37 @@ fun ExplorerScreen(path: String, navController: NavController) {
 }
 
 @Composable
-private fun OptimizedFileItem(
+private fun FileItemCard(
     file: FileItem,
-    dateFormatter: SimpleDateFormat,
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    // Pre-calculate values to avoid recalculation during scroll
     val fileIcon = remember(file.name, file.isDirectory) { getFileIcon(file) }
     val fileColor = remember(file.name, file.isDirectory) { getFileColor(file) }
     val formattedDate = remember(file.lastModified) {
         dateFormatter.format(Date(file.lastModified))
     }
-
-    // Simple Card without animations for better performance
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isSelected) Modifier.border(
+                    2.dp,
+                    MaterialTheme.colorScheme.primary,
+                    RoundedCornerShape(12.dp)
+                ) else Modifier
+            )
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
             ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) 
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -240,67 +517,80 @@ private fun OptimizedFileItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Simplified icon without complex backgrounds
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        color = fileColor.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = fileIcon,
-                    contentDescription = null,
-                    tint = fileColor,
-                    modifier = Modifier.size(20.dp)
+            // Selection checkbox or icon
+            if (isSelectionMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.size(40.dp)
                 )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(fileColor.copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = fileIcon,
+                        contentDescription = null,
+                        tint = fileColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            // File information
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            
+            Spacer(Modifier.width(12.dp))
+            
+            Column(Modifier.weight(1f)) {
                 Text(
                     text = file.name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                if (!file.isDirectory) {
-                    Text(
-                        text = "${file.size.humanReadable()} • $formattedDate",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    Text(
-                        text = "Folder",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Text(
+                    text = if (file.isDirectory) "Folder" else "${file.size.humanReadable()} • $formattedDate",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (file.isDirectory) MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-
-            // Simple chevron without animation
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(16.dp)
-            )
+            
+            if (!isSelectionMode) {
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun OptimizedFileItemSkeleton() {
+private fun BottomActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .combinedClickable(onClick = onClick, onLongClick = {})
+            .padding(12.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(4.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
+private fun FileItemSkeleton() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -309,62 +599,118 @@ private fun OptimizedFileItemSkeleton() {
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-                        CircleShape
-                    )
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(16.dp)
-                        .background(
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                            RoundedCornerShape(4.dp)
-                        )
+                Modifier.size(40.dp).background(
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                    CircleShape
                 )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(12.dp)
-                        .background(
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            RoundedCornerShape(4.dp)
-                        )
+                    Modifier.fillMaxWidth(0.6f).height(16.dp).background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                        RoundedCornerShape(4.dp)
+                    )
+                )
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    Modifier.fillMaxWidth(0.4f).height(12.dp).background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                        RoundedCornerShape(4.dp)
+                    )
                 )
             }
         }
     }
 }
 
+// Helper functions
+private fun handleFileClick(
+    file: FileItem,
+    navController: NavController,
+    archiveManager: ArchiveManager,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onApkClick: (File) -> Unit
+) {
+    val ext = file.name.substringAfterLast('.', "").lowercase()
+    
+    when {
+        file.isDirectory -> {
+            navController.navigate("explorer/${Uri.encode(file.path)}")
+        }
+        file.name.endsWith(".apk", ignoreCase = true) -> {
+            onApkClick(File(file.path))
+        }
+        isArchiveExtension(file.name) -> {
+            navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+        }
+        isImageExtension(ext) -> {
+            navController.navigate("image_viewer/${Uri.encode(file.path)}")
+        }
+        isAudioExtension(ext) -> {
+            navController.navigate("audio_player/${Uri.encode(file.path)}")
+        }
+        isVideoExtension(ext) -> {
+            navController.navigate("video_player/${Uri.encode(file.path)}")
+        }
+        isTextExtension(ext) -> {
+            navController.navigate("text_editor/${Uri.encode(file.path)}")
+        }
+        else -> {
+            // Try to detect as archive, otherwise open as text
+            scope.launch {
+                if (archiveManager.isArchiveFile(file.path)) {
+                    navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                } else {
+                    // Open as text by default for unknown file types
+                    navController.navigate("text_editor/${Uri.encode(file.path)}")
+                }
+            }
+        }
+    }
+}
+
+private fun isImageExtension(ext: String): Boolean {
+    return ext in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp", "svg", "ico", "heic", "heif")
+}
+
+private fun isAudioExtension(ext: String): Boolean {
+    return ext in listOf("mp3", "wav", "flac", "aac", "ogg", "m4a", "wma", "opus")
+}
+
+private fun isVideoExtension(ext: String): Boolean {
+    return ext in listOf("mp4", "avi", "mkv", "mov", "wmv", "webm", "flv", "3gp", "ts", "m4v")
+}
+
+private fun isTextExtension(ext: String): Boolean {
+    return ext in listOf(
+        "txt", "md", "log", "json", "xml", "html", "htm", "css", "js", "ts",
+        "java", "kt", "kts", "py", "c", "cpp", "h", "hpp", "cs", "go", "rs",
+        "php", "rb", "swift", "sh", "bat", "ps1", "yaml", "yml", "toml", "ini",
+        "cfg", "conf", "properties", "gradle", "pro", "gitignore", "env"
+    )
+}
+
+private fun isArchiveExtension(fileName: String): Boolean {
+    val ext = fileName.substringAfterLast('.', "").lowercase()
+    return ext in listOf("zip", "rar", "7z", "tar", "gz", "tgz", "jar", "aar", "xapk")
+}
+
 private fun getFileIcon(file: FileItem): ImageVector {
     if (file.isDirectory) return Icons.Default.Folder
-
-    val extension = file.name.substringAfterLast('.', "").lowercase()
-    return when (extension) {
+    val ext = file.name.substringAfterLast('.', "").lowercase()
+    return when (ext) {
         "zip", "rar", "7z", "tar", "gz", "tgz", "jar", "aar", "xapk" -> Icons.Default.Archive
         "apk" -> Icons.Default.Android
         "mp3", "wav", "flac", "aac", "ogg" -> Icons.Default.AudioFile
         "mp4", "avi", "mkv", "mov", "wmv" -> Icons.Default.VideoFile
         "jpg", "jpeg", "png", "gif", "bmp", "webp" -> Icons.Default.Image
         "pdf" -> Icons.Default.PictureAsPdf
-        "txt", "md", "log" -> Icons.Default.Description
-        "doc", "docx" -> Icons.Default.Description
+        "txt", "md", "log", "doc", "docx" -> Icons.Default.Description
         "xls", "xlsx" -> Icons.Default.TableChart
         "ppt", "pptx" -> Icons.Default.Slideshow
         else -> Icons.AutoMirrored.Filled.InsertDriveFile
@@ -372,793 +718,191 @@ private fun getFileIcon(file: FileItem): ImageVector {
 }
 
 private fun getFileColor(file: FileItem): Color {
-    if (file.isDirectory) return Color(0xFF4CAF50) // Green for folders
-
-    val extension = file.name.substringAfterLast('.', "").lowercase()
-    return when (extension) {
-        "zip", "rar", "7z", "tar", "gz", "tgz", "jar", "aar", "xapk" -> Color(0xFFFF9800) // Orange for archives
-        "apk" -> Color(0xFF4CAF50) // Green for APK
-        "mp3", "wav", "flac", "aac", "ogg" -> Color(0xFF9C27B0) // Purple for audio
-        "mp4", "avi", "mkv", "mov", "wmv" -> Color(0xFFE91E63) // Pink for video
-        "jpg", "jpeg", "png", "gif", "bmp", "webp" -> Color(0xFF2196F3) // Blue for images
-        "pdf" -> Color(0xFFF44336) // Red for PDF
-        "txt", "md", "log", "doc", "docx" -> Color(0xFF607D8B) // Blue-grey for documents
-        "xls", "xlsx" -> Color(0xFF4CAF50) // Green for spreadsheets
-        "ppt", "pptx" -> Color(0xFFFF5722) // Deep orange for presentations
-        else -> Color(0xFF757575) // Grey for other files
+    if (file.isDirectory) return Color(0xFF4CAF50)
+    val ext = file.name.substringAfterLast('.', "").lowercase()
+    return when (ext) {
+        "zip", "rar", "7z", "tar", "gz", "tgz", "jar", "aar", "xapk" -> Color(0xFFFF9800)
+        "apk" -> Color(0xFF4CAF50)
+        "mp3", "wav", "flac", "aac", "ogg" -> Color(0xFF9C27B0)
+        "mp4", "avi", "mkv", "mov", "wmv" -> Color(0xFFE91E63)
+        "jpg", "jpeg", "png", "gif", "bmp", "webp" -> Color(0xFF2196F3)
+        "pdf" -> Color(0xFFF44336)
+        "txt", "md", "log", "doc", "docx" -> Color(0xFF607D8B)
+        "xls", "xlsx" -> Color(0xFF4CAF50)
+        "ppt", "pptx" -> Color(0xFFFF5722)
+        else -> Color(0xFF757575)
     }
 }
 
-
-@OptIn(ExperimentalMaterial3Api::class)
+// Dialog Composables
 @Composable
-fun TopAppBarWithBreadcrumb(
-    path: String,
-    onCrumbClick: (String) -> Unit,
-    onBack: () -> Unit
-) {
-    val scrollState = rememberScrollState()
-
-    // Enhanced TopAppBar with gradient background
-    TopAppBar(
-        title = {
-            Row(
-                modifier = Modifier.horizontalScroll(scrollState),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Enhanced back button
-                Surface(
-                    onClick = onBack,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Enhanced breadcrumb display
-                val cleanPath = getCleanDisplayPath(path)
-
-                // Show simplified path
-                if (cleanPath.length > 30) {
-                    // For very long paths, show just the last folder
-                    val lastFolder = cleanPath.substringAfterLast('/')
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.MoreHoriz,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        EnhancedBreadcrumbChip(
-                            label = lastFolder.ifEmpty { "Root" },
-                            isLast = true,
-                            onClick = { onCrumbClick(path) }
-                        )
-                    }
-                } else {
-                    // Build enhanced crumbs for shorter paths
-                    val normalized = path.trimEnd('/')
-                    val parts = getDisplayParts(normalized)
-
-                    parts.forEachIndexed { index, (displayName, fullPath) ->
-                        EnhancedBreadcrumbChip(
-                            label = displayName,
-                            isLast = index == parts.size - 1,
-                            onClick = { onCrumbClick(fullPath) }
-                        )
-
-                        if (index < parts.size - 1) {
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .padding(horizontal = 4.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-        ),
-        modifier = Modifier.shadow(
-            elevation = 4.dp,
-            ambientColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-        )
-    )
-}
-
-@Composable
-private fun EnhancedBreadcrumbChip(
-    label: String,
-    isLast: Boolean,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "chipScale"
-    )
-
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.scale(scale),
-        color = if (isLast) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
-        } else {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        },
-        shape = RoundedCornerShape(20.dp),
-        interactionSource = interactionSource
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (isLast) {
-                Icon(
-                    Icons.Default.FolderOpen,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-            }
-
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = if (isLast) FontWeight.Bold else FontWeight.Medium,
-                color = if (isLast) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-// Helper functions for cleaner path display
-private fun getCleanDisplayPath(path: String): String {
-    return path
-        .replace("/storage/emulated/0", "Internal Storage")
-        .replace("/sdcard", "Internal Storage")
-        .replace("/storage", "")
-        .replace("emulated/0", "Internal Storage")
-}
-
-private fun getDisplayParts(path: String): List<Pair<String, String>> {
-    if (path.isEmpty() || path == "/") {
-        return listOf("Root" to "/")
-    }
-
-    val parts = path.split("/").filter { it.isNotEmpty() }
-    val result = mutableListOf<Pair<String, String>>()
-    var currentPath = ""
-
-    for ((index, part) in parts.withIndex()) {
-        currentPath = "$currentPath/$part"
-
-        val displayName = when {
-            currentPath == "/storage/emulated/0" || currentPath == "/sdcard" -> "Internal Storage"
-            currentPath == "/storage" -> "Storage"
-            currentPath == "/data" -> "System Data"
-            currentPath == "/system" -> "System"
-            part == "emulated" -> null // Skip this part
-            part == "0" && currentPath.contains("emulated") -> null // Skip this part
-            else -> part.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-        }
-
-        displayName?.let {
-            result.add(it to currentPath)
-        }
-    }
-
-    return result.ifEmpty { listOf("Root" to "/") }
-}
-
-@Composable
-private fun EnhancedActionDialog(
+private fun FileActionDialog(
     file: FileItem,
     onDismiss: () -> Unit,
+    onCopy: () -> Unit,
+    onCut: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
-    onExtract: () -> Unit
+    onShare: () -> Unit,
+    onProperties: () -> Unit,
+    onBookmark: () -> Unit,
+    onExtract: (() -> Unit)?
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "dialogScale"
-    )
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.scale(scale),
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = getFileIcon(file),
-                    contentDescription = null,
-                    tint = getFileColor(file),
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = if (file.isDirectory) "Folder Options" else "File Options",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            Text(
+                file.name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.titleMedium
+            )
         },
         text = {
             Column {
-                Text(
-                    text = "Choose an action for ${if (file.isDirectory) "folder" else "file"}:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // File name display
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = file.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(16.dp),
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Action buttons
-                ActionButton(
-                    icon = Icons.Default.Edit,
-                    text = "Rename",
-                    description = "Change the name",
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    onClick = onRename
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ActionButton(
-                    icon = Icons.Default.Delete,
-                    text = "Delete",
-                    description = "Remove permanently",
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    onClick = onDelete
-                )
-
-                // Extract option for archive files
-                if (!file.isDirectory) {
-                    val fileExtension = file.name.substringAfterLast('.', "").lowercase()
-                    val archiveExtensions = listOf("zip", "rar", "7z", "tar", "gz", "tgz", "jar", "apk", "aar", "xapk")
-
-                    if (archiveExtensions.contains(fileExtension)) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        ActionButton(
-                            icon = Icons.Default.Unarchive,
-                            text = "Extract Archive",
-                            description = "Browse contents",
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                            onClick = onExtract
-                        )
-                    }
+                DialogAction(Icons.Default.ContentCopy, "Copy", onCopy)
+                DialogAction(Icons.Default.ContentCut, "Cut", onCut)
+                DialogAction(Icons.Default.Edit, "Rename", onRename)
+                DialogAction(Icons.Default.Delete, "Delete", onDelete)
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                DialogAction(Icons.Default.Share, "Share", onShare)
+                DialogAction(Icons.Default.Info, "Properties", onProperties)
+                DialogAction(Icons.Default.Bookmark, "Bookmark", onBookmark)
+                onExtract?.let {
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    DialogAction(Icons.Default.FolderZip, "Open Archive", it)
                 }
             }
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }
 
 @Composable
-private fun ActionButton(
-    icon: ImageVector,
-    text: String,
-    description: String,
-    containerColor: Color,
-    contentColor: Color,
-    onClick: () -> Unit
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "buttonScale"
-    )
-
-    Card(
+private fun DialogAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor
-        ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isPressed) 8.dp else 4.dp
-        )
+            .clip(RoundedCornerShape(8.dp))
+            .combinedClickable(onClick = onClick, onLongClick = {})
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = contentColor.copy(alpha = 0.1f),
-                shape = CircleShape,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        icon,
-                        contentDescription = null,
-                        tint = contentColor,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = contentColor
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f)
-                )
-            }
-        }
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(16.dp))
+        Text(label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
 @Composable
-private fun EnhancedRenameDialog(
-    file: FileItem,
-    initialName: String,
-    onNameChange: (String) -> Unit,
-    onConfirm: () -> Unit,
+private fun RenameDialog(
+    currentName: String,
+    onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "renameDialogScale"
-    )
-
+    var name by remember { mutableStateOf(currentName) }
+    
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.scale(scale),
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Rename ${if (file.isDirectory) "Folder" else "File"}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
+        title = { Text("Rename") },
         text = {
-            Column {
-                Text(
-                    text = "Enter a new name:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = initialName,
-                    onValueChange = onNameChange,
-                    label = { Text("Name") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-            }
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
         },
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Rename", fontWeight = FontWeight.Medium)
-            }
+            TextButton(
+                onClick = { onConfirm(name) },
+                enabled = name.isNotBlank() && name != currentName
+            ) { Text("Rename") }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }
 
 @Composable
-private fun EnhancedDeleteDialog(
-    file: FileItem,
+private fun DeleteConfirmDialog(
+    count: Int,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "deleteDialogScale"
-    )
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.scale(scale),
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Delete ${if (file.isDirectory) "Folder" else "File"}",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
-        },
-        text = {
-            Column {
-                Text(
-                    text = if (file.isDirectory) {
-                        "Are you sure you want to delete this folder and all its contents?"
-                    } else {
-                        "Are you sure you want to delete this file?"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = getFileIcon(file),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = file.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = if (file.isDirectory) "⚠️ This action will permanently delete the folder and all files inside it." else "⚠️ This action cannot be undone.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        },
+        icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text("Delete $count item${if (count > 1) "s" else ""}?") },
+        text = { Text("This action cannot be undone.") },
         confirmButton = {
-            Button(
-                onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Delete", color = MaterialTheme.colorScheme.onError, fontWeight = FontWeight.Medium)
+            TextButton(onClick = onConfirm) {
+                Text("Delete", color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }
 
 @Composable
-private fun EnhancedApkInstallDialog(
+private fun NewItemDialog(
+    title: String,
+    placeholder: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                placeholder = { Text(placeholder) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name) },
+                enabled = name.isNotBlank()
+            ) { Text("Create") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
+}
+
+@Composable
+private fun ApkInstallDialog(
     apkFile: File,
     onInstall: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "apkDialogScale"
-    )
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        modifier = Modifier.scale(scale),
-        title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    shape = CircleShape,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            Icons.Default.Android,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Install APK",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        },
+        icon = { Icon(Icons.Default.Android, null, tint = Color(0xFF4CAF50)) },
+        title = { Text("Install APK") },
         text = {
-            Column {
-                Text(
-                    text = "Do you want to install this application?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = CircleShape,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center,
-                                modifier = Modifier.fillMaxSize()
-                            ) {
-                                Icon(
-                                    Icons.Default.Android,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = apkFile.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Android Package",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Security,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Only install applications from trusted sources",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer
-                        )
-                    }
-                }
-            }
+            Text("Do you want to install ${apkFile.name}?")
         },
         confirmButton = {
-            Button(
-                onClick = onInstall,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Install", fontWeight = FontWeight.Medium)
-            }
+            TextButton(onClick = onInstall) { Text("Install") }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }
