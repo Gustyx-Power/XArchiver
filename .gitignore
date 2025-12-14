@@ -17,3 +17,5 @@
 /app/build
 /app/dist
 
+# Ignore gradle.properties (contains tokens) - use gradle.properties.example as template
+gradle.properties
