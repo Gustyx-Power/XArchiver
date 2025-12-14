@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import id.xms.xarchiver.core.*
 import id.xms.xarchiver.core.archive.ArchiveManager
+import id.xms.xarchiver.core.archive.ExtractionProgress
+import id.xms.xarchiver.core.archive.ExtractionState
 import id.xms.xarchiver.core.install.ApkInstaller
 import id.xms.xarchiver.ui.archive.CreateArchiveDialog
 import id.xms.xarchiver.ui.components.PathNavigationBar
@@ -63,6 +65,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showNewFileDialog by remember { mutableStateOf(false) }
     var showActionDialog by remember { mutableStateOf<FileItem?>(null) }
     var showCreateArchiveDialog by remember { mutableStateOf(false) }
+    var showQuickExtractDialog by remember { mutableStateOf<FileItem?>(null) }
+    var extractionProgress by remember { mutableStateOf<ExtractionProgress?>(null) }
     
     // Clipboard info
     val hasClipboard = FileOperationsManager.hasClipboardContent()
@@ -152,6 +156,12 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             .padding(8.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        // Check if selected files contain archives
+                        val selectedArchives = selectionManager.selectedPaths.filter { 
+                            isArchiveExtension(java.io.File(it).name) 
+                        }
+                        val hasArchives = selectedArchives.isNotEmpty()
+                        
                         BottomActionButton(
                             icon = Icons.Default.ContentCopy,
                             label = "Copy",
@@ -181,14 +191,33 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 showDeleteDialog = selectionManager.selectedPaths.toList()
                             }
                         )
-                        BottomActionButton(
-                            icon = Icons.Default.Share,
-                            label = "Share",
-                            onClick = {
-                                ShareUtils.shareMultipleFiles(context, selectionManager.selectedPaths)
-                                selectionManager.clearSelection()
-                            }
-                        )
+                        
+                        // Show Extract button if archives are selected
+                        if (hasArchives) {
+                            BottomActionButton(
+                                icon = Icons.Default.Unarchive,
+                                label = "Extract",
+                                onClick = {
+                                    // Extract first archive (or show dialog for single file)
+                                    val firstArchive = selectedArchives.first()
+                                    val archiveFile = files.find { it.path == firstArchive }
+                                    if (archiveFile != null) {
+                                        selectionManager.clearSelection()
+                                        showQuickExtractDialog = archiveFile
+                                    }
+                                }
+                            )
+                        } else {
+                            BottomActionButton(
+                                icon = Icons.Default.Share,
+                                label = "Share",
+                                onClick = {
+                                    ShareUtils.shareMultipleFiles(context, selectionManager.selectedPaths)
+                                    selectionManager.clearSelection()
+                                }
+                            )
+                        }
+                        
                         BottomActionButton(
                             icon = Icons.Default.FolderZip,
                             label = "Compress",
@@ -375,7 +404,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 onExtract = if (!file.isDirectory && isArchiveExtension(file.name)) {
                     {
                         showActionDialog = null
-                        navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                        showQuickExtractDialog = file
                     }
                 } else null
             )
@@ -498,6 +527,139 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         snackbarHostState.showSnackbar("Archive created: ${java.io.File(archivePath).name}")
                     }
                 }
+            )
+        }
+        
+        // Quick Extract Dialog
+        showQuickExtractDialog?.let { file ->
+            AlertDialog(
+                onDismissRequest = { showQuickExtractDialog = null },
+                title = { 
+                    Text("Extract Archive", fontWeight = FontWeight.Bold) 
+                },
+                text = {
+                    Column {
+                        Text(file.name, style = MaterialTheme.typography.bodyMedium)
+                        Spacer(Modifier.height(16.dp))
+                        
+                        // Extract Here
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .combinedClickable(onClick = {
+                                    showQuickExtractDialog = null
+                                    scope.launch {
+                                        extractionProgress = ExtractionProgress(
+                                            ExtractionState.STARTED, "Starting...", 0
+                                        )
+                                        archiveManager.extractArchive(
+                                            file.path, 
+                                            path + "/" + java.io.File(file.path).nameWithoutExtension
+                                        ).collect { progress ->
+                                            extractionProgress = progress
+                                            if (progress.state == ExtractionState.COMPLETED) {
+                                                extractionProgress = null
+                                                refreshFiles()
+                                                snackbarHostState.showSnackbar("Extracted to ${java.io.File(file.path).nameWithoutExtension}")
+                                            } else if (progress.state == ExtractionState.ERROR) {
+                                                extractionProgress = null
+                                                snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
+                                            }
+                                        }
+                                    }
+                                }, onLongClick = {}),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Unarchive, null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text("Extract Here", fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "Extract to current folder",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(8.dp))
+                        
+                        // Open Archive
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .combinedClickable(onClick = {
+                                    showQuickExtractDialog = null
+                                    navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+                                }, onLongClick = {}),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.FolderOpen, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text("Open Archive", fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "Browse contents first",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showQuickExtractDialog = null }) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+        
+        // Extraction Progress Overlay
+        extractionProgress?.let { progress ->
+            AlertDialog(
+                onDismissRequest = { /* Can't dismiss during extraction */ },
+                title = { Text("Extracting...") },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { progress.percentage / 100f }
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text("${progress.percentage}%", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            progress.currentFile,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${progress.extractedCount} / ${progress.totalCount} files",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                },
+                confirmButton = {}
             )
         }
     }
