@@ -30,6 +30,7 @@ import androidx.navigation.NavController
 import id.xms.xarchiver.core.*
 import id.xms.xarchiver.core.archive.ArchiveManager
 import id.xms.xarchiver.core.install.ApkInstaller
+import id.xms.xarchiver.ui.archive.CreateArchiveDialog
 import id.xms.xarchiver.ui.components.PathNavigationBar
 import id.xms.xarchiver.ui.components.PropertiesDialog
 import kotlinx.coroutines.launch
@@ -61,6 +62,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showNewFolderDialog by remember { mutableStateOf(false) }
     var showNewFileDialog by remember { mutableStateOf(false) }
     var showActionDialog by remember { mutableStateOf<FileItem?>(null) }
+    var showCreateArchiveDialog by remember { mutableStateOf(false) }
     
     // Clipboard info
     val hasClipboard = FileOperationsManager.hasClipboardContent()
@@ -185,6 +187,13 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             onClick = {
                                 ShareUtils.shareMultipleFiles(context, selectionManager.selectedPaths)
                                 selectionManager.clearSelection()
+                            }
+                        )
+                        BottomActionButton(
+                            icon = Icons.Default.FolderZip,
+                            label = "Compress",
+                            onClick = {
+                                showCreateArchiveDialog = true
                             }
                         )
                     }
@@ -470,6 +479,25 @@ fun ExplorerScreen(path: String, navController: NavController) {
                     pendingApk = null
                 },
                 onDismiss = { pendingApk = null }
+            )
+        }
+        
+        // Create Archive Dialog
+        if (showCreateArchiveDialog) {
+            CreateArchiveDialog(
+                selectedFiles = selectionManager.selectedPaths,
+                outputDirectory = path,
+                onDismiss = { 
+                    showCreateArchiveDialog = false
+                },
+                onComplete = { archivePath ->
+                    showCreateArchiveDialog = false
+                    selectionManager.clearSelection()
+                    refreshFiles()
+                    scope.launch {
+                        snackbarHostState.showSnackbar("Archive created: ${java.io.File(archivePath).name}")
+                    }
+                }
             )
         }
     }
