@@ -57,21 +57,23 @@ fun ImageViewerScreen(
     val file = remember { File(filePath) }
     val fileName = file.name
     
-    // Load image
+    // Load image with memory-safe approach
     LaunchedEffect(filePath) {
         isLoading = true
         error = null
         try {
             val loadedBitmap = withContext(Dispatchers.IO) {
-                BitmapFactory.decodeFile(filePath)
+                loadBitmapSafely(filePath)
             }
             if (loadedBitmap != null) {
                 bitmap = loadedBitmap
             } else {
                 error = "Failed to decode image"
             }
+        } catch (e: OutOfMemoryError) {
+            error = "Image too large to display"
         } catch (e: Exception) {
-            error = e.message
+            error = e.message ?: "Unknown error"
         }
         isLoading = false
     }
@@ -252,4 +254,36 @@ fun ImageViewerScreen(
             }
         }
     }
+}
+
+/**
+ * Load bitmap with memory-safe approach by calculating appropriate sample size
+ */
+private fun loadBitmapSafely(filePath: String, maxDimension: Int = 4096): android.graphics.Bitmap? {
+    // First, decode bounds only to get image dimensions
+    val options = BitmapFactory.Options().apply {
+        inJustDecodeBounds = true
+    }
+    BitmapFactory.decodeFile(filePath, options)
+    
+    if (options.outWidth <= 0 || options.outHeight <= 0) {
+        return null
+    }
+    
+    // Calculate sample size
+    val width = options.outWidth
+    val height = options.outHeight
+    var sampleSize = 1
+    
+    while (width / sampleSize > maxDimension || height / sampleSize > maxDimension) {
+        sampleSize *= 2
+    }
+    
+    // Now decode with the sample size
+    val decodeOptions = BitmapFactory.Options().apply {
+        inSampleSize = sampleSize
+        inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // Use less memory
+    }
+    
+    return BitmapFactory.decodeFile(filePath, decodeOptions)
 }
