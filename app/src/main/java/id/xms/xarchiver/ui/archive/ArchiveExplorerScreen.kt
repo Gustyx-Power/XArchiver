@@ -252,10 +252,53 @@ fun ArchiveExplorerScreen(
                                         scope.launch {
                                             try {
                                                 Toast.makeText(context, "Extracting ${entry.name}...", Toast.LENGTH_SHORT).show()
+                                                
+                                                // Extract to Downloads folder instead of app cache
+                                                val fileName = entry.name.substringAfterLast('/')
+                                                val outputDir = "$downloadsPath/.XArchiver_temp"
+                                                val outputFile = File(outputDir, fileName)
+                                                
+                                                // Create output directory
+                                                File(outputDir).mkdirs()
+                                                
+                                                // Use viewArchiveEntry to get the cached file, then copy to accessible location
                                                 val extractedPath = viewModel.viewArchiveEntry(archivePath, entry.name)
+                                                
                                                 if (extractedPath != null) {
-                                                    Toast.makeText(context, "Extracted to: $extractedPath", Toast.LENGTH_LONG).show()
-                                                    // TODO: Open with appropriate viewer based on extension
+                                                    // Copy from cache to Downloads
+                                                    val cacheFile = File(extractedPath)
+                                                    if (cacheFile.exists()) {
+                                                        cacheFile.copyTo(outputFile, overwrite = true)
+                                                        
+                                                        Toast.makeText(context, "Extracted to: ${outputFile.absolutePath}", Toast.LENGTH_SHORT).show()
+                                                        
+                                                        // Open with appropriate viewer
+                                                        val ext = extension
+                                                        when {
+                                                            ext in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp") -> {
+                                                                navController.navigate("image_viewer/${Uri.encode(outputFile.absolutePath)}")
+                                                            }
+                                                            ext in listOf("mp3", "wav", "flac", "aac", "ogg", "m4a") -> {
+                                                                navController.navigate("audio_player/${Uri.encode(outputFile.absolutePath)}")
+                                                            }
+                                                            ext in listOf("mp4", "avi", "mkv", "mov", "wmv", "webm") -> {
+                                                                navController.navigate("video_player/${Uri.encode(outputFile.absolutePath)}")
+                                                            }
+                                                            ext in listOf("txt", "md", "log", "json", "xml", "html", "css", "js") -> {
+                                                                navController.navigate("text_editor/${Uri.encode(outputFile.absolutePath)}")
+                                                            }
+                                                            ext in listOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx") -> {
+                                                                // Open with external app
+                                                                id.xms.xarchiver.core.ShareUtils.openFile(context, outputFile.absolutePath)
+                                                            }
+                                                            else -> {
+                                                                // Try to open as text or with external app
+                                                                navController.navigate("text_editor/${Uri.encode(outputFile.absolutePath)}")
+                                                            }
+                                                        }
+                                                    } else {
+                                                        snackbarHostState.showSnackbar("Failed to extract ${entry.name}")
+                                                    }
                                                 } else {
                                                     snackbarHostState.showSnackbar("Failed to extract ${entry.name}")
                                                 }
