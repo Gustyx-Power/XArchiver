@@ -24,7 +24,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "1.0-Beta1"
+        versionName = "1.0-Release"
     }
 
     signingConfigs {
@@ -39,8 +39,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt")
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
         }
@@ -118,6 +120,10 @@ dependencies {
     implementation("com.squareup.okio:okio:3.9.0")
     // Add DocumentFile support
     implementation("androidx.documentfile:documentfile:1.0.1")
+    
+    // ExoPlayer for video/audio playback
+    implementation("androidx.media3:media3-exoplayer:1.2.1")
+    implementation("androidx.media3:media3-ui:1.2.1")
 }
 
 tasks.register("sendTelegramMessage", SendTelegramMessageTask::class) {
