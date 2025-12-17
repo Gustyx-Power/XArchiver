@@ -325,6 +325,28 @@ fun TextEditorScreen(
         var searchQuery by remember { mutableStateOf("") }
         var replaceQuery by remember { mutableStateOf("") }
         var showReplace by remember { mutableStateOf(false) }
+        var currentMatchIndex by remember { mutableStateOf(-1) }
+        var matchCount by remember { mutableStateOf(0) }
+        var highlightMatches by remember { mutableStateOf(false) }
+        
+        // Calculate match count when search query changes
+        LaunchedEffect(searchQuery, content) {
+            if (searchQuery.isNotEmpty()) {
+                var count = 0
+                var startIndex = 0
+                while (true) {
+                    val index = content.indexOf(searchQuery, startIndex, ignoreCase = true)
+                    if (index == -1) break
+                    count++
+                    startIndex = index + 1
+                }
+                matchCount = count
+                currentMatchIndex = if (count > 0) 0 else -1
+            } else {
+                matchCount = 0
+                currentMatchIndex = -1
+            }
+        }
         
         AlertDialog(
             onDismissRequest = { showFindDialog = false },
@@ -336,8 +358,61 @@ fun TextEditorScreen(
                         onValueChange = { searchQuery = it },
                         label = { Text("Find") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                Text(
+                                    "$matchCount found",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (matchCount > 0) MaterialTheme.colorScheme.primary 
+                                           else MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     )
+                    
+                    // Find action buttons
+                    if (searchQuery.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    if (matchCount > 0) {
+                                        currentMatchIndex = (currentMatchIndex + 1) % matchCount
+                                        // Show current match position
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                "Match ${currentMatchIndex + 1} of $matchCount"
+                                            )
+                                        }
+                                    }
+                                },
+                                enabled = matchCount > 0,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Find Next", style = MaterialTheme.typography.labelSmall)
+                            }
+                            
+                            OutlinedButton(
+                                onClick = { highlightMatches = !highlightMatches },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    if (highlightMatches) "Clear" else "Highlight All",
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                    
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(onClick = { showReplace = !showReplace }) {
+                        Text(if (showReplace) "Hide Replace" else "Show Replace")
+                    }
+                    
                     if (showReplace) {
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
@@ -347,21 +422,50 @@ fun TextEditorScreen(
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
-                    }
-                    TextButton(onClick = { showReplace = !showReplace }) {
-                        Text(if (showReplace) "Hide Replace" else "Show Replace")
+                        
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    if (searchQuery.isNotEmpty() && matchCount > 0) {
+                                        pushUndo()
+                                        // Replace first occurrence
+                                        content = content.replaceFirst(searchQuery, replaceQuery, ignoreCase = true)
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("Replaced 1 occurrence")
+                                        }
+                                    }
+                                },
+                                enabled = searchQuery.isNotEmpty() && matchCount > 0,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Replace", style = MaterialTheme.typography.labelSmall)
+                            }
+                            
+                            Button(
+                                onClick = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        pushUndo()
+                                        val originalCount = matchCount
+                                        content = content.replace(searchQuery, replaceQuery, ignoreCase = true)
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("Replaced $originalCount occurrences")
+                                        }
+                                    }
+                                },
+                                enabled = searchQuery.isNotEmpty() && matchCount > 0,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Replace All", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
                     }
                 }
             },
-            confirmButton = {
-                if (showReplace && searchQuery.isNotEmpty()) {
-                    TextButton(onClick = {
-                        pushUndo()
-                        content = content.replace(searchQuery, replaceQuery)
-                        showFindDialog = false
-                    }) { Text("Replace All") }
-                }
-            },
+            confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showFindDialog = false }) { Text("Close") }
             }
