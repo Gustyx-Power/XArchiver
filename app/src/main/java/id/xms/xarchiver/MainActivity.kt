@@ -24,6 +24,7 @@ import id.xms.xarchiver.ui.home.HomeScreen
 import id.xms.xarchiver.ui.theme.XArchiverTheme
 import id.xms.xarchiver.ui.viewer.AudioPlayerScreen
 import id.xms.xarchiver.ui.viewer.ImageViewerScreen
+import id.xms.xarchiver.ui.home.AboutScreen
 import id.xms.xarchiver.ui.viewer.VideoPlayerScreen
 
 
@@ -135,6 +136,11 @@ private fun AppContent() {
                     backStackEntry.arguments?.getString("encodedPath") ?: ""
                 )
                 VideoPlayerScreen(filePath = filePath, navController = navController)
+            }
+            
+            // About Screen route
+            composable("about") {
+                AboutScreen(navController = navController)
             }
         }
     }
