@@ -73,6 +73,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             topBar = {
                 ModernTopBar(
                     onThemeClick = { showThemeDialog = true },
+                    onAboutClick = { navController.navigate("about") },
                     scrollOffset = scrollOffset
                 )
             },
@@ -226,6 +227,7 @@ private fun AnimatedBackground() {
 @Composable
 private fun ModernTopBar(
     onThemeClick: () -> Unit,
+    onAboutClick: () -> Unit,
     scrollOffset: Float
 ) {
     val elevation = (scrollOffset / 50f).coerceIn(0f, 1f)
@@ -287,6 +289,14 @@ private fun ModernTopBar(
                     Icon(
                         Icons.Outlined.Search,
                         contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                // About button
+                IconButton(onClick = onAboutClick) {
+                    Icon(
+                        Icons.Outlined.Info,
+                        contentDescription = "About",
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
