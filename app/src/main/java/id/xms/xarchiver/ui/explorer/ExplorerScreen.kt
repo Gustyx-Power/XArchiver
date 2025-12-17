@@ -9,7 +9,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -67,6 +69,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showCreateArchiveDialog by remember { mutableStateOf(false) }
     var showQuickExtractDialog by remember { mutableStateOf<FileItem?>(null) }
     var extractionProgress by remember { mutableStateOf<ExtractionProgress?>(null) }
+    var multiArchiveExtractList by remember { mutableStateOf<List<String>>(emptyList()) }
+    var currentExtractingIndex by remember { mutableStateOf(0) }
     
     // Clipboard info
     val hasClipboard = FileOperationsManager.hasClipboardContent()
@@ -76,6 +80,22 @@ fun ExplorerScreen(path: String, navController: NavController) {
     // Selection mode
     val isSelecting = selectionManager.isSelecting
     val selectedCount = selectionManager.selectedCount
+    
+    // Search functionality
+    var isSearching by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    
+    // Filtered files based on search
+    val filteredFiles = remember(files, searchQuery) {
+        if (searchQuery.isEmpty()) {
+            files
+        } else {
+            files.filter { it.name.contains(searchQuery, ignoreCase = true) }
+        }
+    }
+    
+    // Scroll state - remember per-path to restore position on back navigation
+    val listState = rememberLazyListState()
     
     // Refresh function
     fun refreshFiles() {
@@ -87,6 +107,54 @@ fun ExplorerScreen(path: String, navController: NavController) {
         refreshFiles()
         isLoading = false
         selectionManager.clearSelection()
+    }
+    
+    // Handle batch extraction of multiple archives
+    LaunchedEffect(multiArchiveExtractList, currentExtractingIndex) {
+        if (multiArchiveExtractList.isNotEmpty() && currentExtractingIndex < multiArchiveExtractList.size) {
+            val archivePath = multiArchiveExtractList[currentExtractingIndex]
+            val archiveFile = java.io.File(archivePath)
+            val outputDir = path + "/" + archiveFile.nameWithoutExtension
+            
+            extractionProgress = ExtractionProgress(
+                0, "Extracting ${archiveFile.name} (${currentExtractingIndex + 1}/${multiArchiveExtractList.size})...", ExtractionState.STARTED
+            )
+            
+            try {
+                archiveManager.extractArchive(archivePath, outputDir).collect { progress ->
+                    extractionProgress = ExtractionProgress(
+                        progress.percentage,
+                        "${archiveFile.name}: ${progress.currentFile}",
+                        progress.state
+                    )
+                    
+                    if (progress.state == ExtractionState.COMPLETED) {
+                        if (currentExtractingIndex + 1 < multiArchiveExtractList.size) {
+                            currentExtractingIndex++
+                        } else {
+                            // All done
+                            extractionProgress = null
+                            multiArchiveExtractList = emptyList()
+                            refreshFiles()
+                            snackbarHostState.showSnackbar("Extracted ${multiArchiveExtractList.size} archives")
+                        }
+                    } else if (progress.state == ExtractionState.ERROR) {
+                        snackbarHostState.showSnackbar("Error extracting ${archiveFile.name}")
+                        if (currentExtractingIndex + 1 < multiArchiveExtractList.size) {
+                            currentExtractingIndex++
+                        } else {
+                            extractionProgress = null
+                            multiArchiveExtractList = emptyList()
+                            refreshFiles()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("Error: ${e.message}")
+                extractionProgress = null
+                multiArchiveExtractList = emptyList()
+            }
+        }
     }
     
     Scaffold(
@@ -126,17 +194,88 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 )
-            } else {
-                // Normal navigation bar
-                PathNavigationBar(
-                    currentPath = path,
-                    onNavigate = { newPath ->
-                        navController.navigate("explorer/${Uri.encode(newPath)}") {
-                            launchSingleTop = true
+            } else if (isSearching) {
+                // Search bar mode
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding(),
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { 
+                            isSearching = false
+                            searchQuery = ""
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close Search")
                         }
-                    },
-                    onBack = { navController.navigateUp() }
-                )
+                        
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Search files...") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color.Transparent
+                            )
+                        )
+                        
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Normal navigation bar with search button
+                Column {
+                    PathNavigationBar(
+                        currentPath = path,
+                        onNavigate = { newPath ->
+                            navController.navigate("explorer/${Uri.encode(newPath)}") {
+                                launchSingleTop = true
+                            }
+                        },
+                        onBack = { navController.navigateUp() }
+                    )
+                    
+                    // Search bar button
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .combinedClickable(onClick = { isSearching = true }, onLongClick = {}),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                "Search files...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
             }
         },
         bottomBar = {
@@ -166,10 +305,11 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             icon = Icons.Default.ContentCopy,
                             label = "Copy",
                             onClick = {
+                                val count = selectionManager.selectedCount
                                 FileOperationsManager.copyToClipboard(selectionManager.selectedPaths)
                                 selectionManager.clearSelection()
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("${selectionManager.selectedCount} items copied")
+                                    snackbarHostState.showSnackbar("$count items copied to clipboard")
                                 }
                             }
                         )
@@ -177,10 +317,11 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             icon = Icons.Default.ContentCut,
                             label = "Cut",
                             onClick = {
+                                val count = selectionManager.selectedCount
                                 FileOperationsManager.cutToClipboard(selectionManager.selectedPaths)
                                 selectionManager.clearSelection()
                                 scope.launch {
-                                    snackbarHostState.showSnackbar("${selectionManager.selectedCount} items cut")
+                                    snackbarHostState.showSnackbar("$count items cut to clipboard")
                                 }
                             }
                         )
@@ -198,12 +339,19 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 icon = Icons.Default.Unarchive,
                                 label = "Extract",
                                 onClick = {
-                                    // Extract first archive (or show dialog for single file)
-                                    val firstArchive = selectedArchives.first()
-                                    val archiveFile = files.find { it.path == firstArchive }
-                                    if (archiveFile != null) {
+                                    if (selectedArchives.size == 1) {
+                                        // Single archive - show quick extract dialog
+                                        val archiveFile = files.find { it.path == selectedArchives.first() }
+                                        if (archiveFile != null) {
+                                            selectionManager.clearSelection()
+                                            showQuickExtractDialog = archiveFile
+                                        }
+                                    } else {
+                                        // Multiple archives - batch extract all to current directory
+                                        val archivesToExtract = selectedArchives.toList()
                                         selectionManager.clearSelection()
-                                        showQuickExtractDialog = archiveFile
+                                        multiArchiveExtractList = archivesToExtract
+                                        currentExtractingIndex = 0
                                     }
                                 }
                             )
@@ -247,12 +395,20 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 ExtendedFloatingActionButton(
                                     onClick = {
                                         showFabMenu = false
+                                        val isCut = clipboardOp == ClipboardOperation.CUT
+                                        val itemCount = clipboardCount
                                         scope.launch {
+                                            snackbarHostState.showSnackbar("Pasting $itemCount items...")
                                             FileOperationsManager.pasteFiles(path).collect { progress ->
-                                                // Show progress (could add a dialog)
+                                                // Progress is emitted during paste operation
                                             }
                                             refreshFiles()
-                                            snackbarHostState.showSnackbar("Paste complete")
+                                            val action = if (isCut) "moved" else "copied"
+                                            snackbarHostState.showSnackbar("$itemCount items $action successfully")
+                                            // Clear clipboard after paste COPY operation
+                                            if (!isCut) {
+                                                FileOperationsManager.clearClipboard()
+                                            }
                                         }
                                     },
                                     icon = { Icon(Icons.Default.ContentPaste, null) },
@@ -297,13 +453,14 @@ fun ExplorerScreen(path: String, navController: NavController) {
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier.padding(padding),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             if (isLoading) {
                 items(6) { FileItemSkeleton() }
-            } else if (files.isEmpty()) {
+            } else if (filteredFiles.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier
@@ -313,14 +470,14 @@ fun ExplorerScreen(path: String, navController: NavController) {
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
-                                Icons.Default.FolderOff,
+                                if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.FolderOff,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                             )
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                "Empty folder",
+                                if (searchQuery.isNotEmpty()) "No files found matching \"$searchQuery\"" else "Empty folder",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                             )
@@ -329,7 +486,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 }
             } else {
                 itemsIndexed(
-                    items = files,
+                    items = filteredFiles,
                     key = { _, file -> file.path }
                 ) { _, file ->
                     FileItemCard(
@@ -341,6 +498,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 selectionManager.toggleSelection(file.path)
                             } else {
                                 handleFileClick(
+                                    context = context,
                                     file = file,
                                     navController = navController,
                                     archiveManager = archiveManager,
@@ -820,6 +978,7 @@ private fun FileItemSkeleton() {
 
 // Helper functions
 private fun handleFileClick(
+    context: android.content.Context,
     file: FileItem,
     navController: NavController,
     archiveManager: ArchiveManager,
@@ -850,6 +1009,10 @@ private fun handleFileClick(
         isTextExtension(ext) -> {
             navController.navigate("text_editor/${Uri.encode(file.path)}")
         }
+        isDocumentExtension(ext) -> {
+            // Open PDF, DOC, XLS, PPT etc. with external app
+            ShareUtils.openFile(context, file.path)
+        }
         else -> {
             // Try to detect as archive, otherwise open as text
             scope.launch {
@@ -862,6 +1025,10 @@ private fun handleFileClick(
             }
         }
     }
+}
+
+private fun isDocumentExtension(ext: String): Boolean {
+    return ext in listOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "odt", "ods", "odp", "rtf")
 }
 
 private fun isImageExtension(ext: String): Boolean {
@@ -886,8 +1053,14 @@ private fun isTextExtension(ext: String): Boolean {
 }
 
 private fun isArchiveExtension(fileName: String): Boolean {
-    val ext = fileName.substringAfterLast('.', "").lowercase()
-    return ext in listOf("zip", "rar", "7z", "tar", "gz", "tgz", "jar", "aar", "xapk")
+    val lowerName = fileName.lowercase()
+    // Check for compound extensions first
+    if (lowerName.endsWith(".tar.gz") || lowerName.endsWith(".tar.bz2") ||
+        lowerName.endsWith(".tar.xz") || lowerName.endsWith(".tar.lz")) {
+        return true
+    }
+    val ext = lowerName.substringAfterLast('.', "")
+    return ext in listOf("zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz2", "xz", "lz", "jar", "aar", "xapk")
 }
 
 private fun getFileIcon(file: FileItem): ImageVector {
