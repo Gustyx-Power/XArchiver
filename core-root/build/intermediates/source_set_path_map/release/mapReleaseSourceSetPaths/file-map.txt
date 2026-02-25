@@ -1,7 +1,0 @@
-id.xms.xarchiver.core.root.core-root-pngs-0 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\build\generated\res\pngs\release
-id.xms.xarchiver.core.root.core-root-resValues-1 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\build\generated\res\resValues\release
-id.xms.xarchiver.core.root.core-root-mergeReleaseResources-2 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\build\intermediates\incremental\release\mergeReleaseResources\merged.dir
-id.xms.xarchiver.core.root.core-root-mergeReleaseResources-3 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\build\intermediates\incremental\release\mergeReleaseResources\stripped.dir
-id.xms.xarchiver.core.root.core-root-release-4 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\build\intermediates\merged_res\release\mergeReleaseResources
-id.xms.xarchiver.core.root.core-root-main-5 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\src\main\res
-id.xms.xarchiver.core.root.core-root-release-6 C:\Users\putri\Documents\Project\XMS\XArchiver\core-root\src\release\res
