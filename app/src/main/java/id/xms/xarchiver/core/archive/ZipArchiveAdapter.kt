@@ -51,4 +51,27 @@ class ZipArchiveAdapter : ArchiveAdapter {
             }
         }
     }
+    override suspend fun extractAll(input: InputStream, outputDir: java.io.File) = withContext(Dispatchers.IO) {
+        ZipInputStream(input).use { zis ->
+            var entry: java.util.zip.ZipEntry? = zis.nextEntry
+            while (entry != null) {
+                if (entry.isDirectory) {
+                    java.io.File(outputDir, entry.name).mkdirs()
+                } else {
+                    val outFile = java.io.File(outputDir, entry.name)
+                    outFile.parentFile?.mkdirs()
+                    outFile.outputStream().use { out ->
+                        val buffer = ByteArray(8 * 1024)
+                        var len: Int
+                        while (zis.read(buffer).also { len = it } > 0) {
+                            out.write(buffer, 0, len)
+                        }
+                        out.flush()
+                    }
+                }
+                zis.closeEntry()
+                entry = zis.nextEntry
+            }
+        }
+    }
 }
