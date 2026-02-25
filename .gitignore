@@ -11,11 +11,17 @@
 /captures
 .externalNativeBuild
 .cxx
-/core-archive
-/core-extract
-/core-storage
+
+# App build folders
 /app/build
 /app/dist
 
+# Core modules build folders
+/core-archive/build
+/core-extract/build
+/core-storage/build
+/core-root/build
+
 # Ignore gradle.properties (contains tokens) - use gradle.properties.example as template
 gradle.properties
+local.properties
