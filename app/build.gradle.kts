@@ -88,6 +88,12 @@ dependencies {
     // Apache Commons Compress for archive handling (needed for UI classes too)
     implementation("org.apache.commons:commons-compress:1.26.1")
     implementation("commons-io:commons-io:2.15.1")
+    
+    // Protobuf for payload.bin parsing
+    implementation("com.google.protobuf:protobuf-javalite:3.25.1")
+    
+    // XZ compression for payload.bin
+    implementation("org.tukaani:xz:1.9")
 
     // Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
