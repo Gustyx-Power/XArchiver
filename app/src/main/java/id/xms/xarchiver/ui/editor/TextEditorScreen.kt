@@ -69,14 +69,45 @@ fun TextEditorScreen(
         isLoading = true
         try {
             val text = withContext(Dispatchers.IO) {
+                val fileSize = file.length()
+                val maxSize = 10 * 1024 * 1024 // 10MB limit
+                
+                if (fileSize > maxSize) {
+                    throw IllegalStateException(
+                        "File too large to open as text (${fileSize / (1024 * 1024)}MB). " +
+                        "Maximum supported size is ${maxSize / (1024 * 1024)}MB."
+                    )
+                }
+                
+                // Check if file is likely binary
+                val extension = file.extension.lowercase()
+                val binaryExtensions = listOf("bin", "so", "apk", "dex", "img", "dat", "exe", "dll")
+                if (extension in binaryExtensions) {
+                    throw IllegalStateException(
+                        "Cannot open binary file (.${extension}) as text. " +
+                        "This file type is not supported in text editor."
+                    )
+                }
+                
                 file.readText()
             }
             content = text
             originalContent = text
+        } catch (e: OutOfMemoryError) {
+            scope.launch {
+                snackbarHostState.showSnackbar("File too large to load into memory")
+            }
+            navController.popBackStack()
+        } catch (e: IllegalStateException) {
+            scope.launch {
+                snackbarHostState.showSnackbar(e.message ?: "Cannot open file")
+            }
+            navController.popBackStack()
         } catch (e: Exception) {
             scope.launch {
                 snackbarHostState.showSnackbar("Error loading file: ${e.message}")
             }
+            navController.popBackStack()
         }
         isLoading = false
     }

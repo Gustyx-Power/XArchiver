@@ -2,7 +2,7 @@
 
 XArchiver is an open-source file manager for Android OS. It aims to provide a fast, simple, and modern experience for managing files and archives on your device.
 
-## Features (Alpha)
+## Features
 - Browse files and folders
 - Rename files
 - Delete files

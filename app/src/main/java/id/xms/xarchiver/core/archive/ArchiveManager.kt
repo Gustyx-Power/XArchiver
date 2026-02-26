@@ -186,12 +186,38 @@ class ArchiveManager(private val context: Context) {
                 var entry = archiveStream.nextEntry
                 while (entry != null) {
                     if (entry.name == entryPath) {
-                        return@withContext archiveStream.bufferedReader().readText()
+                        // Check entry size before reading
+                        val maxSize = 10 * 1024 * 1024 // 10MB limit
+                        if (entry.size > maxSize) {
+                            throw IllegalStateException("Entry too large to view as text")
+                        }
+                        
+                        // Read with size limit
+                        val reader = archiveStream.bufferedReader()
+                        val stringBuilder = StringBuilder()
+                        var totalRead = 0
+                        val buffer = CharArray(8192)
+                        
+                        while (true) {
+                            val read = reader.read(buffer)
+                            if (read == -1) break
+                            
+                            totalRead += read
+                            if (totalRead > maxSize) {
+                                throw IllegalStateException("Entry too large to view as text")
+                            }
+                            
+                            stringBuilder.append(buffer, 0, read)
+                        }
+                        
+                        return@withContext stringBuilder.toString()
                     }
                     entry = archiveStream.nextEntry
                 }
             }
             null
+        } catch (e: IllegalStateException) {
+            throw e
         } catch (e: Exception) {
             null
         }

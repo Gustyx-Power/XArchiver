@@ -503,6 +503,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                     navController = navController,
                                     archiveManager = archiveManager,
                                     scope = scope,
+                                    snackbarHostState = snackbarHostState,
                                     onApkClick = { pendingApk = it }
                                 )
                             }
@@ -983,9 +984,11 @@ private fun handleFileClick(
     navController: NavController,
     archiveManager: ArchiveManager,
     scope: kotlinx.coroutines.CoroutineScope,
+    snackbarHostState: androidx.compose.material3.SnackbarHostState,
     onApkClick: (File) -> Unit
 ) {
     val ext = file.name.substringAfterLast('.', "").lowercase()
+    val actualFile = File(file.path)
     
     when {
         file.isDirectory -> {
@@ -1007,7 +1010,17 @@ private fun handleFileClick(
             navController.navigate("video_player/${Uri.encode(file.path)}")
         }
         isTextExtension(ext) -> {
-            navController.navigate("text_editor/${Uri.encode(file.path)}")
+            // Check file size before opening in text editor
+            val maxSize = 10 * 1024 * 1024 // 10MB
+            if (actualFile.length() > maxSize) {
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        "File too large to open as text (${actualFile.length() / (1024 * 1024)}MB). Maximum: 10MB"
+                    )
+                }
+            } else {
+                navController.navigate("text_editor/${Uri.encode(file.path)}")
+            }
         }
         isDocumentExtension(ext) -> {
             // Open PDF, DOC, XLS, PPT etc. with external app
@@ -1019,8 +1032,17 @@ private fun handleFileClick(
                 if (archiveManager.isArchiveFile(file.path)) {
                     navController.navigate("archive_explorer/${Uri.encode(file.path)}")
                 } else {
-                    // Open as text by default for unknown file types
-                    navController.navigate("text_editor/${Uri.encode(file.path)}")
+                    // Check file size and type before opening as text
+                    val binaryExtensions = listOf("bin", "so", "apk", "dex", "img", "dat", "exe", "dll")
+                    if (ext in binaryExtensions) {
+                        snackbarHostState.showSnackbar("Cannot open binary file (.${ext}) as text")
+                    } else if (actualFile.length() > 10 * 1024 * 1024) {
+                        snackbarHostState.showSnackbar(
+                            "File too large to open as text (${actualFile.length() / (1024 * 1024)}MB). Maximum: 10MB"
+                        )
+                    } else {
+                        navController.navigate("text_editor/${Uri.encode(file.path)}")
+                    }
                 }
             }
         }
