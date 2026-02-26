@@ -1,5 +1,6 @@
 package id.xms.xarchiver.core.payload
 
+import id.xms.xarchiver.core.payload.proto.UpdateMetadataProtos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -88,31 +89,119 @@ class PayloadParser {
     }
     
     /**
-     * Parse basic payload info without full protobuf parsing
-     * This is a simplified version that extracts basic information
+     * Parse full payload info with protobuf manifest parsing
      */
-    suspend fun parseBasicInfo(file: File): PayloadInfo? = withContext(Dispatchers.IO) {
+    suspend fun parsePayloadInfo(file: File): PayloadInfo? = withContext(Dispatchers.IO) {
         try {
             val header = parseHeader(file) ?: return@withContext null
+            val manifestBytes = getManifestBytes(file) ?: return@withContext null
             
-            // For now, return basic info
-            // Full protobuf parsing will be implemented in Phase 2
+            // Parse protobuf manifest
+            val manifest = UpdateMetadataProtos.DeltaArchiveManifest.parseFrom(manifestBytes)
+            
+            // Calculate data offset (after header + manifest + signature)
+            val dataOffset = HEADER_SIZE + header.manifestSize + header.manifestSignatureSize
+            
+            // Parse partitions
+            val partitions = manifest.partitionsList.map { partition ->
+                parsePartition(partition, dataOffset, header.blockSize)
+            }
+            
             PayloadInfo(
-                header = header,
-                partitions = emptyList(), // Will be populated with protobuf parsing
+                header = header.copy(blockSize = manifest.blockSize.toLong()),
+                partitions = partitions,
                 totalSize = file.length(),
                 filePath = file.absolutePath
             )
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }
     
     /**
-     * Get manifest bytes for protobuf parsing
-     * This will be used when we add protobuf support
+     * Parse a single partition from protobuf
      */
-    suspend fun getManifestBytes(file: File): ByteArray? = withContext(Dispatchers.IO) {
+    private fun parsePartition(
+        partition: UpdateMetadataProtos.PartitionUpdate,
+        dataOffset: Long,
+        blockSize: Long
+    ): PayloadPartition {
+        val operations = partition.operationsList.map { op ->
+            InstallOperation(
+                type = mapOperationType(op.type),
+                dataOffset = dataOffset + (op.dataOffset ?: 0),
+                dataLength = op.dataLength ?: 0,
+                dstExtents = op.dstExtentsList.map { extent ->
+                    Extent(
+                        startBlock = extent.startBlock ?: 0,
+                        numBlocks = extent.numBlocks ?: 0
+                    )
+                }
+            )
+        }
+        
+        // Calculate compressed and uncompressed sizes
+        val compressedSize = operations.sumOf { it.dataLength }
+        val uncompressedSize = partition.newPartitionSize ?: 0
+        
+        // Determine compression type from operations
+        val compressionType = detectCompressionType(operations)
+        
+        // Get hash (convert bytes to hex string)
+        val hash = partition.newPartitionHash?.toByteArray()?.joinToString("") { 
+            "%02x".format(it) 
+        } ?: ""
+        
+        // Calculate offset (first operation's data offset)
+        val offset = operations.firstOrNull()?.dataOffset ?: 0
+        
+        return PayloadPartition(
+            name = partition.partitionName,
+            compressedSize = compressedSize,
+            uncompressedSize = uncompressedSize,
+            hash = hash,
+            compressionType = compressionType,
+            offset = offset,
+            operations = operations
+        )
+    }
+    
+    /**
+     * Map protobuf operation type to our enum
+     */
+    private fun mapOperationType(type: UpdateMetadataProtos.InstallOperation.Type): OperationType {
+        return when (type) {
+            UpdateMetadataProtos.InstallOperation.Type.REPLACE -> OperationType.REPLACE
+            UpdateMetadataProtos.InstallOperation.Type.REPLACE_BZ -> OperationType.REPLACE_BZ
+            UpdateMetadataProtos.InstallOperation.Type.REPLACE_XZ -> OperationType.REPLACE_XZ
+            UpdateMetadataProtos.InstallOperation.Type.ZERO -> OperationType.ZERO
+            UpdateMetadataProtos.InstallOperation.Type.DISCARD -> OperationType.DISCARD
+            UpdateMetadataProtos.InstallOperation.Type.SOURCE_COPY -> OperationType.SOURCE_COPY
+            UpdateMetadataProtos.InstallOperation.Type.SOURCE_BSDIFF -> OperationType.SOURCE_BSDIFF
+            UpdateMetadataProtos.InstallOperation.Type.PUFFDIFF -> OperationType.PUFFDIFF
+            else -> OperationType.UNKNOWN
+        }
+    }
+    
+    /**
+     * Detect compression type from operations
+     */
+    private fun detectCompressionType(operations: List<InstallOperation>): CompressionType {
+        // Check the most common operation type
+        val types = operations.map { it.type }
+        return when {
+            types.any { it == OperationType.REPLACE_XZ } -> CompressionType.XZ
+            types.any { it == OperationType.REPLACE_BZ } -> CompressionType.BZIP2
+            types.any { it == OperationType.REPLACE } -> CompressionType.NONE
+            else -> CompressionType.UNKNOWN
+        }
+    }
+    
+    /**
+     * Get manifest bytes for protobuf parsing
+     */
+    private suspend fun getManifestBytes(file: File): ByteArray? = withContext(Dispatchers.IO) {
         try {
             val header = parseHeader(file) ?: return@withContext null
             

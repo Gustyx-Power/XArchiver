@@ -47,7 +47,7 @@ class PayloadViewModel(private val context: Context) : ViewModel() {
                     return@launch
                 }
                 
-                val info = parser.parseBasicInfo(file)
+                val info = parser.parsePayloadInfo(file)
                 if (info == null) {
                     error = "Failed to parse payload file"
                     return@launch
