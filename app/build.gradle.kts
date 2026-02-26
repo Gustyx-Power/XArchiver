@@ -13,6 +13,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
+    id("com.google.protobuf") version "0.9.4"
 }
 
 android {
@@ -68,6 +69,21 @@ android {
 
     packaging {
         resources.excludes.add("META-INF/DEPENDENCIES")
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.1"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
     }
 }
 
