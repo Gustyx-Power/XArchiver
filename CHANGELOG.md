@@ -42,6 +42,13 @@ All notable changes to XArchiver will be documented in this file.
 - Improved memory management for large file operations
 - Cleaned up build artifacts from version control
 
+### Planned Features (Coming Soon)
+- **Payload.bin Viewer**: Browse and extract Android OTA system images
+  - View partition images (system, vendor, boot, etc.)
+  - Extract individual partitions from payload.bin
+  - Support for Android OTA update packages
+  - Read-only access to prevent accidental modifications
+
 ---
 
 ## [1.0] - Initial Release
