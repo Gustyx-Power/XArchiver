@@ -26,3 +26,4 @@
 # Ignore gradle.properties (contains tokens) - use gradle.properties.example as template
 gradle.properties
 local.properties
+.idea/misc.xml
