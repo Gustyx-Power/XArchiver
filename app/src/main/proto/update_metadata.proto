@@ -1,0 +1,75 @@
+syntax = "proto2";
+
+package chromeos_update_engine;
+
+option java_package = "id.xms.xarchiver.core.payload.proto";
+option java_outer_classname = "UpdateMetadataProtos";
+
+message Extent {
+  optional uint64 start_block = 1;
+  optional uint64 num_blocks = 2;
+}
+
+message InstallOperation {
+  enum Type {
+    REPLACE = 0;
+    REPLACE_BZ = 1;
+    MOVE = 2;
+    BSDIFF = 3;
+    SOURCE_COPY = 4;
+    SOURCE_BSDIFF = 5;
+    REPLACE_XZ = 8;
+    ZERO = 6;
+    DISCARD = 7;
+    BROTLI_BSDIFF = 10;
+    PUFFDIFF = 9;
+  }
+  
+  required Type type = 1;
+  optional uint32 data_offset = 2;
+  optional uint64 data_length = 3;
+  
+  repeated Extent dst_extents = 6;
+  optional uint64 dst_length = 7;
+  
+  repeated Extent src_extents = 4;
+  optional uint64 src_length = 5;
+  
+  optional bytes data_sha256_hash = 11;
+  optional bytes src_sha256_hash = 12;
+}
+
+message PartitionUpdate {
+  required string partition_name = 1;
+  optional bool run_postinstall = 2;
+  
+  repeated InstallOperation operations = 3;
+  
+  optional Extent old_partition_info = 4;
+  optional Extent new_partition_info = 5;
+  
+  optional uint64 old_partition_size = 6;
+  optional uint64 new_partition_size = 7;
+  
+  optional bytes old_partition_hash = 8;
+  optional bytes new_partition_hash = 9;
+}
+
+message DeltaArchiveManifest {
+  repeated PartitionUpdate partitions = 1;
+  
+  optional uint32 block_size = 3 [default = 4096];
+  optional uint64 signatures_offset = 4;
+  optional uint64 signatures_size = 5;
+  
+  optional uint32 minor_version = 6 [default = 0];
+  optional uint64 max_timestamp = 7;
+  
+  message PartitionInfo {
+    optional uint64 size = 1;
+    optional bytes hash = 2;
+  }
+  
+  repeated PartitionInfo old_partition_infos = 8;
+  repeated PartitionInfo new_partition_infos = 9;
+}
