@@ -86,7 +86,7 @@ fun TextEditorScreen(
                 // Special handling for known system files
                 if (file.name.equals("payload.bin", ignoreCase = true)) {
                     throw IllegalStateException(
-                        "Cannot open payload.bin - This is an Android OTA update file containing system images, not text."
+                        "Payload.bin viewer coming soon! This feature will allow you to browse and extract Android OTA system images."
                     )
                 }
                 

@@ -26,6 +26,7 @@ import id.xms.xarchiver.ui.viewer.AudioPlayerScreen
 import id.xms.xarchiver.ui.viewer.ImageViewerScreen
 import id.xms.xarchiver.ui.home.AboutScreen
 import id.xms.xarchiver.ui.viewer.VideoPlayerScreen
+import id.xms.xarchiver.ui.payload.PayloadViewerScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -112,6 +113,17 @@ private fun AppContent() {
                     backStackEntry.arguments?.getString("encodedPath") ?: ""
                 )
                 TextEditorScreen(filePath = filePath, navController = navController)
+            }
+            
+            // Payload Viewer route
+            composable("payload_viewer/{encodedPath}") { backStackEntry ->
+                val filePath = Uri.decode(
+                    backStackEntry.arguments?.getString("encodedPath") ?: ""
+                )
+                PayloadViewerScreen(
+                    payloadPath = filePath,
+                    navController = navController
+                )
             }
             
             // Image Viewer route

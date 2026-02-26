@@ -1039,7 +1039,7 @@ private fun handleFileClick(
                     when {
                         file.name.equals("payload.bin", ignoreCase = true) -> {
                             snackbarHostState.showSnackbar(
-                                "Cannot open payload.bin - This is an Android OTA update file containing system images"
+                                "Payload.bin viewer coming soon! This feature will allow you to browse and extract Android OTA system images."
                             )
                         }
                         ext in binaryExtensions -> {
