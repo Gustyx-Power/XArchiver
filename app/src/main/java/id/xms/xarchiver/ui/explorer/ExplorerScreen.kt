@@ -1034,14 +1034,25 @@ private fun handleFileClick(
                 } else {
                     // Check file size and type before opening as text
                     val binaryExtensions = listOf("bin", "so", "apk", "dex", "img", "dat", "exe", "dll")
-                    if (ext in binaryExtensions) {
-                        snackbarHostState.showSnackbar("Cannot open binary file (.${ext}) as text")
-                    } else if (actualFile.length() > 10 * 1024 * 1024) {
-                        snackbarHostState.showSnackbar(
-                            "File too large to open as text (${actualFile.length() / (1024 * 1024)}MB). Maximum: 10MB"
-                        )
-                    } else {
-                        navController.navigate("text_editor/${Uri.encode(file.path)}")
+                    
+                    // Special handling for known system files
+                    when {
+                        file.name.equals("payload.bin", ignoreCase = true) -> {
+                            snackbarHostState.showSnackbar(
+                                "Cannot open payload.bin - This is an Android OTA update file containing system images"
+                            )
+                        }
+                        ext in binaryExtensions -> {
+                            snackbarHostState.showSnackbar("Cannot open binary file (.${ext}) as text")
+                        }
+                        actualFile.length() > 10 * 1024 * 1024 -> {
+                            snackbarHostState.showSnackbar(
+                                "File too large to open as text (${actualFile.length() / (1024 * 1024)}MB). Maximum: 10MB"
+                            )
+                        }
+                        else -> {
+                            navController.navigate("text_editor/${Uri.encode(file.path)}")
+                        }
                     }
                 }
             }

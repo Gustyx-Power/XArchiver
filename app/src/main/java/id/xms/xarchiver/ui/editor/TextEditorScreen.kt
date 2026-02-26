@@ -82,6 +82,14 @@ fun TextEditorScreen(
                 // Check if file is likely binary
                 val extension = file.extension.lowercase()
                 val binaryExtensions = listOf("bin", "so", "apk", "dex", "img", "dat", "exe", "dll")
+                
+                // Special handling for known system files
+                if (file.name.equals("payload.bin", ignoreCase = true)) {
+                    throw IllegalStateException(
+                        "Cannot open payload.bin - This is an Android OTA update file containing system images, not text."
+                    )
+                }
+                
                 if (extension in binaryExtensions) {
                     throw IllegalStateException(
                         "Cannot open binary file (.${extension}) as text. " +
