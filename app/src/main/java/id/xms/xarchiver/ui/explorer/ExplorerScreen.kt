@@ -987,77 +987,16 @@ private fun handleFileClick(
     snackbarHostState: androidx.compose.material3.SnackbarHostState,
     onApkClick: (File) -> Unit
 ) {
-    val ext = file.name.substringAfterLast('.', "").lowercase()
-    val actualFile = File(file.path)
-    
-    when {
-        file.isDirectory -> {
-            navController.navigate("explorer/${Uri.encode(file.path)}")
-        }
-        file.name.endsWith(".apk", ignoreCase = true) -> {
-            onApkClick(File(file.path))
-        }
-        isArchiveExtension(file.name) -> {
-            navController.navigate("archive_explorer/${Uri.encode(file.path)}")
-        }
-        isImageExtension(ext) -> {
-            navController.navigate("image_viewer/${Uri.encode(file.path)}")
-        }
-        isAudioExtension(ext) -> {
-            navController.navigate("audio_player/${Uri.encode(file.path)}")
-        }
-        isVideoExtension(ext) -> {
-            navController.navigate("video_player/${Uri.encode(file.path)}")
-        }
-        isTextExtension(ext) -> {
-            // Check file size before opening in text editor
-            val maxSize = 10 * 1024 * 1024 // 10MB
-            if (actualFile.length() > maxSize) {
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        "File too large to open as text (${actualFile.length() / (1024 * 1024)}MB). Maximum: 10MB"
-                    )
-                }
-            } else {
-                navController.navigate("text_editor/${Uri.encode(file.path)}")
-            }
-        }
-        isDocumentExtension(ext) -> {
-            // Open PDF, DOC, XLS, PPT etc. with external app
-            ShareUtils.openFile(context, file.path)
-        }
-        else -> {
-            // Try to detect as archive, otherwise open as text
-            scope.launch {
-                if (archiveManager.isArchiveFile(file.path)) {
-                    navController.navigate("archive_explorer/${Uri.encode(file.path)}")
-                } else {
-                    // Check file size and type before opening as text
-                    val binaryExtensions = listOf("bin", "so", "apk", "dex", "img", "dat", "exe", "dll")
-                    
-                    // Special handling for known system files
-                    when {
-                        file.name.equals("payload.bin", ignoreCase = true) -> {
-                            snackbarHostState.showSnackbar(
-                                "Payload.bin viewer coming soon! This feature will allow you to browse and extract Android OTA system images."
-                            )
-                        }
-                        ext in binaryExtensions -> {
-                            snackbarHostState.showSnackbar("Cannot open binary file (.${ext}) as text")
-                        }
-                        actualFile.length() > 10 * 1024 * 1024 -> {
-                            snackbarHostState.showSnackbar(
-                                "File too large to open as text (${actualFile.length() / (1024 * 1024)}MB). Maximum: 10MB"
-                            )
-                        }
-                        else -> {
-                            navController.navigate("text_editor/${Uri.encode(file.path)}")
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // Use FileActionHandler for consistent file handling
+    id.xms.xarchiver.ui.explorer.utils.FileActionHandler.handleFileClick(
+        context = context,
+        file = file,
+        navController = navController,
+        archiveManager = archiveManager,
+        scope = scope,
+        snackbarHostState = snackbarHostState,
+        onApkClick = onApkClick
+    )
 }
 
 private fun isDocumentExtension(ext: String): Boolean {

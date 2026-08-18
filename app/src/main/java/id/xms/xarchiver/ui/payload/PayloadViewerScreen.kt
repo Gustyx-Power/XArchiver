@@ -28,9 +28,30 @@ fun PayloadViewerScreen(
     )
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    var showExtractDialog by remember { mutableStateOf(false) }
+    var selectedPartition by remember { mutableStateOf<PayloadPartition?>(null) }
+    var showExtractAllDialog by remember { mutableStateOf(false) }
     
     LaunchedEffect(payloadPath) {
         viewModel.loadPayload(payloadPath)
+    }
+    
+    // Show snackbar when extraction completes
+    LaunchedEffect(viewModel.extractionProgress) {
+        viewModel.extractionProgress?.let { progress ->
+            if (progress.state == id.xms.xarchiver.core.payload.ExtractionState.COMPLETED) {
+                snackbarHostState.showSnackbar(
+                    message = "Extraction completed: ${progress.partitionName}",
+                    duration = SnackbarDuration.Short
+                )
+            } else if (progress.state == id.xms.xarchiver.core.payload.ExtractionState.ERROR) {
+                val errorMsg = progress.errorMessage ?: "Unknown error"
+                snackbarHostState.showSnackbar(
+                    message = "Extraction failed: ${progress.partitionName}\n$errorMsg",
+                    duration = SnackbarDuration.Long
+                )
+            }
+        }
     }
     
     Scaffold(
@@ -43,6 +64,14 @@ fun PayloadViewerScreen(
                     }
                 },
                 actions = {
+                    if (viewModel.payloadInfo != null && viewModel.payloadInfo!!.partitions.isNotEmpty()) {
+                        IconButton(
+                            onClick = { showExtractAllDialog = true },
+                            enabled = !viewModel.isExtracting
+                        ) {
+                            Icon(Icons.Default.Download, "Extract All")
+                        }
+                    }
                     IconButton(onClick = { viewModel.refreshPayload() }) {
                         Icon(Icons.Default.Refresh, "Refresh")
                     }
@@ -87,20 +116,115 @@ fun PayloadViewerScreen(
                 viewModel.payloadInfo != null -> {
                     PayloadContent(
                         payloadInfo = viewModel.payloadInfo!!,
+                        extractionProgress = viewModel.extractionProgress,
+                        isExtracting = viewModel.isExtracting,
                         onExtractPartition = { partition ->
-                            // TODO: Implement extraction
-                            viewModel.extractPartition(partition)
+                            selectedPartition = partition
+                            showExtractDialog = true
                         }
                     )
                 }
             }
         }
     }
+    
+    // Extract single partition dialog
+    if (showExtractDialog && selectedPartition != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                if (!viewModel.isExtracting) {
+                    showExtractDialog = false
+                }
+            },
+            title = { Text("Extract Partition") },
+            text = {
+                Column {
+                    Text("Extract ${selectedPartition!!.name}.img?")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Size: ${selectedPartition!!.uncompressedSize.humanReadable()}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Output: Downloads/XArchiver/extracted/",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.extractPartition(selectedPartition!!)
+                        showExtractDialog = false
+                    },
+                    enabled = !viewModel.isExtracting
+                ) {
+                    Text("Extract")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExtractDialog = false },
+                    enabled = !viewModel.isExtracting
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    // Extract all partitions dialog
+    if (showExtractAllDialog) {
+        AlertDialog(
+            onDismissRequest = { 
+                if (!viewModel.isExtracting) {
+                    showExtractAllDialog = false
+                }
+            },
+            title = { Text("Extract All Partitions") },
+            text = {
+                Column {
+                    Text("Extract all ${viewModel.payloadInfo?.partitions?.size ?: 0} partitions?")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val totalSize = viewModel.payloadInfo?.partitions?.sumOf { it.uncompressedSize } ?: 0
+                    Text(
+                        text = "Total size: ${totalSize.humanReadable()}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Output: Downloads/XArchiver/extracted/",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.extractAllPartitions()
+                        showExtractAllDialog = false
+                    },
+                    enabled = !viewModel.isExtracting
+                ) {
+                    Text("Extract All")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showExtractAllDialog = false },
+                    enabled = !viewModel.isExtracting
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun PayloadContent(
     payloadInfo: id.xms.xarchiver.core.payload.PayloadInfo,
+    extractionProgress: id.xms.xarchiver.core.payload.PayloadExtractionProgress?,
+    isExtracting: Boolean,
     onExtractPartition: (PayloadPartition) -> Unit
 ) {
     LazyColumn(
@@ -130,6 +254,13 @@ private fun PayloadContent(
             }
         }
         
+        // Extraction progress
+        if (extractionProgress != null && isExtracting) {
+            item {
+                ExtractionProgressCard(extractionProgress)
+            }
+        }
+        
         // Partitions list
         if (payloadInfo.partitions.isNotEmpty()) {
             item {
@@ -144,6 +275,7 @@ private fun PayloadContent(
             items(payloadInfo.partitions) { partition ->
                 PartitionCard(
                     partition = partition,
+                    isExtracting = isExtracting && extractionProgress?.partitionName == partition.name,
                     onExtract = { onExtractPartition(partition) }
                 )
             }
@@ -166,14 +298,8 @@ private fun PayloadContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Partition parsing coming soon!",
+                            text = "No partitions found",
                             style = MaterialTheme.typography.bodyLarge
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Protobuf manifest parsing will be implemented in the next update.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -204,8 +330,67 @@ private fun InfoRow(label: String, value: String) {
 }
 
 @Composable
+private fun ExtractionProgressCard(progress: id.xms.xarchiver.core.payload.PayloadExtractionProgress) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Extracting: ${progress.partitionName}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${progress.percentage}%",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            LinearProgressIndicator(
+                progress = progress.percentage / 100f,
+                modifier = Modifier.fillMaxWidth()
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = progress.state.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "${progress.bytesExtracted.humanReadable()} / ${progress.totalBytes.humanReadable()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun PartitionCard(
     partition: PayloadPartition,
+    isExtracting: Boolean = false,
     onExtract: () -> Unit
 ) {
     Card(
@@ -242,8 +427,15 @@ private fun PartitionCard(
                 )
             }
             
-            IconButton(onClick = onExtract) {
-                Icon(Icons.Default.Download, "Extract")
+            if (isExtracting) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                IconButton(onClick = onExtract) {
+                    Icon(Icons.Default.Download, "Extract")
+                }
             }
         }
     }

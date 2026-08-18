@@ -83,12 +83,8 @@ fun TextEditorScreen(
                 val extension = file.extension.lowercase()
                 val binaryExtensions = listOf("bin", "so", "apk", "dex", "img", "dat", "exe", "dll")
                 
-                // Special handling for known system files
-                if (file.name.equals("payload.bin", ignoreCase = true)) {
-                    throw IllegalStateException(
-                        "Payload.bin viewer coming soon! This feature will allow you to browse and extract Android OTA system images."
-                    )
-                }
+                // Note: payload.bin should be handled by PayloadViewerScreen, not text editor
+                // If it reaches here, it means FileActionHandler didn't catch it
                 
                 if (extension in binaryExtensions) {
                     throw IllegalStateException(

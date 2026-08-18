@@ -68,7 +68,8 @@ data class PayloadExtractionProgress(
     val bytesExtracted: Long,
     val totalBytes: Long,
     val percentage: Int,
-    val state: ExtractionState
+    val state: ExtractionState,
+    val errorMessage: String? = null
 )
 
 enum class ExtractionState {

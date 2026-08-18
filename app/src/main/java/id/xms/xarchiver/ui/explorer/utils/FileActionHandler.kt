@@ -25,6 +25,12 @@ object FileActionHandler {
         val ext = file.name.substringAfterLast('.', "").lowercase()
         val actualFile = File(file.path)
         
+        // Check for payload.bin FIRST before other checks
+        if (FileTypeDetector.isPayloadBin(file.name)) {
+            navController.navigate("payload_viewer/${Uri.encode(file.path)}")
+            return
+        }
+        
         when {
             file.isDirectory -> {
                 navController.navigate("explorer/${Uri.encode(file.path)}")
@@ -89,12 +95,6 @@ object FileActionHandler {
         snackbarHostState: SnackbarHostState
     ) {
         scope.launch {
-            // Check for payload.bin first
-            if (FileTypeDetector.isPayloadBin(file.name)) {
-                navController.navigate("payload_viewer/${Uri.encode(filePath)}")
-                return@launch
-            }
-            
             if (archiveManager.isArchiveFile(filePath)) {
                 navController.navigate("archive_explorer/${Uri.encode(filePath)}")
             } else {

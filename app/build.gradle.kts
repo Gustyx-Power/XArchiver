@@ -13,7 +13,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
-    id("com.google.protobuf") version "0.9.4"
 }
 
 android {
@@ -72,21 +71,6 @@ android {
     }
 }
 
-protobuf {
-    protoc {
-        artifact = "com.google.protobuf:protoc:3.25.1"
-    }
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                create("java") {
-                    option("lite")
-                }
-            }
-        }
-    }
-}
-
 dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core-ktx:1.12.0")
@@ -104,9 +88,6 @@ dependencies {
     // Apache Commons Compress for archive handling (needed for UI classes too)
     implementation("org.apache.commons:commons-compress:1.26.1")
     implementation("commons-io:commons-io:2.15.1")
-    
-    // Protobuf for payload.bin parsing
-    implementation("com.google.protobuf:protobuf-javalite:3.25.1")
     
     // XZ compression for payload.bin
     implementation("org.tukaani:xz:1.9")
