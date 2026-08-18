@@ -271,13 +271,13 @@ private fun ModernTopBar(
                     Column {
                         Text(
                             "XArchiver",
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             "File Manager",
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
@@ -336,7 +336,7 @@ private fun WelcomeHeader(modifier: Modifier = Modifier) {
         
         Text(
             greeting,
-            style = MaterialTheme.typography.headlineMedium,
+            style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -449,8 +449,8 @@ private fun SectionHeader(
         )
         Text(
             title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
     }

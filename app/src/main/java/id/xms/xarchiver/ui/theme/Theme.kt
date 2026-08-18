@@ -12,72 +12,61 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Material You compatible color schemes
-private val DynamicLightColorScheme = lightColorScheme(
-    primary = Blue40,
-    secondary = BlueGrey40,
-    tertiary = Teal40,
-    background = SurfaceLight,
-    surface = Color.White,
-    surfaceVariant = Color(0xFFF5F7FA),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onBackground = Color(0xFF1A1A1A),
-    onSurface = Color(0xFF1A1A1A),
-    primaryContainer = Color(0xFFE8F4FD),
-    onPrimaryContainer = DeepBlue
+// Expressive Light Color Scheme
+private val ExpressiveLightColorScheme = lightColorScheme(
+    primary = primaryLight,
+    onPrimary = onPrimaryLight,
+    primaryContainer = primaryContainerLight,
+    onPrimaryContainer = onPrimaryContainerLight,
+    secondary = secondaryLight,
+    onSecondary = onSecondaryLight,
+    secondaryContainer = secondaryContainerLight,
+    onSecondaryContainer = onSecondaryContainerLight,
+    tertiary = tertiaryLight,
+    onTertiary = onTertiaryLight,
+    tertiaryContainer = tertiaryContainerLight,
+    onTertiaryContainer = onTertiaryContainerLight,
+    error = errorLight,
+    onError = onErrorLight,
+    errorContainer = errorContainerLight,
+    onErrorContainer = onErrorContainerLight,
+    background = backgroundLight,
+    onBackground = onBackgroundLight,
+    surface = surfaceLight,
+    onSurface = onSurfaceLight,
+    surfaceVariant = surfaceVariantLight,
+    onSurfaceVariant = onSurfaceVariantLight
 )
 
-private val DynamicDarkColorScheme = darkColorScheme(
-    primary = Blue80,
-    secondary = BlueGrey80,
-    tertiary = Teal80,
-    background = SurfaceDark,
-    surface = Color(0xFF1E1E1E),
-    surfaceVariant = Color(0xFF333333),
-    onPrimary = Color.Black,
-    onSecondary = Color.Black,
-    onBackground = Color.White,
-    onSurface = Color.White,
-    primaryContainer = Color(0xFF2A2A2A),
-    onPrimaryContainer = Blue80
-)
-
-// Legacy static color schemes
-private val StaticLightColorScheme = lightColorScheme(
-    primary = Blue40,
-    secondary = Teal40,
-    background = SurfaceLight,
-    surface = Color.White,
-    surfaceVariant = Color(0xFFF5F7FA),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onBackground = Color(0xFF1A1A1A),
-    onSurface = Color(0xFF1A1A1A),
-    primaryContainer = Color(0xFFE8F4FD),
-    onPrimaryContainer = DeepBlue,
-    tertiary = AccentOrange
-)
-
-private val StaticDarkColorScheme = darkColorScheme(
-    primary = GradientStart,
-    secondary = Teal80,
-    background = SurfaceDark,
-    surface = Color(0xFF1E1E1E),
-    surfaceVariant = Color(0xFF333333),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onBackground = Color.White,
-    onSurface = Color.White,
-    primaryContainer = Color(0xFF2A2A2A),
-    onPrimaryContainer = Blue80,
-    tertiary = AccentOrange
+// Expressive Dark Color Scheme
+private val ExpressiveDarkColorScheme = darkColorScheme(
+    primary = primaryDark,
+    onPrimary = onPrimaryDark,
+    primaryContainer = primaryContainerDark,
+    onPrimaryContainer = onPrimaryContainerDark,
+    secondary = secondaryDark,
+    onSecondary = onSecondaryDark,
+    secondaryContainer = secondaryContainerDark,
+    onSecondaryContainer = onSecondaryContainerDark,
+    tertiary = tertiaryDark,
+    onTertiary = onTertiaryDark,
+    tertiaryContainer = tertiaryContainerDark,
+    onTertiaryContainer = onTertiaryContainerDark,
+    error = errorDark,
+    onError = onErrorDark,
+    errorContainer = errorContainerDark,
+    onErrorContainer = onErrorContainerDark,
+    background = backgroundDark,
+    onBackground = onBackgroundDark,
+    surface = surfaceDark,
+    onSurface = onSurfaceDark,
+    surfaceVariant = surfaceVariantDark,
+    onSurfaceVariant = onSurfaceVariantDark
 )
 
 @Composable
@@ -101,16 +90,16 @@ fun XArchiverTheme(
         isDynamicColorEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-        // Fallback to static custom colors
-        darkTheme -> StaticDarkColorScheme
-        else -> StaticLightColorScheme
+        // Fallback to Expressive custom colors
+        darkTheme -> ExpressiveDarkColorScheme
+        else -> ExpressiveLightColorScheme
     }
 
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            window.statusBarColor = colorScheme.background.toArgb() // Use background for a flatter immersive look
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
@@ -118,6 +107,7 @@ fun XArchiverTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = ExpressiveShapes,
         content = content
     )
 }

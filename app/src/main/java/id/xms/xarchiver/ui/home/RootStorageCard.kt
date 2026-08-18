@@ -77,7 +77,7 @@ fun RootStorageCard(
                 }
             },
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
@@ -85,9 +85,9 @@ fun RootStorageCard(
                 .fillMaxWidth()
                 .background(
                     brush = Brush.linearGradient(colors = gradientColors),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = MaterialTheme.shapes.extraLarge
                 )
-                .clip(RoundedCornerShape(20.dp))
+                .clip(MaterialTheme.shapes.extraLarge)
         ) {
             // Decorative elements
             Box(
@@ -143,7 +143,7 @@ fun RootStorageCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         "Root Explorer",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -154,7 +154,7 @@ fun RootStorageCard(
                             granted -> "System files access ready"
                             else -> "Tap to grant root access"
                         },
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.9f)
                     )
                 }

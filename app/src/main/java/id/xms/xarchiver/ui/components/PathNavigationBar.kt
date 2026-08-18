@@ -86,7 +86,7 @@ fun PathNavigationBar(
                         .height(40.dp)
                         .background(
                             MaterialTheme.colorScheme.surfaceVariant,
-                            RoundedCornerShape(20.dp)
+                            MaterialTheme.shapes.extraLarge
                         )
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.CenterStart
@@ -99,7 +99,7 @@ fun PathNavigationBar(
                             .focusRequester(focusRequester),
                         textStyle = TextStyle(
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
                         ),
                         singleLine = true,
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -199,12 +199,12 @@ private fun PathChip(
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         },
-        shape = RoundedCornerShape(16.dp)
+        shape = MaterialTheme.shapes.large
     ) {
         Text(
             text = text.ifEmpty { "Root" },
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isLast) FontWeight.Bold else FontWeight.Normal,
             color = if (isLast) {
                 MaterialTheme.colorScheme.onPrimaryContainer

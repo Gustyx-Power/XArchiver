@@ -66,7 +66,7 @@ fun PropertiesDialog(
                 )
                 Text(
                     "Properties",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -166,7 +166,7 @@ fun PropertiesDialog(
                 Text("Close")
             }
         },
-        shape = RoundedCornerShape(20.dp)
+        shape = MaterialTheme.shapes.extraLarge
     )
 }
 

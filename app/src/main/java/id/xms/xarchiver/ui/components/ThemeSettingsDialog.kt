@@ -37,7 +37,7 @@ fun ThemeSettingsDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
@@ -54,7 +54,7 @@ fun ThemeSettingsDialog(
                 ) {
                     Text(
                         "Theme Settings",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -134,7 +134,7 @@ fun ThemeSettingsDialog(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.large
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -209,7 +209,7 @@ private fun ThemeOption(
             else
                 MaterialTheme.colorScheme.surface
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(
             defaultElevation = if (selected) 4.dp else 1.dp
         )

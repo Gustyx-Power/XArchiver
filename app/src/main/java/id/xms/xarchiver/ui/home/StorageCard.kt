@@ -75,7 +75,7 @@ fun StorageCard(
                 indication = null
             ) { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        shape = RoundedCornerShape(24.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
@@ -88,9 +88,9 @@ fun StorageCard(
                             GradientEnd
                         )
                     ),
-                    shape = RoundedCornerShape(24.dp)
+                    shape = MaterialTheme.shapes.extraLarge
                 )
-                .clip(RoundedCornerShape(24.dp))
+                .clip(MaterialTheme.shapes.extraLarge)
         ) {
             // Decorative background elements
             Box(
@@ -165,7 +165,7 @@ fun StorageCard(
                 // Storage label
                 Text(
                     info.label,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.headlineMedium,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
@@ -175,7 +175,7 @@ fun StorageCard(
                 // Usage text
                 Text(
                     "${info.used.humanReadable()} of ${info.total.humanReadable()}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     color = Color.White.copy(alpha = 0.85f)
                 )
 
@@ -264,7 +264,7 @@ fun StoragePlaceholderCard(title: String, modifier: Modifier = Modifier) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = shimmerAlpha)
         ),
-        shape = RoundedCornerShape(24.dp)
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(
             modifier = Modifier

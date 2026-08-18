@@ -98,7 +98,7 @@ private fun CategoryItem(
                 indication = null
             ) { onClick() },
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box(
@@ -106,9 +106,9 @@ private fun CategoryItem(
                 .fillMaxSize()
                 .background(
                     brush = Brush.linearGradient(gradientColors),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = MaterialTheme.shapes.large
                 )
-                .clip(RoundedCornerShape(20.dp)),
+                .clip(MaterialTheme.shapes.large),
             contentAlignment = Alignment.Center
         ) {
             // Subtle overlay for depth
@@ -154,7 +154,7 @@ private fun CategoryItem(
 
                 Text(
                     category.name,
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
@@ -164,7 +164,7 @@ private fun CategoryItem(
 
                 Text(
                     "${category.count}",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.8f)
                 )
             }
