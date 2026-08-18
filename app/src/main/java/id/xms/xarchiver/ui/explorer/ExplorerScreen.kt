@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -65,7 +66,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showDeleteDialog by remember { mutableStateOf<List<String>?>(null) }
     var showNewFolderDialog by remember { mutableStateOf(false) }
     var showNewFileDialog by remember { mutableStateOf(false) }
-    var showActionDialog by remember { mutableStateOf<FileItem?>(null) }
+    var showSelectionBottomSheet by remember { mutableStateOf(false) }
     var showCreateArchiveDialog by remember { mutableStateOf(false) }
     var showQuickExtractDialog by remember { mutableStateOf<FileItem?>(null) }
     var extractionProgress by remember { mutableStateOf<ExtractionProgress?>(null) }
@@ -373,6 +374,14 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 showCreateArchiveDialog = true
                             }
                         )
+                        
+                        BottomActionButton(
+                            icon = Icons.Default.MoreVert,
+                            label = "More",
+                            onClick = {
+                                showSelectionBottomSheet = true
+                            }
+                        )
                     }
                 }
             }
@@ -511,8 +520,6 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         onLongClick = {
                             if (!isSelecting) {
                                 selectionManager.toggleSelection(file.path)
-                            } else {
-                                showActionDialog = file
                             }
                         }
                     )
@@ -520,50 +527,44 @@ fun ExplorerScreen(path: String, navController: NavController) {
             }
         }
         
-        // Dialogs
-        showActionDialog?.let { file ->
-            FileActionDialog(
-                file = file,
-                onDismiss = { showActionDialog = null },
-                onCopy = {
-                    FileOperationsManager.copyToClipboard(listOf(file.path))
-                    showActionDialog = null
-                    scope.launch { snackbarHostState.showSnackbar("Copied to clipboard") }
-                },
-                onCut = {
-                    FileOperationsManager.cutToClipboard(listOf(file.path))
-                    showActionDialog = null
-                    scope.launch { snackbarHostState.showSnackbar("Cut to clipboard") }
-                },
+        if (showSelectionBottomSheet) {
+            val selectedPaths = selectionManager.selectedPaths.toList()
+            val singleFile = if (selectedPaths.size == 1) files.find { it.path == selectedPaths.first() } else null
+            
+            SelectionActionBottomSheet(
+                selectedPaths = selectedPaths,
+                onDismiss = { showSelectionBottomSheet = false },
                 onRename = {
-                    showRenameDialog = file
-                    showActionDialog = null
-                },
-                onDelete = {
-                    showDeleteDialog = listOf(file.path)
-                    showActionDialog = null
+                    singleFile?.let { showRenameDialog = it }
+                    showSelectionBottomSheet = false
                 },
                 onShare = {
-                    ShareUtils.shareFile(context, file.path)
-                    showActionDialog = null
+                    if (selectedPaths.size == 1) {
+                        ShareUtils.shareFile(context, selectedPaths.first())
+                    } else {
+                        ShareUtils.shareMultipleFiles(context, selectedPaths)
+                    }
+                    showSelectionBottomSheet = false
                 },
                 onProperties = {
-                    showPropertiesDialog = file.path
-                    showActionDialog = null
+                    singleFile?.let { showPropertiesDialog = it.path }
+                    showSelectionBottomSheet = false
                 },
                 onBookmark = {
-                    scope.launch {
-                        val isNowBookmarked = bookmarksManager.toggleBookmark(file.path)
-                        snackbarHostState.showSnackbar(
-                            if (isNowBookmarked) "Added to bookmarks" else "Removed from bookmarks"
-                        )
+                    singleFile?.let {
+                        scope.launch {
+                            val isNowBookmarked = bookmarksManager.toggleBookmark(it.path)
+                            snackbarHostState.showSnackbar(
+                                if (isNowBookmarked) "Added to bookmarks" else "Removed from bookmarks"
+                            )
+                        }
                     }
-                    showActionDialog = null
+                    showSelectionBottomSheet = false
                 },
-                onExtract = if (!file.isDirectory && isArchiveExtension(file.name)) {
+                onExtract = if (singleFile != null && !singleFile.isDirectory && isArchiveExtension(singleFile.name)) {
                     {
-                        showActionDialog = null
-                        showQuickExtractDialog = file
+                        showSelectionBottomSheet = false
+                        showQuickExtractDialog = singleFile
                     }
                 } else null
             )
@@ -1070,60 +1071,58 @@ private fun getFileColor(file: FileItem): Color {
 }
 
 // Dialog Composables
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FileActionDialog(
-    file: FileItem,
+private fun SelectionActionBottomSheet(
+    selectedPaths: List<String>,
     onDismiss: () -> Unit,
-    onCopy: () -> Unit,
-    onCut: () -> Unit,
     onRename: () -> Unit,
-    onDelete: () -> Unit,
     onShare: () -> Unit,
     onProperties: () -> Unit,
     onBookmark: () -> Unit,
     onExtract: (() -> Unit)?
 ) {
-    AlertDialog(
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = {
+        sheetState = sheetState
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp, top = 8.dp)
+        ) {
             Text(
-                file.name,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleMedium
+                text = "${selectedPaths.size} item${if(selectedPaths.size > 1) "s" else ""} selected",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
             )
-        },
-        text = {
-            Column {
-                DialogAction(Icons.Default.ContentCopy, "Copy", onCopy)
-                DialogAction(Icons.Default.ContentCut, "Cut", onCut)
-                DialogAction(Icons.Default.Edit, "Rename", onRename)
-                DialogAction(Icons.Default.Delete, "Delete", onDelete)
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                DialogAction(Icons.Default.Share, "Share", onShare)
-                DialogAction(Icons.Default.Info, "Properties", onProperties)
-                DialogAction(Icons.Default.Bookmark, "Bookmark", onBookmark)
-                onExtract?.let {
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    DialogAction(Icons.Default.FolderZip, "Open Archive", it)
-                }
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            
+            if (selectedPaths.size == 1) {
+                BottomSheetAction(Icons.Default.Edit, "Rename", onRename)
+                BottomSheetAction(Icons.Default.Info, "Properties", onProperties)
+                BottomSheetAction(Icons.Default.Bookmark, "Bookmark", onBookmark)
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            
+            BottomSheetAction(Icons.Default.Share, "Share", onShare)
+            
+            onExtract?.let {
+                BottomSheetAction(Icons.Default.FolderZip, "Open Archive", it)
+            }
         }
-    )
+    }
 }
 
 @Composable
-private fun DialogAction(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun BottomSheetAction(icon: ImageVector, label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .combinedClickable(onClick = onClick, onLongClick = {})
-            .padding(12.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 24.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
