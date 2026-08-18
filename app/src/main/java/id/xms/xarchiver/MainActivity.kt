@@ -27,25 +27,17 @@ import id.xms.xarchiver.ui.viewer.ImageViewerScreen
 import id.xms.xarchiver.ui.home.AboutScreen
 import id.xms.xarchiver.ui.viewer.VideoPlayerScreen
 import id.xms.xarchiver.ui.payload.PayloadViewerScreen
+import id.xms.xarchiver.ui.SetupScreen
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // "Nakal" permission flow (dev/testing). Pastikan mengerti risikonya.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-                // buka setting agar user bisa grant MANAGE_EXTERNAL_STORAGE
-                startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
-            }
-        } else {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                0
-            )
-        }
+
 
         setContent {
             XArchiverTheme {
@@ -59,8 +51,25 @@ class MainActivity : ComponentActivity() {
 private fun AppContent() {
     MaterialTheme {
         val navController = rememberNavController()
+        val context = LocalContext.current
+        val isAndroid11OrAbove = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+        val hasPermission = if (isAndroid11OrAbove) {
+            Environment.isExternalStorageManager()
+        } else {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
 
-        NavHost(navController = navController, startDestination = "home") {
+        val startDest = if (hasPermission) "home" else "setup"
+
+        NavHost(navController = navController, startDestination = startDest) {
+            composable("setup") {
+                SetupScreen {
+                    navController.navigate("home") {
+                        popUpTo("setup") { inclusive = true }
+                    }
+                }
+            }
             composable("home") { HomeScreen(navController) }
 
             // Category Explorer route

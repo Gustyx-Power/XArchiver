@@ -31,7 +31,7 @@ import id.xms.xarchiver.R
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun SplashScreen(
+fun SetupScreen(
     onAllPermissionsGranted: () -> Unit
 ) {
     val context = LocalContext.current
@@ -80,13 +80,6 @@ fun SplashScreen(
         val missing = permissions.filterIndexed { i, _ -> !permissionStates[i] }
         if (missing.isNotEmpty()) {
             launcher.launch(missing.toTypedArray())
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
-            val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                data = android.net.Uri.parse("package:" + context.packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
-            Toast.makeText(context, "Enable install permission from this source in settings.", Toast.LENGTH_LONG).show()
         } else {
             onAllPermissionsGranted()
         }
@@ -94,9 +87,7 @@ fun SplashScreen(
 
     LaunchedEffect(permissionStates) {
         if (permissionStates.all { it }) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()) {
-                onAllPermissionsGranted()
-            }
+            onAllPermissionsGranted()
         }
     }
 
@@ -186,15 +177,22 @@ fun SplashScreen(
             Text("Allow & Continue", fontSize = 16.sp)
         }
     }
-    LaunchedEffect(Unit) {
-        if (isAndroid11OrAbove) {
-            snapshotFlow { android.os.Environment.isExternalStorageManager() }
-                .collect { granted ->
-                    val idx = permissions.indexOf(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
-                    if (idx != -1 && granted && !permissionStates[idx]) {
-                        permissionStates = permissionStates.toMutableList().also { it[idx] = true }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                permissionStates = permissions.map { perm ->
+                    if (perm == Manifest.permission.MANAGE_EXTERNAL_STORAGE && isAndroid11OrAbove) {
+                        android.os.Environment.isExternalStorageManager()
+                    } else {
+                        ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
                     }
                 }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 }
