@@ -32,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.Image
+import id.xms.xarchiver.R
 import id.xms.xarchiver.ui.theme.*
 import id.xms.xarchiver.ui.components.ThemeSettingsDialog
 import kotlinx.coroutines.delay
@@ -66,9 +69,6 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Animated background circles for premium feel
-        AnimatedBackground()
-        
         Scaffold(
             topBar = {
                 ModernTopBar(
@@ -87,24 +87,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                 contentPadding = PaddingValues(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Welcome Header with parallax effect
-                item(key = "header") {
-                    AnimatedVisibility(
-                        visible = showContent,
-                        enter = fadeIn(tween(600)) + slideInVertically(
-                            initialOffsetY = { -50 },
-                            animationSpec = tween(600, easing = EaseOutCubic)
-                        )
-                    ) {
-                        WelcomeHeader(
-                            modifier = Modifier
-                                .graphicsLayer {
-                                    translationY = scrollOffset * 0.3f
-                                    alpha = 1f - (scrollOffset / 400f).coerceIn(0f, 0.5f)
-                                }
-                        )
-                    }
-                }
+                // Header removed as requested
 
                 // Storage Section
                 item(key = "storage") {
@@ -169,59 +152,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     }
 }
 
-@Composable
-private fun AnimatedBackground() {
-    val infiniteTransition = rememberInfiniteTransition(label = "bg")
-    
-    val offset1 by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "offset1"
-    )
-    
-    val offset2 by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "offset2"
-    )
-    
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .drawBehind {
-                // Gradient circle 1
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            GradientStart.copy(alpha = 0.15f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * offset1, size.height * 0.2f),
-                        radius = size.width * 0.6f
-                    )
-                )
-                // Gradient circle 2
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            GradientEnd.copy(alpha = 0.12f),
-                            Color.Transparent
-                        ),
-                        center = Offset(size.width * offset2, size.height * 0.7f),
-                        radius = size.width * 0.5f
-                    )
-                )
-            }
-    )
-}
+// Removed AnimatedBackground
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -233,65 +164,40 @@ private fun ModernTopBar(
     val elevation = (scrollOffset / 50f).coerceIn(0f, 1f)
     
     Surface(
-        color = MaterialTheme.colorScheme.surface.copy(alpha = elevation * 0.95f),
-        shadowElevation = (elevation * 8).dp
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.85f + (elevation * 0.15f)),
+        shadowElevation = (elevation * 4).dp
     ) {
         TopAppBar(
             title = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Modern app icon with gradient background
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color.Transparent,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(GradientStart, GradientEnd)
-                                    ),
-                                    shape = RoundedCornerShape(12.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.FolderZip,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
+                    // App Logo
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "XArchiver Logo",
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                    )
                     
-                    Column {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = CircleShape
+                    ) {
                         Text(
                             "XArchiver",
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            "File Manager",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                         )
                     }
                 }
             },
             actions = {
-                // Search button
-                IconButton(onClick = { /* TODO: Search */ }) {
-                    Icon(
-                        Icons.Outlined.Search,
-                        contentDescription = "Search",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
                 // About button
                 IconButton(onClick = onAboutClick) {
                     Icon(
@@ -316,40 +222,7 @@ private fun ModernTopBar(
     }
 }
 
-@Composable
-private fun WelcomeHeader(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-            .padding(top = 8.dp, bottom = 8.dp)
-    ) {
-        // Greeting based on time
-        val greeting = remember {
-            val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
-            when {
-                hour < 12 -> "Good Morning"
-                hour < 17 -> "Good Afternoon"
-                else -> "Good Evening"
-            }
-        }
-        
-        Text(
-            greeting,
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        
-        Spacer(Modifier.height(4.dp))
-        
-        Text(
-            "Manage your files and archives",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-        )
-    }
-}
+// WelcomeHeader removed
 
 @Composable
 private fun StorageSection(

@@ -47,17 +47,8 @@ fun RootStorageCard(
     )
 
     // Gradient colors based on state
-    val gradientColors = if (granted) {
-        listOf(
-            Color(0xFF43A047),
-            Color(0xFF2E7D32)
-        )
-    } else {
-        listOf(
-            Color(0xFFFF8A65),
-            Color(0xFFE64A19)
-        )
-    }
+    val containerColor = if (granted) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer
+    val contentColor = if (granted) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer
 
     Card(
         modifier = modifier
@@ -76,113 +67,88 @@ fun RootStorageCard(
                     }
                 }
             },
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = MaterialTheme.shapes.extraLarge,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(colors = gradientColors),
-                    shape = MaterialTheme.shapes.extraLarge
-                )
-                .clip(MaterialTheme.shapes.extraLarge)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Decorative elements
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.1f),
-                                Color.Transparent
-                            ),
-                            radius = 300f
-                        )
-                    )
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Icon container
+            Surface(
+                color = contentColor.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.size(48.dp)
             ) {
-                // Icon container
-                Surface(
-                    color = Color.White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.size(48.dp)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        if (busy) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = Color.White
-                            )
-                        } else {
-                            Icon(
-                                if (granted) Icons.Filled.Security else Icons.Outlined.AdminPanelSettings,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                    if (busy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = contentColor
+                        )
+                    } else {
+                        Icon(
+                            if (granted) Icons.Filled.Security else Icons.Outlined.AdminPanelSettings,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
+            }
 
-                Spacer(Modifier.width(14.dp))
+            Spacer(Modifier.width(14.dp))
 
-                // Text content
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Root Explorer",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+            // Text content
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Root Explorer",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = contentColor,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Text(
+                    when {
+                        busy -> "Requesting access..."
+                        granted -> "System files access ready"
+                        else -> "Tap to grant root access"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = contentColor.copy(alpha = 0.8f)
+                )
+            }
+
+            // Status badge
+            Surface(
+                color = contentColor.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Surface(
+                        color = contentColor,
+                        shape = CircleShape,
+                        modifier = Modifier.size(6.dp)
+                    ) {}
+                    
+                    Spacer(Modifier.width(6.dp))
                     
                     Text(
-                        when {
-                            busy -> "Requesting access..."
-                            granted -> "System files access ready"
-                            else -> "Tap to grant root access"
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f)
+                        if (granted) "Ready" else "Required",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = contentColor,
+                        fontWeight = FontWeight.SemiBold
                     )
-                }
-
-                // Status badge
-                Surface(
-                    color = Color.White.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Surface(
-                            color = if (granted) AccentGreen else Color.White,
-                            shape = CircleShape,
-                            modifier = Modifier.size(6.dp)
-                        ) {}
-                        
-                        Spacer(Modifier.width(6.dp))
-                        
-                        Text(
-                            if (granted) "Ready" else "Required",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
             }
         }
