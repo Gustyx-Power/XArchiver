@@ -6,8 +6,11 @@ import org.apache.http.entity.mime.content.FileBody
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 import java.util.Date
+import java.text.SimpleDateFormat
 import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 import kotlin.text.substringAfterLast
+
+val buildDate = SimpleDateFormat("yyyyMMdd").format(Date())
 
 plugins {
     id("com.android.application")
@@ -24,7 +27,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 1
-        versionName = "1.1-Release"
+        versionName = "2.0.0-$buildDate"
     }
 
     signingConfigs {

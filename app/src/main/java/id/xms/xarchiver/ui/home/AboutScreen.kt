@@ -2,22 +2,29 @@ package id.xms.xarchiver.ui.home
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
+import id.xms.xarchiver.R
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -34,22 +41,56 @@ fun AboutScreen(navController: NavController) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("About") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+    val versionName = androidx.compose.runtime.remember {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "Unknown"
+        } catch (e: Exception) {
+            "Unknown"
+        }
+    }
+    
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                        MaterialTheme.colorScheme.background
+                    ),
+                    radius = 1500f
                 )
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    ) {
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                Surface(
+                    color = Color.Transparent,
+                    modifier = Modifier.statusBarsPadding()
+                ) {
+                    TopAppBar(
+                        title = { 
+                            Text(
+                                "About", 
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold
+                            ) 
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = { navController.navigateUp() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent,
+                            titleContentColor = MaterialTheme.colorScheme.onBackground,
+                            navigationIconContentColor = MaterialTheme.colorScheme.onBackground
+                        )
+                    )
+                }
+            }
+        ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -77,11 +118,10 @@ fun AboutScreen(navController: NavController) {
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.FolderZip,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(48.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.size(64.dp)
                     )
                 }
             }
@@ -98,7 +138,7 @@ fun AboutScreen(navController: NavController) {
             
             // Version
             Text(
-                text = "Version 1.0.0",
+                text = "Version $versionName",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
@@ -116,39 +156,47 @@ fun AboutScreen(navController: NavController) {
             Spacer(Modifier.height(32.dp))
             
             // Developer Card
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                )
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                shadowElevation = 0.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(
-                        Icons.Outlined.Person,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = CircleShape,
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Outlined.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
                     Text(
                         text = "Developer",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "GustyxPower",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
             
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
             
             // Links
             AboutLinkItem(
@@ -174,56 +222,56 @@ fun AboutScreen(navController: NavController) {
             Spacer(Modifier.height(24.dp))
             
             // License Info
-            Card(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                )
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                contentColor = MaterialTheme.colorScheme.onSurface,
+                shadowElevation = 0.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp)
+                    modifier = Modifier.padding(24.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Outlined.Gavel,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(12.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = CircleShape,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Outlined.Gavel,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(16.dp))
                         Text(
                             text = "MIT License",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "Copyright © 2024 GustyxPower\n\n" +
+                        text = "Copyright © 2026 GustyxPower\n\n" +
                                "Permission is hereby granted, free of charge, to any person obtaining a copy " +
                                "of this software and associated documentation files (the \"Software\"), to deal " +
                                "in the Software without restriction, including without limitation the rights " +
                                "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell " +
                                "copies of the Software.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             
             Spacer(Modifier.height(32.dp))
-            
-            // Footer
-            Text(
-                text = "Made with ❤️ by GustyxPower",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            )
-            
-            Spacer(Modifier.height(24.dp))
         }
+    }
     }
 }
 
@@ -234,16 +282,32 @@ private fun AboutLinkItem(
     subtitle: String,
     onClick: () -> Unit
 ) {
-    Card(
+    val interactionSource = androidx.compose.runtime.remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = androidx.compose.animation.core.spring(
+            dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+            stiffness = androidx.compose.animation.core.Spring.StiffnessMedium
+        ),
+        label = "scale"
+    )
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            .padding(vertical = 6.dp)
+            .scale(scale)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = androidx.compose.foundation.LocalIndication.current,
+                onClick = onClick
+            ),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
@@ -253,17 +317,17 @@ private fun AboutLinkItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(56.dp)
                     .background(
                         MaterialTheme.colorScheme.primaryContainer,
-                        RoundedCornerShape(12.dp)
+                        CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
             
