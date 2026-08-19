@@ -221,6 +221,33 @@ private fun StorageSection(
     val storages = viewModel.storages.value
     val rootEnabled = isRootAccessEnabled
     val pageCount = storages.size + (if (rootEnabled) 1 else 0)
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    DisposableEffect(context) {
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
+                viewModel.refreshStorage()
+            }
+        }
+        val filter = android.content.IntentFilter().apply {
+            addAction(android.content.Intent.ACTION_MEDIA_MOUNTED)
+            addAction(android.content.Intent.ACTION_MEDIA_UNMOUNTED)
+            addAction(android.content.Intent.ACTION_MEDIA_REMOVED)
+            addAction(android.content.Intent.ACTION_MEDIA_EJECT)
+            addAction(android.content.Intent.ACTION_MEDIA_BAD_REMOVAL)
+            addDataScheme("file")
+        }
+        androidx.core.content.ContextCompat.registerReceiver(
+            context, 
+            receiver, 
+            filter, 
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.refreshStorage()
@@ -263,8 +290,15 @@ private fun StorageSection(
         ) { page ->
             if (page < storages.size) {
                 val storage = storages[page]
+                val icon = when {
+                    storage.label.contains("USB", ignoreCase = true) -> Icons.Outlined.Usb
+                    storage.label.contains("SD", ignoreCase = true) -> Icons.Outlined.Save
+                    else -> Icons.Outlined.Smartphone
+                }
+                
                 StorageCard(
                     info = storage,
+                    icon = icon,
                     onClick = {
                         navController.navigate("explorer/${Uri.encode(storage.path)}")
                     }

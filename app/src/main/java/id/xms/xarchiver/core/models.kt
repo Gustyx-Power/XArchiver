@@ -24,7 +24,8 @@ data class StorageInfo(
     val used: Long,
     val total: Long,
     val label: String,
-    val path: String
+    val path: String,
+    val fsType: String = "" // e.g. ext4, exFAT, f2fs
 )
 
 

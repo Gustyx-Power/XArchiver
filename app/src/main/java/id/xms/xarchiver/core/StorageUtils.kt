@@ -94,9 +94,61 @@ object StorageUtils {
             val total = totalBlocks * blockSize
             val used = total - (availableBlocks * blockSize)
 
-            StorageInfo(used, total, label, path.absolutePath)
+            val fsType = getFsType(path.absolutePath)
+            StorageInfo(used, total, label, path.absolutePath, fsType)
         } catch (e: Exception) {
-            StorageInfo(0, 0, label, path.absolutePath)
+            StorageInfo(0, 0, label, path.absolutePath, "")
+        }
+    }
+
+    private fun getFsType(path: String): String {
+        try {
+            val mounts = File("/proc/mounts").readLines()
+            
+            // For internal storage, check /data to get real fs (ext4/f2fs) instead of FUSE
+            val searchPath = if (path.startsWith(Environment.getExternalStorageDirectory().absolutePath)) {
+                "/data"
+            } else {
+                path
+            }
+            
+            var bestMatch: String? = null
+            var bestMatchLen = -1
+            
+            for (line in mounts) {
+                val parts = line.split(" ")
+                if (parts.size >= 3) {
+                    val mountPoint = parts[1]
+                    val fsType = parts[2]
+                    
+                    // Exact match or prefix match
+                    if (searchPath == mountPoint || (searchPath.startsWith(mountPoint) && mountPoint != "/")) {
+                        if (mountPoint.length > bestMatchLen) {
+                            bestMatchLen = mountPoint.length
+                            bestMatch = fsType
+                        }
+                    }
+                    
+                    // Special logic to penetrate FUSE for external drives
+                    if (searchPath.startsWith("/storage/") && !searchPath.contains("emulated")) {
+                        val uuid = File(searchPath).name
+                        if (mountPoint == "/mnt/media_rw/$uuid") {
+                            return fsType // Always prefer the raw mount over FUSE
+                        }
+                    }
+                    
+                    // Exact match for root /
+                    if (searchPath == "/" && mountPoint == "/") {
+                        if (bestMatchLen < 1) { // Only set if not already set by a better match
+                            bestMatchLen = 1
+                            bestMatch = fsType
+                        }
+                    }
+                }
+            }
+            return bestMatch ?: ""
+        } catch (e: Exception) {
+            return ""
         }
     }
 
