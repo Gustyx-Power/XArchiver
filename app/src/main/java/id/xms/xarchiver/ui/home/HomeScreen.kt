@@ -36,14 +36,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import id.xms.xarchiver.R
 import id.xms.xarchiver.ui.theme.*
-import id.xms.xarchiver.ui.components.ThemeSettingsDialog
+import id.xms.xarchiver.ui.theme.*
 import kotlinx.coroutines.delay
 
 @SuppressLint("SdCardPath")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
-    var showThemeDialog by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val themePreferences = remember { ThemePreferences(context) }
+    val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
+    
     val listState = rememberLazyListState()
     
     // Staggered entrance animation
@@ -72,8 +75,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         Scaffold(
             topBar = {
                 ModernTopBar(
-                    onThemeClick = { showThemeDialog = true },
-                    onAboutClick = { navController.navigate("about") },
+                    onSettingsClick = { navController.navigate("settings") },
                     scrollOffset = scrollOffset
                 )
             },
@@ -100,7 +102,8 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     ) {
                         StorageSection(
                             viewModel = viewModel,
-                            navController = navController
+                            navController = navController,
+                            isRootAccessEnabled = isRootAccessEnabled
                         )
                     }
                 }
@@ -143,13 +146,6 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             }
         }
     }
-
-    // Theme dialog
-    if (showThemeDialog) {
-        ThemeSettingsDialog(
-            onDismiss = { showThemeDialog = false }
-        )
-    }
 }
 
 // Removed AnimatedBackground
@@ -157,8 +153,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModernTopBar(
-    onThemeClick: () -> Unit,
-    onAboutClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     scrollOffset: Float
 ) {
     val elevation = (scrollOffset / 50f).coerceIn(0f, 1f)
@@ -198,16 +193,8 @@ private fun ModernTopBar(
                 }
             },
             actions = {
-                // About button
-                IconButton(onClick = onAboutClick) {
-                    Icon(
-                        Icons.Outlined.Info,
-                        contentDescription = "About",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                // Settings/Theme button
-                IconButton(onClick = onThemeClick) {
+                // Settings button
+                IconButton(onClick = onSettingsClick) {
                     Icon(
                         Icons.Outlined.Settings,
                         contentDescription = "Settings",
@@ -227,7 +214,8 @@ private fun ModernTopBar(
 @Composable
 private fun StorageSection(
     viewModel: HomeViewModel,
-    navController: NavController
+    navController: NavController,
+    isRootAccessEnabled: Boolean
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 20.dp),
@@ -253,11 +241,13 @@ private fun StorageSection(
         }
         
         // Root storage card
-        RootStorageCard(
-            onOpenRoot = { rootPath ->
-                navController.navigate("root_explorer/${Uri.encode(rootPath)}")
-            }
-        )
+        if (isRootAccessEnabled) {
+            RootStorageCard(
+                onOpenRoot = { rootPath ->
+                    navController.navigate("root_explorer/${Uri.encode(rootPath)}")
+                }
+            )
+        }
     }
 }
 

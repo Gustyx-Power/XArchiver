@@ -25,6 +25,7 @@ import id.xms.xarchiver.ui.theme.XArchiverTheme
 import id.xms.xarchiver.ui.viewer.AudioPlayerScreen
 import id.xms.xarchiver.ui.viewer.ImageViewerScreen
 import id.xms.xarchiver.ui.home.AboutScreen
+import id.xms.xarchiver.ui.settings.SettingsScreen
 import id.xms.xarchiver.ui.viewer.VideoPlayerScreen
 import id.xms.xarchiver.ui.payload.PayloadViewerScreen
 import id.xms.xarchiver.ui.SetupScreen
@@ -162,6 +163,11 @@ private fun AppContent() {
             // About Screen route
             composable("about") {
                 AboutScreen(navController = navController)
+            }
+            
+            // Settings Screen route
+            composable("settings") {
+                SettingsScreen(navController = navController)
             }
         }
     }

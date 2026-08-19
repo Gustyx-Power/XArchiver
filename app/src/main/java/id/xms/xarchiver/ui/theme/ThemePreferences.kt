@@ -16,6 +16,7 @@ class ThemePreferences(private val context: Context) {
     companion object {
         private val THEME_MODE_KEY = intPreferencesKey("theme_mode")
         private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
+        private val ROOT_ACCESS_KEY = booleanPreferencesKey("root_access")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
@@ -43,6 +44,16 @@ class ThemePreferences(private val context: Context) {
     suspend fun setDynamicColorEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[DYNAMIC_COLOR_KEY] = enabled
+        }
+    }
+
+    val isRootAccessEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[ROOT_ACCESS_KEY] ?: false
+    }
+
+    suspend fun setRootAccessEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[ROOT_ACCESS_KEY] = enabled
         }
     }
 }
