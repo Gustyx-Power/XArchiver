@@ -47,7 +47,7 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-private val dateFormatter = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.getDefault())
+internal val dateFormatter = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.getDefault())
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -875,7 +875,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
 }
 
 @Composable
-private fun FileItemCard(
+internal fun FileItemCard(
     file: FileItem,
     isSelected: Boolean,
     isSelectionMode: Boolean,
@@ -1118,7 +1118,7 @@ private fun isArchiveExtension(fileName: String): Boolean {
     return ext in listOf("zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "tbz2", "xz", "lz", "jar", "aar", "xapk")
 }
 
-private fun getFileIcon(file: FileItem): ImageVector {
+internal fun getFileIcon(file: FileItem): ImageVector {
     if (file.isDirectory) return Icons.Default.Folder
     val ext = file.name.substringAfterLast('.', "").lowercase()
     return when (ext) {
@@ -1136,7 +1136,7 @@ private fun getFileIcon(file: FileItem): ImageVector {
 }
 
 @Composable
-private fun getFileColor(file: FileItem): Color {
+internal fun getFileColor(file: FileItem): Color {
     if (file.isDirectory) return MaterialTheme.colorScheme.primary
     val ext = file.name.substringAfterLast('.', "").lowercase()
     return when (ext) {
