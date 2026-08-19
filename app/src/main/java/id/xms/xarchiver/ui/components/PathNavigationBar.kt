@@ -59,9 +59,11 @@ fun PathNavigationBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .statusBarsPadding(),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 4.dp
+            .statusBarsPadding()
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+        shadowElevation = 8.dp
     ) {
         Row(
             modifier = Modifier

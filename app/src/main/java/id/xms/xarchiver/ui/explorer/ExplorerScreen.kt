@@ -9,6 +9,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.ui.draw.scale
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -158,26 +162,47 @@ fun ExplorerScreen(path: String, navController: NavController) {
         }
     }
     
-    Scaffold(
-        topBar = {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = androidx.compose.ui.graphics.Brush.radialGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
+                        MaterialTheme.colorScheme.background
+                    ),
+                    radius = 1500f
+                )
+            )
+    ) {
+        Scaffold(
+            topBar = {
             if (isSelecting) {
                 // Selection mode top bar
-                TopAppBar(
-                    title = { Text("$selectedCount selected") },
-                    navigationIcon = {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shadowElevation = 8.dp
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(onClick = { selectionManager.clearSelection() }) {
                             Icon(Icons.Default.Close, contentDescription = "Cancel Selection")
                         }
-                    },
-                    actions = {
-                        IconButton(onClick = { 
-                            selectionManager.selectAll(files.map { it.path })
-                        }) {
+                        Text(
+                            "$selectedCount selected",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
+                        )
+                        IconButton(onClick = { selectionManager.selectAll(files.map { it.path }) }) {
                             Icon(Icons.Default.SelectAll, contentDescription = "Select All")
                         }
-                        IconButton(onClick = {
-                            selectionManager.reverseSelection(files.map { it.path })
-                        }) {
+                        IconButton(onClick = { selectionManager.reverseSelection(files.map { it.path }) }) {
                             Icon(Icons.Default.FlipToBack, contentDescription = "Reverse Selection")
                         }
                         if (selectedCount == 1) {
@@ -190,19 +215,19 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 Icon(Icons.Default.FilterList, contentDescription = "Select Same Type")
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                )
+                    }
+                }
             } else if (isSearching) {
                 // Search bar mode
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .statusBarsPadding(),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 4.dp
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    shadowElevation = 8.dp
                 ) {
                     Row(
                         modifier = Modifier
@@ -253,13 +278,15 @@ fun ExplorerScreen(path: String, navController: NavController) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .clip(CircleShape)
                             .combinedClickable(onClick = { isSearching = true }, onLongClick = {}),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                .padding(horizontal = 20.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
@@ -287,13 +314,19 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
                 Surface(
-                    color = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shape = RoundedCornerShape(24.dp),
                     shadowElevation = 8.dp
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
+                            .padding(horizontal = 8.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         // Check if selected files contain archives
@@ -459,13 +492,13 @@ fun ExplorerScreen(path: String, navController: NavController) {
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = Color.Transparent
     ) { padding ->
         LazyColumn(
             state = listState,
             modifier = Modifier.padding(padding),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (isLoading) {
                 items(6) { FileItemSkeleton() }
@@ -478,17 +511,32 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.FolderOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                            )
-                            Spacer(Modifier.height(16.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                shape = CircleShape,
+                                modifier = Modifier.size(120.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                    Icon(
+                                        if (searchQuery.isNotEmpty()) Icons.Default.SearchOff else Icons.Default.FolderOff,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(64.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(24.dp))
                             Text(
-                                if (searchQuery.isNotEmpty()) "No files found matching \"$searchQuery\"" else "Empty folder",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                if (searchQuery.isNotEmpty()) "No files found matching \"$searchQuery\"" else "Empty Folder",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "There's nothing here yet.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -824,6 +872,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
         }
     }
 }
+}
 
 @Composable
 private fun FileItemCard(
@@ -834,77 +883,99 @@ private fun FileItemCard(
     onLongClick: () -> Unit
 ) {
     val fileIcon = remember(file.name, file.isDirectory) { getFileIcon(file) }
-    val fileColor = remember(file.name, file.isDirectory) { getFileColor(file) }
+    val fileColor = getFileColor(file)
     val formattedDate = remember(file.lastModified) {
         dateFormatter.format(Date(file.lastModified))
     }
     
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "scale"
+    )
+    
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .scale(scale)
             .then(
                 if (isSelected) Modifier.border(
                     2.dp,
                     MaterialTheme.colorScheme.primary,
-                    RoundedCornerShape(12.dp)
+                    RoundedCornerShape(24.dp)
                 ) else Modifier
             )
             .combinedClickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
                 onClick = onClick,
                 onLongClick = onLongClick
             ),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) 
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else MaterialTheme.colorScheme.surface
+            else MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Selection checkbox or icon
             if (isSelectionMode) {
-                Checkbox(
-                    checked = isSelected,
-                    onCheckedChange = { onClick() },
-                    modifier = Modifier.size(40.dp)
-                )
-            } else {
                 Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(fileColor.copy(alpha = 0.1f), CircleShape),
+                    modifier = Modifier.size(56.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = fileIcon,
-                        contentDescription = null,
-                        tint = fileColor,
-                        modifier = Modifier.size(20.dp)
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() }
                     )
+                }
+            } else {
+                Surface(
+                    color = fileColor.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            imageVector = fileIcon,
+                            contentDescription = null,
+                            tint = fileColor,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
             }
             
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(16.dp))
             
             Column(Modifier.weight(1f)) {
                 Text(
                     text = file.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(Modifier.height(4.dp))
                 Text(
                     text = if (file.isDirectory) "Folder" else "${file.size.humanReadable()} • $formattedDate",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = if (file.isDirectory) MaterialTheme.colorScheme.primary 
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                 )
             }
             
@@ -912,8 +983,8 @@ private fun FileItemCard(
                 Icon(
                     Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.size(16.dp)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -941,36 +1012,47 @@ private fun BottomActionButton(
 
 @Composable
 private fun FileItemSkeleton() {
+    val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
+    val shimmerAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "shimmerAlpha"
+    )
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                Modifier.size(40.dp).background(
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    CircleShape
-                )
-            )
-            Spacer(Modifier.width(12.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = shimmerAlpha * 0.2f),
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.size(56.dp)
+            ) {}
+            Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Box(
-                    Modifier.fillMaxWidth(0.6f).height(16.dp).background(
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                        RoundedCornerShape(4.dp)
+                    Modifier.fillMaxWidth(0.7f).height(18.dp).background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = shimmerAlpha * 0.3f),
+                        RoundedCornerShape(6.dp)
                     )
                 )
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(8.dp))
                 Box(
-                    Modifier.fillMaxWidth(0.4f).height(12.dp).background(
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
-                        RoundedCornerShape(4.dp)
+                    Modifier.fillMaxWidth(0.4f).height(14.dp).background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = shimmerAlpha * 0.2f),
+                        RoundedCornerShape(6.dp)
                     )
                 )
             }
@@ -1053,12 +1135,13 @@ private fun getFileIcon(file: FileItem): ImageVector {
     }
 }
 
+@Composable
 private fun getFileColor(file: FileItem): Color {
-    if (file.isDirectory) return Color(0xFF4CAF50)
+    if (file.isDirectory) return MaterialTheme.colorScheme.primary
     val ext = file.name.substringAfterLast('.', "").lowercase()
     return when (ext) {
         "zip", "rar", "7z", "tar", "gz", "tgz", "jar", "aar", "xapk" -> Color(0xFFFF9800)
-        "apk" -> Color(0xFF4CAF50)
+        "apk" -> MaterialTheme.colorScheme.tertiary
         "mp3", "wav", "flac", "aac", "ogg" -> Color(0xFF9C27B0)
         "mp4", "avi", "mkv", "mov", "wmv" -> Color(0xFFE91E63)
         "jpg", "jpeg", "png", "gif", "bmp", "webp" -> Color(0xFF2196F3)
