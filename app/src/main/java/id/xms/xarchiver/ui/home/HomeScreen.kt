@@ -221,36 +221,14 @@ private fun StorageSection(
     val storages = viewModel.storages.value
     val rootEnabled = isRootAccessEnabled
     val pageCount = storages.size + (if (rootEnabled) 1 else 0)
-    val context = androidx.compose.ui.platform.LocalContext.current
 
-    DisposableEffect(context) {
-        val receiver = object : android.content.BroadcastReceiver() {
-            override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
-                viewModel.refreshStorage()
-            }
-        }
-        val filter = android.content.IntentFilter().apply {
-            addAction(android.content.Intent.ACTION_MEDIA_MOUNTED)
-            addAction(android.content.Intent.ACTION_MEDIA_UNMOUNTED)
-            addAction(android.content.Intent.ACTION_MEDIA_REMOVED)
-            addAction(android.content.Intent.ACTION_MEDIA_EJECT)
-            addAction(android.content.Intent.ACTION_MEDIA_BAD_REMOVAL)
-            addDataScheme("file")
-        }
-        androidx.core.content.ContextCompat.registerReceiver(
-            context, 
-            receiver, 
-            filter, 
-            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
-        )
-
-        onDispose {
-            context.unregisterReceiver(receiver)
-        }
-    }
-
+    // Gunakan teknik polling karena beberapa custom ROM (HyperOS/MIUI) 
+    // seringkali menggunakan intent broadcast non-standar untuk USB OTG.
     LaunchedEffect(Unit) {
-        viewModel.refreshStorage()
+        while(true) {
+            viewModel.refreshStorage()
+            kotlinx.coroutines.delay(2000) // Cek setiap 2 detik
+        }
     }
 
     Column(
