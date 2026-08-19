@@ -218,11 +218,18 @@ private fun StorageSection(
     navController: NavController,
     isRootAccessEnabled: Boolean
 ) {
+    val storages = viewModel.storages.value
+    val rootEnabled = isRootAccessEnabled
+    val pageCount = storages.size + (if (rootEnabled) 1 else 0)
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshStorage()
+    }
+
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        val pageCount = if (isRootAccessEnabled) 2 else 1
         val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { pageCount })
 
         Box(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -248,37 +255,27 @@ private fun StorageSection(
             )
         }
         
-        val internal = viewModel.storages.firstOrNull()
-        
         androidx.compose.foundation.pager.HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = 20.dp),
             pageSpacing = 16.dp,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
-            when (page) {
-                0 -> {
-                    if (internal != null) {
-                        StorageCard(
-                            info = internal,
-                            onClick = {
-                                navController.navigate("explorer/${Uri.encode(internal.path)}")
-                            }
-                        )
-                    } else {
-                        StoragePlaceholderCard(title = "Device Storage")
+            if (page < storages.size) {
+                val storage = storages[page]
+                StorageCard(
+                    info = storage,
+                    onClick = {
+                        navController.navigate("explorer/${Uri.encode(storage.path)}")
                     }
-                }
-                1 -> {
-                    if (isRootAccessEnabled) {
-                        RootStorageCard(
-                            info = viewModel.rootStorageInfo,
-                            onOpenRoot = { rootPath ->
-                                navController.navigate("root_explorer/${Uri.encode(rootPath)}")
-                            }
-                        )
+                )
+            } else if (rootEnabled) {
+                RootStorageCard(
+                    info = viewModel.rootStorageInfo,
+                    onOpenRoot = { rootPath ->
+                        navController.navigate("root_explorer/${Uri.encode(rootPath)}")
                     }
-                }
+                )
             }
         }
     }

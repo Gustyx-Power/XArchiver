@@ -16,7 +16,8 @@ import java.io.File
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
-    var storages: List<StorageInfo> = StorageUtils.getAllStorage(app)
+    var storages = mutableStateOf(StorageUtils.getAllStorage(app))
+        private set
     var rootStorageInfo: StorageInfo = StorageUtils.getRootStorageInfo()
     
     // Use mutableStateOf for categories so UI updates when counts are loaded
@@ -51,6 +52,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             loadCategoryCounts()
         }
+    }
+    
+    fun refreshStorage() {
+        storages.value = StorageUtils.getAllStorage(getApplication())
     }
     
     private fun getInitialCategories(): List<Category> {

@@ -9,19 +9,72 @@ object StorageUtils {
 
     fun getAllStorage(context: Context): List<StorageInfo> {
         val storages = mutableListOf<StorageInfo>()
+        val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as android.os.storage.StorageManager
+        val externalDirs = androidx.core.content.ContextCompat.getExternalFilesDirs(context, null)
 
-        // Internal
+        // Internal Storage
         storages.add(getStorageInfo(Environment.getExternalStorageDirectory(), "Internal Storage"))
 
-        // Eksternal (SD card) → via Context.externalMediaDirs
-        context.externalMediaDirs?.forEach { dir ->
-            dir?.let {
-                val base = it.absoluteFile
-                // pastikan path ada dan berbeda dari internal
-                if (base.exists() && !isSameAsInternal(base)) {
-                    storages.add(getStorageInfo(base, "SD Card"))
+        // Removable storage (SD Card, USB OTG)
+        storageManager.storageVolumes.forEach { volume ->
+            if (!volume.isPrimary) {
+                var rootPath: String? = null
+                
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+                    rootPath = volume.directory?.absolutePath
+                }
+
+                if (rootPath == null) {
+                    try {
+                        rootPath = volume.javaClass.getMethod("getPath").invoke(volume) as String
+                    } catch (e: Exception) {
+                        // ignore
+                    }
+                }
+
+                if (rootPath != null) {
+                    val rootFile = File(rootPath)
+                    if (!isSameAsInternal(rootFile)) {
+                        val label = volume.getDescription(context)
+                        if (storages.none { it.path == rootPath }) {
+                            storages.add(getStorageInfo(rootFile, label))
+                        }
+                    }
                 }
             }
+        }
+
+        // AGGRESSIVE FALLBACK 1: ContextCompat.getExternalFilesDirs
+        externalDirs.forEach { dir ->
+            if (dir != null) {
+                val rootStr = dir.absolutePath.substringBefore("/Android/data").substringBefore("/Android/media")
+                val rootFile = File(rootStr)
+                if (rootStr.startsWith("/storage/") && !isSameAsInternal(rootFile) && rootFile.name != "emulated") {
+                    if (storages.none { it.path == rootStr }) {
+                        val isUsb = rootStr.contains("-")
+                        val label = if (isUsb) "USB Storage (${rootFile.name})" else "SD Card (${rootFile.name})"
+                        storages.add(getStorageInfo(rootFile, label))
+                    }
+                }
+            }
+        }
+
+        // AGGRESSIVE FALLBACK 2: Scan /storage/ manually
+        try {
+            val storageDir = File("/storage")
+            if (storageDir.exists() && storageDir.isDirectory) {
+                storageDir.listFiles()?.forEach { dir ->
+                    if (dir.isDirectory && dir.name != "emulated" && dir.name != "self") {
+                        if (storages.none { it.path == dir.absolutePath }) {
+                            val isUsb = dir.name.contains("-")
+                            val label = if (isUsb) "Removable Storage (${dir.name})" else "External Storage (${dir.name})"
+                            storages.add(getStorageInfo(dir, label))
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Ignored
         }
 
         return storages
