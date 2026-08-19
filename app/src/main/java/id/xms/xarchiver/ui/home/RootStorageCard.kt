@@ -32,10 +32,20 @@ fun RootStorageCard(
 ) {
     val scope = rememberCoroutineScope()
     var granted by remember { mutableStateOf(RootService.isGranted()) }
-    var busy by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(!RootService.isGranted()) }
     
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+
+    LaunchedEffect(Unit) {
+        if (!granted) {
+            busy = true
+            granted = RootService.ensureRoot()
+            busy = false
+        } else {
+            busy = false
+        }
+    }
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.98f else 1f,
