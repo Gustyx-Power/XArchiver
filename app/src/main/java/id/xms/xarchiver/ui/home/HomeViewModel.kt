@@ -18,6 +18,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     var storages = mutableStateOf(StorageUtils.getAllStorage(app))
         private set
+    var isRefreshing = mutableStateOf(false)
+        private set
     var rootStorageInfo: StorageInfo = StorageUtils.getRootStorageInfo()
     
     // Use mutableStateOf for categories so UI updates when counts are loaded
@@ -55,7 +57,21 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
     
     fun refreshStorage() {
-        storages.value = StorageUtils.getAllStorage(getApplication())
+        viewModelScope.launch {
+            val newStorages = withContext(Dispatchers.IO) { StorageUtils.getAllStorage(getApplication()) }
+            
+            val currentPaths = storages.value.map { it.path }
+            val newPaths = newStorages.map { it.path }
+            
+            if (currentPaths != newPaths) {
+                isRefreshing.value = true
+                kotlinx.coroutines.delay(600) // Brief visual loading
+                storages.value = newStorages
+                isRefreshing.value = false
+            } else {
+                storages.value = newStorages
+            }
+        }
     }
     
     private fun getInitialCategories(): List<Category> {

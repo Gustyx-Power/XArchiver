@@ -219,6 +219,7 @@ private fun StorageSection(
     isRootAccessEnabled: Boolean
 ) {
     val storages = viewModel.storages.value
+    val isRefreshing = viewModel.isRefreshing.value
     val rootEnabled = isRootAccessEnabled
     val pageCount = storages.size + (if (rootEnabled) 1 else 0)
 
@@ -242,7 +243,10 @@ private fun StorageSection(
                 title = "Storage",
                 icon = Icons.Outlined.Storage,
                 trailing = {
-                    if (pageCount > 1) {
+                    if (isRefreshing) {
+                        @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+                        androidx.compose.material3.ContainedLoadingIndicator()
+                    } else if (pageCount > 1) {
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             shape = CircleShape
@@ -266,7 +270,9 @@ private fun StorageSection(
             pageSpacing = 16.dp,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
-            if (page < storages.size) {
+            if (isRefreshing) {
+                StoragePlaceholderCard(title = "Detecting Storage...")
+            } else if (page < storages.size) {
                 val storage = storages[page]
                 val icon = when {
                     storage.label.contains("USB", ignoreCase = true) -> Icons.Outlined.Usb
