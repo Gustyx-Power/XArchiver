@@ -211,6 +211,7 @@ private fun ModernTopBar(
 
 // WelcomeHeader removed
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun StorageSection(
     viewModel: HomeViewModel,
@@ -218,35 +219,67 @@ private fun StorageSection(
     isRootAccessEnabled: Boolean
 ) {
     Column(
-        modifier = Modifier.padding(horizontal = 20.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        SectionHeader(
-            title = "Storage",
-            icon = Icons.Outlined.Storage
-        )
+        val pageCount = if (isRootAccessEnabled) 2 else 1
+        val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { pageCount })
+
+        Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+            SectionHeader(
+                title = "Storage",
+                icon = Icons.Outlined.Storage,
+                trailing = {
+                    if (pageCount > 1) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                "${pagerState.currentPage + 1} of $pageCount",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+            )
+        }
         
         val internal = viewModel.storages.firstOrNull()
         
-        // Internal storage card
-        if (internal != null) {
-            StorageCard(
-                info = internal,
-                onClick = {
-                    navController.navigate("explorer/${Uri.encode(internal.path)}")
+        androidx.compose.foundation.pager.HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            pageSpacing = 16.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) { page ->
+            when (page) {
+                0 -> {
+                    if (internal != null) {
+                        StorageCard(
+                            info = internal,
+                            onClick = {
+                                navController.navigate("explorer/${Uri.encode(internal.path)}")
+                            }
+                        )
+                    } else {
+                        StoragePlaceholderCard(title = "Device Storage")
+                    }
                 }
-            )
-        } else {
-            StoragePlaceholderCard(title = "Device Storage")
-        }
-        
-        // Root storage card
-        if (isRootAccessEnabled) {
-            RootStorageCard(
-                onOpenRoot = { rootPath ->
-                    navController.navigate("root_explorer/${Uri.encode(rootPath)}")
+                1 -> {
+                    if (isRootAccessEnabled) {
+                        RootStorageCard(
+                            info = viewModel.rootStorageInfo,
+                            onOpenRoot = { rootPath ->
+                                navController.navigate("root_explorer/${Uri.encode(rootPath)}")
+                            }
+                        )
+                    }
                 }
-            )
+            }
         }
     }
 }
@@ -297,25 +330,34 @@ private fun QuickAccessSection(
 @Composable
 private fun SectionHeader(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    trailing: @Composable () -> Unit = {}
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(vertical = 4.dp)
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
     ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp)
-        )
-        Text(
-            title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+        trailing()
     }
 }
 

@@ -23,13 +23,16 @@ import androidx.compose.ui.unit.dp
 import java.util.Locale
 import id.xms.xarchiver.core.StorageInfo
 import id.xms.xarchiver.core.humanReadable
+import id.xms.xarchiver.core.commercialStorageSize
 import id.xms.xarchiver.ui.theme.*
 
 @Composable
 fun StorageCard(
     info: StorageInfo,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    icon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Filled.PhoneAndroid,
+    title: String = info.label
 ) {
     val percent = (if (info.total > 0) info.used.toFloat() / info.total.toFloat() else 0f).coerceIn(0f, 1f)
     val interactionSource = remember { MutableInteractionSource() }
@@ -98,7 +101,7 @@ fun StorageCard(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            Icons.Filled.PhoneAndroid,
+                            icon,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(26.dp)
@@ -136,7 +139,7 @@ fun StorageCard(
 
             // Storage label
             Text(
-                info.label,
+                title,
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold
@@ -146,7 +149,7 @@ fun StorageCard(
 
             // Usage text
             Text(
-                "${info.used.humanReadable()} of ${info.total.humanReadable()}",
+                "${info.used.humanReadable()} of ${info.total.commercialStorageSize()}",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
             )

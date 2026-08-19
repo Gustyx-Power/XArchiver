@@ -39,3 +39,15 @@ fun Long.humanReadable(): String {
         else -> "$this B"
     }
 }
+
+fun Long.commercialStorageSize(): String {
+    val gib = this / (1024.0 * 1024.0 * 1024.0)
+    var size = 8
+    while (size <= 2048) {
+        if (gib <= size * 1.05) {
+            return if (size >= 1024) "${size / 1024} TB" else "$size GB"
+        }
+        size *= 2
+    }
+    return this.humanReadable()
+}

@@ -27,6 +27,10 @@ object StorageUtils {
         return storages
     }
 
+    fun getRootStorageInfo(): StorageInfo {
+        return getStorageInfo(File("/"), "Root System")
+    }
+
     private fun getStorageInfo(path: File, label: String): StorageInfo {
         return try {
             val stat = StatFs(path.path)
