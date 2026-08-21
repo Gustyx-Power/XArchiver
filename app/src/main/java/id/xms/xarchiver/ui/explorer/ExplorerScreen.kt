@@ -950,6 +950,30 @@ internal fun FileItemCard(
                 val isVideo = remember(file.name) {
                     isVideoExtension(file.name.substringAfterLast('.', "").lowercase())
                 }
+                val isApk = remember(file.name) {
+                    file.name.substringAfterLast('.', "").lowercase() == "apk"
+                }
+
+                var apkIconDrawable by remember { mutableStateOf<android.graphics.drawable.Drawable?>(null) }
+                val context = LocalContext.current
+
+                if (isApk) {
+                    LaunchedEffect(file.path) {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            try {
+                                val pm = context.packageManager
+                                val pi = pm.getPackageArchiveInfo(file.path, 0)
+                                pi?.applicationInfo?.let { appInfo ->
+                                    appInfo.sourceDir = file.path
+                                    appInfo.publicSourceDir = file.path
+                                    apkIconDrawable = appInfo.loadIcon(pm)
+                                }
+                            } catch (e: Exception) {
+                                // Ignore if extracting icon fails
+                            }
+                        }
+                    }
+                }
 
                 Surface(
                     color = fileColor.copy(alpha = 0.15f),
@@ -959,13 +983,23 @@ internal fun FileItemCard(
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         if (isImage || isVideo) {
                             coil.compose.AsyncImage(
-                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                model = coil.request.ImageRequest.Builder(context)
                                     .data(java.io.File(file.path))
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = null,
                                 contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
+                            )
+                        } else if (isApk && apkIconDrawable != null) {
+                            coil.compose.AsyncImage(
+                                model = coil.request.ImageRequest.Builder(context)
+                                    .data(apkIconDrawable)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().padding(8.dp)
                             )
                         } else {
                             Icon(
