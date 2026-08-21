@@ -29,13 +29,15 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import id.xms.xarchiver.R
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(
     onAllPermissionsGranted: () -> Unit
 ) {
     val context = LocalContext.current
-    // Define permissions and labels based on Android version
+    // Define permissions based on Android version
     val isAndroid11OrAbove = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
     val permissions = if (isAndroid11OrAbove) {
         listOf(Manifest.permission.MANAGE_EXTERNAL_STORAGE)
@@ -44,11 +46,6 @@ fun SetupScreen(
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
         )
-    }
-    val permissionLabels = if (isAndroid11OrAbove) {
-        listOf("Manage Storage (All files access)")
-    } else {
-        listOf("Read Storage Access", "Write Storage Access")
     }
 
     var permissionStates by remember { mutableStateOf(permissions.map { perm ->
@@ -67,7 +64,6 @@ fun SetupScreen(
             if (idx != -1) {
                 permissionStates = permissionStates.toMutableList().also { it[idx] = granted }
             }
-            android.util.Log.d("SplashScreen", "Permission $perm granted: $granted")
         }
         currentPermissionToRequest = null
     }
@@ -80,103 +76,173 @@ fun SetupScreen(
         val missing = permissions.filterIndexed { i, _ -> !permissionStates[i] }
         if (missing.isNotEmpty()) {
             launcher.launch(missing.toTypedArray())
-        } else {
-            onAllPermissionsGranted()
         }
     }
 
-    LaunchedEffect(permissionStates) {
-        if (permissionStates.all { it }) {
-            onAllPermissionsGranted()
-        }
-    }
+    val allGranted = permissionStates.all { it }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Colorful logo icon
-        Icon(
-            imageVector = Icons.Filled.Storage,
-            contentDescription = "Logo",
-            tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(120.dp)
-        )
-        Text(
-            text = "XArchiver",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 16.dp)
-        )
-        Text(
-            text = "The application requires the following permissions:",
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 32.dp)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        permissions.forEachIndexed { i, perm ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 4.dp)
+    Scaffold(
+        bottomBar = {
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+                tonalElevation = 8.dp
             ) {
-                Checkbox(
-                    checked = permissionStates[i],
-                    onCheckedChange = { checked ->
-                        android.util.Log.d("SplashScreen", "Checkbox for $perm clicked, checked: $checked")
-                        if (!permissionStates[i] && checked) {
-                            if (perm == Manifest.permission.MANAGE_EXTERNAL_STORAGE && isAndroid11OrAbove) {
-                                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                                    data = Uri.parse("package:" + context.packageName)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                                Toast.makeText(context, "Please enable 'All files access' for XArchiver.", Toast.LENGTH_LONG).show()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = {
+                            if (allGranted) {
+                                onAllPermissionsGranted()
                             } else {
-                                currentPermissionToRequest = perm
-                                singlePermissionLauncher.launch(perm)
+                                if (isAndroid11OrAbove && !allGranted) {
+                                    val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                                        data = Uri.parse("package:" + context.packageName)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                    Toast.makeText(context, "Please enable 'All files access' for XArchiver.", Toast.LENGTH_LONG).show()
+                                } else {
+                                    requestPermissions()
+                                }
                             }
-                        }
-                    },
-                    enabled = true,
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.primary,
-                        uncheckedColor = MaterialTheme.colorScheme.secondary,
-                        checkmarkColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                )
-                // Colorful icon for permission state
-                Icon(
-                    imageVector = if (permissionStates[i]) Icons.Filled.CheckCircle else Icons.Filled.Warning,
-                    contentDescription = null,
-                    tint = if (permissionStates[i]) MaterialTheme.colorScheme.primary else Color.Red,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = permissionLabels[i],
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (allGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = if (allGranted) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    ) {
+                        Text(
+                            text = if (allGranted) "Get Started" else "Grant Permissions",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
             }
         }
-        Spacer(modifier = Modifier.height(32.dp))
-        Button(
-            onClick = { requestPermissions() },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Allow & Continue", fontSize = 16.sp)
+            Spacer(modifier = Modifier.height(64.dp))
+            
+            // App Icon
+            Surface(
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                shadowElevation = 12.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(100.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(40.dp))
+            
+            Text(
+                text = "Welcome to XArchiver",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "Let's set things up. To provide a seamless file management experience, XArchiver needs access to your files.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            
+            Spacer(modifier = Modifier.height(48.dp))
+            
+            // Permissions Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                ),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = "Required Permissions",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    val title = if (isAndroid11OrAbove) "All Files Access" else "Storage Access"
+                    val desc = if (isAndroid11OrAbove) "Required to manage and archive all files on your device." else "Required to read and write files on your storage."
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = if (allGranted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (allGranted) Icons.Filled.CheckCircle else Icons.Filled.Storage,
+                                contentDescription = null,
+                                tint = if (allGranted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier
+                                    .padding(12.dp)
+                                    .fillMaxSize()
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = desc,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        if (allGranted) {
+                            Icon(
+                                imageVector = Icons.Filled.CheckCircle,
+                                contentDescription = "Granted",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
+
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
