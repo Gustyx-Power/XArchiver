@@ -40,7 +40,9 @@ fun CreateArchiveDialog(
         },
         text = {
             Column(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Archive name input
@@ -54,31 +56,40 @@ fun CreateArchiveDialog(
                 )
                 
                 // Format selection
-                Text("Format", style = MaterialTheme.typography.labelLarge)
-                Column(Modifier.selectableGroup()) {
-                    ArchiveFormat.entries.forEach { format ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = selectedFormat == format,
-                                    onClick = { selectedFormat = format },
-                                    role = Role.RadioButton
-                                )
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedFormat == format,
-                                onClick = null
-                            )
-                            Spacer(Modifier.width(12.dp))
-                            Column {
-                                Text(format.displayName)
-                                Text(
-                                    ".${format.extension}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Format", style = MaterialTheme.typography.labelLarge)
+                    Box {
+                        var expanded by remember { mutableStateOf(false) }
+                        
+                        val availableFormats = if (selectedFilesCount > 1) {
+                            ArchiveFormat.entries.filter { it != ArchiveFormat.GZ }
+                        } else {
+                            ArchiveFormat.entries
+                        }
+                        
+                        // Ensure selectedFormat is valid if it was GZ but now multiple files are selected
+                        LaunchedEffect(selectedFilesCount) {
+                            if (selectedFilesCount > 1 && selectedFormat == ArchiveFormat.GZ) {
+                                selectedFormat = ArchiveFormat.ZIP
+                            }
+                        }
+                        
+                        OutlinedButton(onClick = { expanded = true }) {
+                            Text(selectedFormat.displayName)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                        }
+                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                            availableFormats.forEach { format ->
+                                DropdownMenuItem(
+                                    text = { Text(format.displayName) },
+                                    onClick = { 
+                                        selectedFormat = format
+                                        expanded = false 
+                                    }
                                 )
                             }
                         }
@@ -87,28 +98,28 @@ fun CreateArchiveDialog(
                 
                 // Compression level (only for ZIP)
                 if (selectedFormat == ArchiveFormat.ZIP) {
-                    HorizontalDivider()
-                    Text("Compression Level", style = MaterialTheme.typography.labelLarge)
-                    
-                    Column(Modifier.selectableGroup()) {
-                        CompressionLevel.entries.forEach { level ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = selectedCompression == level,
-                                        onClick = { selectedCompression = level },
-                                        role = Role.RadioButton
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Compression", style = MaterialTheme.typography.labelLarge)
+                        Box {
+                            var expanded by remember { mutableStateOf(false) }
+                            OutlinedButton(onClick = { expanded = true }) {
+                                Text(selectedCompression.displayName)
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null)
+                            }
+                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                                CompressionLevel.entries.forEach { level ->
+                                    DropdownMenuItem(
+                                        text = { Text(level.displayName) },
+                                        onClick = { 
+                                            selectedCompression = level
+                                            expanded = false 
+                                        }
                                     )
-                                    .padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedCompression == level,
-                                    onClick = null
-                                )
-                                Spacer(Modifier.width(12.dp))
-                                Text(level.displayName)
+                                }
                             }
                         }
                     }

@@ -40,13 +40,13 @@ class ArchiveManager(private val context: Context) {
      */
     fun listArchiveContents(archiveFilePath: String): Flow<ArchiveEntry> = flow {
         val file = File(archiveFilePath)
-        val inputStream = createArchiveInputStream(file)
+        val reader = createArchiveReader(file)
         
-        inputStream?.use { archiveStream ->
-            var entry = archiveStream.nextEntry
+        reader?.use { archiveReader ->
+            var entry = archiveReader.nextEntry()
             while (entry != null) {
                 emit(entry)
-                entry = archiveStream.nextEntry
+                entry = archiveReader.nextEntry()
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -59,24 +59,25 @@ class ArchiveManager(private val context: Context) {
         nestedArchivePath: String
     ): Flow<ArchiveEntry> = flow {
         val file = File(archiveFilePath)
-        val inputStream = createArchiveInputStream(file)
+        val reader = createArchiveReader(file)
         
-        inputStream?.use { archiveStream ->
-            var entry = archiveStream.nextEntry
+        reader?.use { archiveReader ->
+            var entry = archiveReader.nextEntry()
             while (entry != null) {
                 if (entry.name == nestedArchivePath) {
                     // Found the nested archive, read it
-                    val nestedInputStream = createArchiveInputStream(archiveStream)
-                    nestedInputStream?.use { nestedStream ->
-                        var nestedEntry = nestedStream.nextEntry
+                    val nestedStream = ArchiveReaderInputStream(archiveReader)
+                    val nestedReader = createArchiveReader(nestedStream, nestedArchivePath)
+                    nestedReader?.use { nr ->
+                        var nestedEntry = nr.nextEntry()
                         while (nestedEntry != null) {
                             emit(nestedEntry)
-                            nestedEntry = nestedStream.nextEntry
+                            nestedEntry = nr.nextEntry()
                         }
                     }
                     break
                 }
-                entry = archiveStream.nextEntry
+                entry = archiveReader.nextEntry()
             }
         }
     }.flowOn(Dispatchers.IO)
@@ -103,8 +104,8 @@ class ArchiveManager(private val context: Context) {
             var extractedCount = 0
             
             // Single pass: extract and track progress by bytes processed
-            createArchiveInputStream(file)?.use { archiveStream ->
-                var entry = archiveStream.nextEntry
+            createArchiveReader(file)?.use { archiveReader ->
+                var entry = archiveReader.nextEntry()
                 
                 while (entry != null) {
                     val outputFile = File(outputDirectory, entry.name)
@@ -137,7 +138,7 @@ class ArchiveManager(private val context: Context) {
                         FileOutputStream(outputFile).use { output ->
                             val buffer = ByteArray(8192)
                             var bytesRead: Int
-                            while (archiveStream.read(buffer).also { bytesRead = it } != -1) {
+                            while (archiveReader.read(buffer).also { bytesRead = it } != -1) {
                                 output.write(buffer, 0, bytesRead)
                                 bytesWritten += bytesRead
                                 processedBytes += bytesRead
@@ -163,7 +164,7 @@ class ArchiveManager(private val context: Context) {
                         }
                     }
                     
-                    entry = archiveStream.nextEntry
+                    entry = archiveReader.nextEntry()
                 }
                 
                 emit(ExtractionProgress(100, "Extraction completed", ExtractionState.COMPLETED, null, archiveSize, archiveSize))
@@ -187,10 +188,10 @@ class ArchiveManager(private val context: Context) {
     ): String? = withContext(Dispatchers.IO) {
         try {
             val file = File(archiveFilePath)
-            val inputStream = createArchiveInputStream(file)
+            val reader = createArchiveReader(file)
             
-            inputStream?.use { archiveStream ->
-                var entry = archiveStream.nextEntry
+            reader?.use { archiveReader ->
+                var entry = archiveReader.nextEntry()
                 while (entry != null) {
                     if (entry.name == entryPath) {
                         // Check entry size before reading
@@ -200,13 +201,12 @@ class ArchiveManager(private val context: Context) {
                         }
                         
                         // Read with size limit
-                        val reader = archiveStream.bufferedReader()
-                        val stringBuilder = StringBuilder()
+                        val stringBuilder = java.lang.StringBuilder()
                         var totalRead = 0
-                        val buffer = CharArray(8192)
+                        val buffer = ByteArray(8192)
                         
                         while (true) {
-                            val read = reader.read(buffer)
+                            val read = archiveReader.read(buffer)
                             if (read == -1) break
                             
                             totalRead += read
@@ -214,12 +214,12 @@ class ArchiveManager(private val context: Context) {
                                 throw IllegalStateException("Entry too large to view as text")
                             }
                             
-                            stringBuilder.append(buffer, 0, read)
+                            stringBuilder.append(String(buffer, 0, read))
                         }
                         
                         return@withContext stringBuilder.toString()
                     }
-                    entry = archiveStream.nextEntry
+                    entry = archiveReader.nextEntry()
                 }
             }
             null
@@ -239,6 +239,110 @@ class ArchiveManager(private val context: Context) {
         extension in listOf("zip", "tar", "gz", "tgz", "7z", "rar")
     }
 
+    private interface ArchiveReader : java.io.Closeable {
+        fun nextEntry(): ArchiveEntry?
+        fun read(buffer: ByteArray): Int
+    }
+    
+    private class ArchiveReaderInputStream(private val reader: ArchiveReader) : java.io.InputStream() {
+        override fun read(): Int {
+            val b = ByteArray(1)
+            val read = reader.read(b)
+            return if (read == -1) -1 else b[0].toInt() and 0xFF
+        }
+        
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            if (off == 0 && len == b.size) {
+                return reader.read(b)
+            }
+            val temp = ByteArray(len)
+            val read = reader.read(temp)
+            if (read != -1) {
+                System.arraycopy(temp, 0, b, off, read)
+            }
+            return read
+        }
+    }
+    
+    private fun createArchiveReader(file: File): ArchiveReader? {
+        val extension = file.extension.lowercase()
+        return when {
+            extension == "7z" -> {
+                object : ArchiveReader {
+                    val sevenZFile = org.apache.commons.compress.archivers.sevenz.SevenZFile(file)
+                    override fun nextEntry(): ArchiveEntry? = sevenZFile.nextEntry
+                    override fun read(buffer: ByteArray): Int = sevenZFile.read(buffer)
+                    override fun close() = sevenZFile.close()
+                }
+            }
+            extension == "gz" && !file.name.lowercase().endsWith(".tar.gz") -> {
+                object : ArchiveReader {
+                    val stream = GzipCompressorInputStream(BufferedInputStream(FileInputStream(file)))
+                    var readEntry = false
+                    override fun nextEntry(): ArchiveEntry? {
+                        if (!readEntry) {
+                            readEntry = true
+                            return object : ArchiveEntry {
+                                override fun getName() = file.nameWithoutExtension
+                                override fun getSize() = -1L
+                                override fun isDirectory() = false
+                                override fun getLastModifiedDate() = java.util.Date(file.lastModified())
+                            }
+                        }
+                        return null
+                    }
+                    override fun read(buffer: ByteArray): Int = stream.read(buffer, 0, buffer.size)
+                    override fun close() = stream.close()
+                }
+            }
+            else -> {
+                val stream = createArchiveInputStream(file) ?: return null
+                object : ArchiveReader {
+                    override fun nextEntry(): ArchiveEntry? = stream.nextEntry
+                    override fun read(buffer: ByteArray): Int = stream.read(buffer, 0, buffer.size)
+                    override fun close() = stream.close()
+                }
+            }
+        }
+    }
+    
+    private fun createArchiveReader(inputStream: java.io.InputStream, name: String): ArchiveReader? {
+        val extension = name.substringAfterLast('.', "").lowercase()
+        return when {
+            extension == "7z" -> {
+                null // Nested 7z not supported via sequential stream
+            }
+            extension == "gz" && !name.lowercase().endsWith(".tar.gz") -> {
+                object : ArchiveReader {
+                    val stream = GzipCompressorInputStream(inputStream)
+                    var readEntry = false
+                    override fun nextEntry(): ArchiveEntry? {
+                        if (!readEntry) {
+                            readEntry = true
+                            return object : ArchiveEntry {
+                                override fun getName() = name.removeSuffix(".gz")
+                                override fun getSize() = -1L
+                                override fun isDirectory() = false
+                                override fun getLastModifiedDate() = java.util.Date()
+                            }
+                        }
+                        return null
+                    }
+                    override fun read(buffer: ByteArray): Int = stream.read(buffer, 0, buffer.size)
+                    override fun close() = stream.close()
+                }
+            }
+            else -> {
+                val stream = createArchiveInputStream(inputStream) ?: return null
+                object : ArchiveReader {
+                    override fun nextEntry(): ArchiveEntry? = stream.nextEntry
+                    override fun read(buffer: ByteArray): Int = stream.read(buffer, 0, buffer.size)
+                    override fun close() = stream.close()
+                }
+            }
+        }
+    }
+
     private fun createArchiveInputStream(file: File): ArchiveInputStream<*>? {
         val bufferedInputStream = BufferedInputStream(FileInputStream(file))
         val extension = file.extension.lowercase()
@@ -246,9 +350,17 @@ class ArchiveManager(private val context: Context) {
         return when (extension) {
             "zip" -> ZipArchiveInputStream(bufferedInputStream)
             "tar" -> TarArchiveInputStream(bufferedInputStream)
-            "gz", "tgz" -> {
+            "tgz" -> {
                 val gzipStream = GzipCompressorInputStream(bufferedInputStream)
                 TarArchiveInputStream(gzipStream)
+            }
+            "gz" -> {
+                if (file.name.lowercase().endsWith(".tar.gz")) {
+                    val gzipStream = GzipCompressorInputStream(bufferedInputStream)
+                    TarArchiveInputStream(gzipStream)
+                } else {
+                    null // Handled by ArchiveReader
+                }
             }
             else -> null
         }
