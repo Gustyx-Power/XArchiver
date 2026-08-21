@@ -73,6 +73,9 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showSelectionBottomSheet by remember { mutableStateOf(false) }
     var showCreateArchiveDialog by remember { mutableStateOf(false) }
     var showQuickExtractDialog by remember { mutableStateOf<FileItem?>(null) }
+    var showCustomPathDialogFor by remember { mutableStateOf<FileItem?>(null) }
+    val downloadsPath = remember { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath }
+    var customPath by remember { mutableStateOf(downloadsPath) }
     var extractionProgress by remember { mutableStateOf<ExtractionProgress?>(null) }
     var multiArchiveExtractList by remember { mutableStateOf<List<String>>(emptyList()) }
     var currentExtractingIndex by remember { mutableStateOf(0) }
@@ -829,11 +832,100 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 }
                             }
                         }
+                        
+                        Spacer(Modifier.height(8.dp))
+                        
+                        // Extract to Custom Path
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .combinedClickable(onClick = {
+                                    showQuickExtractDialog = null
+                                    customPath = downloadsPath
+                                    showCustomPathDialogFor = file
+                                }, onLongClick = {}),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CreateNewFolder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.width(12.dp))
+                                Column {
+                                    Text("Extract to Custom Path", fontWeight = FontWeight.Medium)
+                                    Text(
+                                        "Choose a different location",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
                     }
                 },
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = { showQuickExtractDialog = null }) {
+                    TextButton(onClick = { showQuickExtractDialog = null }) { Text("Cancel") }
+                }
+            )
+        }
+        
+        // Custom Path Dialog
+        showCustomPathDialogFor?.let { file ->
+            AlertDialog(
+                onDismissRequest = { showCustomPathDialogFor = null },
+                title = { Text("Custom Extract Path") },
+                text = {
+                    Column {
+                        Text(
+                            text = "Enter the path where you want to extract the archive:",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = customPath,
+                            onValueChange = { customPath = it },
+                            label = { Text("Path") },
+                            placeholder = { Text(downloadsPath) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showCustomPathDialogFor = null
+                            scope.launch {
+                                extractionProgress = ExtractionProgress(
+                                    0, "Starting...", ExtractionState.STARTED
+                                )
+                                val targetFolder = customPath + "/" + java.io.File(file.path).nameWithoutExtension
+                                archiveManager.extractArchive(
+                                    file.path, 
+                                    targetFolder
+                                ).collect { progress ->
+                                    extractionProgress = progress
+                                    if (progress.state == ExtractionState.COMPLETED) {
+                                        extractionProgress = null
+                                        refreshFiles()
+                                        snackbarHostState.showSnackbar("Extracted to $targetFolder")
+                                    } else if (progress.state == ExtractionState.ERROR) {
+                                        extractionProgress = null
+                                        snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
+                                    }
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Extract")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showCustomPathDialogFor = null }) {
                         Text("Cancel")
                     }
                 }

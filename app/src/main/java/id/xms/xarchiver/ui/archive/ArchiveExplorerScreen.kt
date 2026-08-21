@@ -198,15 +198,6 @@ fun ArchiveExplorerScreen(
                 }
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    showExtractionDialog = true
-                }
-            ) {
-                Icon(Icons.Default.Unarchive, contentDescription = "Extract")
-            }
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         Box(
