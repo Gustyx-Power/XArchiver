@@ -53,6 +53,11 @@ fun CategoryExplorerScreen(
     var files by remember { mutableStateOf<List<MediaFileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     
+    val scope = rememberCoroutineScope()
+    val archiveManager = remember { id.xms.xarchiver.core.archive.ArchiveManager(context) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var pendingApk by remember { mutableStateOf<java.io.File?>(null) }
+    
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
     
     // Load files based on category
@@ -65,6 +70,7 @@ fun CategoryExplorerScreen(
     }
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -151,14 +157,45 @@ fun CategoryExplorerScreen(
                             categoryName = categoryName,
                             dateFormatter = dateFormatter,
                             onClick = {
-                                // Navigate to file explorer at the file's parent directory
-                                val parentPath = file.path.substringBeforeLast('/')
-                                navController.navigate("explorer/${Uri.encode(parentPath)}")
+                                val fileItem = id.xms.xarchiver.core.FileItem(
+                                    name = file.name,
+                                    path = file.path,
+                                    isDirectory = false,
+                                    size = file.size,
+                                    lastModified = file.dateModified * 1000
+                                )
+                                id.xms.xarchiver.ui.explorer.utils.FileActionHandler.handleFileClick(
+                                    context = context,
+                                    file = fileItem,
+                                    navController = navController,
+                                    archiveManager = archiveManager,
+                                    scope = scope,
+                                    snackbarHostState = snackbarHostState,
+                                    onApkClick = { pendingApk = it }
+                                )
                             }
                         )
                     }
                 }
             }
+        }
+        
+        pendingApk?.let { apkFile ->
+            AlertDialog(
+                onDismissRequest = { pendingApk = null },
+                icon = { Icon(Icons.Default.Android, null, tint = Color(0xFF4CAF50)) },
+                title = { Text("Install APK") },
+                text = { Text("Do you want to install ${apkFile.name}?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        id.xms.xarchiver.core.install.ApkInstaller.installApk(context, apkFile)
+                        pendingApk = null
+                    }) { Text("Install") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingApk = null }) { Text("Cancel") }
+                }
+            )
         }
     }
 }
@@ -171,6 +208,29 @@ private fun MediaFileCard(
     onClick: () -> Unit
 ) {
     val iconColor = getCategoryColor(categoryName)
+    val context = LocalContext.current
+    
+    val isImage = categoryName.lowercase() == "images"
+    val isVideo = categoryName.lowercase() == "videos"
+    val isApk = categoryName.lowercase() == "apk"
+
+    var apkIconDrawable by remember { mutableStateOf<android.graphics.drawable.Drawable?>(null) }
+    
+    if (isApk) {
+        LaunchedEffect(file.path) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val pm = context.packageManager
+                    val pi = pm.getPackageArchiveInfo(file.path, 0)
+                    pi?.applicationInfo?.let { appInfo ->
+                        appInfo.sourceDir = file.path
+                        appInfo.publicSourceDir = file.path
+                        apkIconDrawable = appInfo.loadIcon(pm)
+                    }
+                } catch (e: Exception) { }
+            }
+        }
+    }
     
     Card(
         modifier = Modifier
@@ -188,22 +248,45 @@ private fun MediaFileCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icon with colored background
+            // Icon or Preview
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .background(
                         color = iconColor.copy(alpha = 0.15f),
                         shape = RoundedCornerShape(12.dp)
-                    ),
+                    )
+                    .clip(RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    getCategoryIcon(categoryName),
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
-                )
+                if (isImage || isVideo) {
+                    coil.compose.AsyncImage(
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(java.io.File(file.path))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (isApk && apkIconDrawable != null) {
+                    coil.compose.AsyncImage(
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(apkIconDrawable)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().padding(6.dp)
+                    )
+                } else {
+                    Icon(
+                        getCategoryIcon(categoryName),
+                        contentDescription = null,
+                        tint = iconColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
             
             Spacer(Modifier.width(12.dp))
