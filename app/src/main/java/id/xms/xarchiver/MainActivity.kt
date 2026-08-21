@@ -38,7 +38,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
+        // Initialize Coil for video frame decoding
+        val imageLoader = coil.ImageLoader.Builder(this)
+            .components {
+                add(coil.decode.VideoFrameDecoder.Factory())
+            }
+            .build()
+        coil.Coil.setImageLoader(imageLoader)
 
         setContent {
             XArchiverTheme {

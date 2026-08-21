@@ -130,6 +130,10 @@ dependencies {
     // ExoPlayer for video/audio playback
     implementation("androidx.media3:media3-exoplayer:1.2.1")
     implementation("androidx.media3:media3-ui:1.2.1")
+    
+    // Coil for image and video preview
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-video:2.6.0")
 }
 
 tasks.register("sendTelegramMessage", SendTelegramMessageTask::class) {

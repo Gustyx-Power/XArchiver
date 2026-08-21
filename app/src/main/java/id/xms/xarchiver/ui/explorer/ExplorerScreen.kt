@@ -944,18 +944,37 @@ internal fun FileItemCard(
                     )
                 }
             } else {
+                val isImage = remember(file.name) {
+                    isImageExtension(file.name.substringAfterLast('.', "").lowercase())
+                }
+                val isVideo = remember(file.name) {
+                    isVideoExtension(file.name.substringAfterLast('.', "").lowercase())
+                }
+
                 Surface(
                     color = fileColor.copy(alpha = 0.15f),
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.size(56.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            imageVector = fileIcon,
-                            contentDescription = null,
-                            tint = fileColor,
-                            modifier = Modifier.size(28.dp)
-                        )
+                        if (isImage || isVideo) {
+                            coil.compose.AsyncImage(
+                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                    .data(java.io.File(file.path))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Icon(
+                                imageVector = fileIcon,
+                                contentDescription = null,
+                                tint = fileColor,
+                                modifier = Modifier.size(28.dp)
+                            )
+                        }
                     }
                 }
             }
