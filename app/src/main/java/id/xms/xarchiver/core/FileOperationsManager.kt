@@ -110,9 +110,11 @@ object FileOperationsManager {
             val destFile = File(destination, sourceFile.name)
             
             if (sourceFile.isDirectory) {
-                copyDirectory(sourceFile, destFile) { file, bytes ->
-                    bytesProcessed += bytes
-                    filesProcessed++
+                copyDirectory(sourceFile, destFile) { file, bytesChunk, isFinished ->
+                    bytesProcessed += bytesChunk
+                    if (isFinished) {
+                        filesProcessed++
+                    }
                     emit(FileOperationProgress(
                         currentFile = file.name,
                         percentage = if (totalBytes > 0) ((bytesProcessed * 100) / totalBytes).toInt() else 0,
@@ -123,17 +125,19 @@ object FileOperationsManager {
                     ))
                 }
             } else {
-                copyFile(sourceFile, getUniqueFile(destFile))
-                bytesProcessed += sourceFile.length()
+                val destF = getUniqueFile(destFile)
+                copyFile(sourceFile, destF) { bytesChunk ->
+                    bytesProcessed += bytesChunk
+                    emit(FileOperationProgress(
+                        currentFile = sourceFile.name,
+                        percentage = if (totalBytes > 0) ((bytesProcessed * 100) / totalBytes).toInt() else 0,
+                        bytesProcessed = bytesProcessed,
+                        totalBytes = totalBytes,
+                        filesProcessed = filesProcessed,
+                        totalFiles = totalFiles
+                    ))
+                }
                 filesProcessed++
-                emit(FileOperationProgress(
-                    currentFile = sourceFile.name,
-                    percentage = if (totalBytes > 0) ((bytesProcessed * 100) / totalBytes).toInt() else 0,
-                    bytesProcessed = bytesProcessed,
-                    totalBytes = totalBytes,
-                    filesProcessed = filesProcessed,
-                    totalFiles = totalFiles
-                ))
             }
         }
         
@@ -260,13 +264,26 @@ object FileOperationsManager {
     
     // Helper functions
     
-    private fun copyFile(source: File, dest: File) {
-        FileInputStream(source).use { input ->
-            FileOutputStream(dest).use { output ->
+    private suspend fun copyFile(source: File, dest: File, onProgress: suspend (Long) -> Unit = {}) {
+        java.io.FileInputStream(source).use { input ->
+            java.io.FileOutputStream(dest).use { output ->
                 val buffer = ByteArray(8192)
                 var length: Int
+                var lastUpdate = System.currentTimeMillis()
+                var bytesWritten = 0L
                 while (input.read(buffer).also { length = it } > 0) {
                     output.write(buffer, 0, length)
+                    bytesWritten += length
+                    
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdate > 100) {
+                        onProgress(bytesWritten)
+                        bytesWritten = 0L
+                        lastUpdate = now
+                    }
+                }
+                if (bytesWritten > 0L) {
+                    onProgress(bytesWritten)
                 }
             }
         }
@@ -275,7 +292,7 @@ object FileOperationsManager {
     private suspend fun copyDirectory(
         source: File,
         dest: File,
-        onProgress: suspend (File, Long) -> Unit
+        onProgress: suspend (File, Long, Boolean) -> Unit
     ) {
         dest.mkdirs()
         
@@ -284,8 +301,10 @@ object FileOperationsManager {
             if (file.isDirectory) {
                 copyDirectory(file, destFile, onProgress)
             } else {
-                copyFile(file, destFile)
-                onProgress(file, file.length())
+                copyFile(file, destFile) { bytesChunk ->
+                    onProgress(file, bytesChunk, false)
+                }
+                onProgress(file, 0L, true)
             }
         }
     }

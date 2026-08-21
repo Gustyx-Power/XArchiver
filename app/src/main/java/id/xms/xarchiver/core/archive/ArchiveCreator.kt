@@ -89,9 +89,11 @@ object ArchiveCreator {
             for (filePath in files) {
                 val file = File(filePath)
                 if (file.exists()) {
-                    addToZip(zos, file, basePath) { name, size ->
-                        bytesProcessed += size
-                        filesProcessed++
+                    addToZip(zos, file, basePath) { name, sizeChunk, isFinished ->
+                        bytesProcessed += sizeChunk
+                        if (isFinished) {
+                            filesProcessed++
+                        }
                         emit(ArchiveCreationProgress(
                             currentFile = name,
                             percentage = if (totalBytes > 0) ((bytesProcessed * 100) / totalBytes).toInt() else 0,
@@ -136,9 +138,11 @@ object ArchiveCreator {
             for (filePath in files) {
                 val file = File(filePath)
                 if (file.exists()) {
-                    addToTar(tos, file, basePath) { name, size ->
-                        bytesProcessed += size
-                        filesProcessed++
+                    addToTar(tos, file, basePath) { name, sizeChunk, isFinished ->
+                        bytesProcessed += sizeChunk
+                        if (isFinished) {
+                            filesProcessed++
+                        }
                         emit(ArchiveCreationProgress(
                             currentFile = name,
                             percentage = if (totalBytes > 0) ((bytesProcessed * 100) / totalBytes).toInt() else 0,
@@ -189,7 +193,7 @@ object ArchiveCreator {
         zos: ZipOutputStream,
         file: File,
         basePath: String,
-        onProgress: suspend (String, Long) -> Unit
+        onProgress: suspend (String, Long, Boolean) -> Unit
     ) {
         val entryName = if (basePath.isNotEmpty()) {
             file.absolutePath.removePrefix(basePath).removePrefix("/").removePrefix("\\")
@@ -210,12 +214,24 @@ object ArchiveCreator {
             FileInputStream(file).use { fis ->
                 val buffer = ByteArray(8192)
                 var len: Int
+                var lastUpdate = System.currentTimeMillis()
+                var bytesWritten = 0L
                 while (fis.read(buffer).also { len = it } > 0) {
                     zos.write(buffer, 0, len)
+                    bytesWritten += len
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdate > 100) {
+                        onProgress(entryName, bytesWritten, false)
+                        bytesWritten = 0L
+                        lastUpdate = now
+                    }
+                }
+                if (bytesWritten > 0L) {
+                    onProgress(entryName, bytesWritten, false)
                 }
             }
             zos.closeEntry()
-            onProgress(entryName, file.length())
+            onProgress(entryName, 0L, true)
         }
     }
     
@@ -224,7 +240,7 @@ object ArchiveCreator {
         tos: TarArchiveOutputStream,
         file: File,
         basePath: String,
-        onProgress: suspend (String, Long) -> Unit
+        onProgress: suspend (String, Long, Boolean) -> Unit
     ) {
         val entryName = if (basePath.isNotEmpty()) {
             file.absolutePath.removePrefix(basePath).removePrefix("/").removePrefix("\\")
@@ -247,12 +263,24 @@ object ArchiveCreator {
             FileInputStream(file).use { fis ->
                 val buffer = ByteArray(8192)
                 var len: Int
+                var lastUpdate = System.currentTimeMillis()
+                var bytesWritten = 0L
                 while (fis.read(buffer).also { len = it } > 0) {
                     tos.write(buffer, 0, len)
+                    bytesWritten += len
+                    val now = System.currentTimeMillis()
+                    if (now - lastUpdate > 100) {
+                        onProgress(entryName, bytesWritten, false)
+                        bytesWritten = 0L
+                        lastUpdate = now
+                    }
+                }
+                if (bytesWritten > 0L) {
+                    onProgress(entryName, bytesWritten, false)
                 }
             }
             tos.closeArchiveEntry()
-            onProgress(entryName, file.length())
+            onProgress(entryName, 0L, true)
         }
     }
     

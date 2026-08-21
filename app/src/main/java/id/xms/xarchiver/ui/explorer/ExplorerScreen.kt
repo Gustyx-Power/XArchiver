@@ -38,6 +38,10 @@ import id.xms.xarchiver.core.*
 import id.xms.xarchiver.core.archive.ArchiveManager
 import id.xms.xarchiver.core.archive.ExtractionProgress
 import id.xms.xarchiver.core.archive.ExtractionState
+import id.xms.xarchiver.core.archive.ArchiveCreator
+import id.xms.xarchiver.core.archive.ArchiveCreationProgress
+import id.xms.xarchiver.core.archive.ArchiveFormat
+import id.xms.xarchiver.core.archive.CompressionLevel
 import id.xms.xarchiver.core.install.ApkInstaller
 import id.xms.xarchiver.ui.archive.CreateArchiveDialog
 import id.xms.xarchiver.ui.components.PathNavigationBar
@@ -74,9 +78,12 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showCreateArchiveDialog by remember { mutableStateOf(false) }
     var showQuickExtractDialog by remember { mutableStateOf<FileItem?>(null) }
     var showCustomPathDialogFor by remember { mutableStateOf<FileItem?>(null) }
+    var pendingFileOperation by remember { mutableStateOf<Pair<String, List<String>>?>(null) }
     val downloadsPath = remember { android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath }
     var customPath by remember { mutableStateOf(downloadsPath) }
     var extractionProgress by remember { mutableStateOf<ExtractionProgress?>(null) }
+    var archiveCreationProgress by remember { mutableStateOf<ArchiveCreationProgress?>(null) }
+    var fileOperationProgress by remember { mutableStateOf<FileOperationProgress?>(null) }
     var multiArchiveExtractList by remember { mutableStateOf<List<String>>(emptyList()) }
     var currentExtractingIndex by remember { mutableStateOf(0) }
     
@@ -342,24 +349,16 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             icon = Icons.Default.ContentCopy,
                             label = "Copy",
                             onClick = {
-                                val count = selectionManager.selectedCount
-                                FileOperationsManager.copyToClipboard(selectionManager.selectedPaths)
+                                pendingFileOperation = Pair("COPY", selectionManager.selectedPaths.toList())
                                 selectionManager.clearSelection()
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("$count items copied to clipboard")
-                                }
                             }
                         )
                         BottomActionButton(
                             icon = Icons.Default.ContentCut,
                             label = "Cut",
                             onClick = {
-                                val count = selectionManager.selectedCount
-                                FileOperationsManager.cutToClipboard(selectionManager.selectedPaths)
+                                pendingFileOperation = Pair("CUT", selectionManager.selectedPaths.toList())
                                 selectionManager.clearSelection()
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("$count items cut to clipboard")
-                                }
                             }
                         )
                         BottomActionButton(
@@ -436,31 +435,6 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(bottom = 8.dp)
                         ) {
-                            if (hasClipboard) {
-                                ExtendedFloatingActionButton(
-                                    onClick = {
-                                        showFabMenu = false
-                                        val isCut = clipboardOp == ClipboardOperation.CUT
-                                        val itemCount = clipboardCount
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("Pasting $itemCount items...")
-                                            FileOperationsManager.pasteFiles(path).collect { progress ->
-                                                // Progress is emitted during paste operation
-                                            }
-                                            refreshFiles()
-                                            val action = if (isCut) "moved" else "copied"
-                                            snackbarHostState.showSnackbar("$itemCount items $action successfully")
-                                            // Clear clipboard after paste COPY operation
-                                            if (!isCut) {
-                                                FileOperationsManager.clearClipboard()
-                                            }
-                                        }
-                                    },
-                                    icon = { Icon(Icons.Default.ContentPaste, null) },
-                                    text = { Text("Paste ($clipboardCount)") },
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                                )
-                            }
                             ExtendedFloatingActionButton(
                                 onClick = {
                                     showFabMenu = false
@@ -725,17 +699,40 @@ fun ExplorerScreen(path: String, navController: NavController) {
         // Create Archive Dialog
         if (showCreateArchiveDialog) {
             CreateArchiveDialog(
-                selectedFiles = selectionManager.selectedPaths,
-                outputDirectory = path,
+                selectedFilesCount = selectionManager.selectedCount,
                 onDismiss = { 
                     showCreateArchiveDialog = false
                 },
-                onComplete = { archivePath ->
+                onCreate = { archiveName, format, compressionLevel ->
                     showCreateArchiveDialog = false
-                    selectionManager.clearSelection()
-                    refreshFiles()
+                    
+                    val selectedFiles = selectionManager.selectedPaths.toList()
+                    val extension = format.extension
+                    val fullPath = "$path/$archiveName.$extension"
+                    
                     scope.launch {
-                        snackbarHostState.showSnackbar("Archive created: ${java.io.File(archivePath).name}")
+                        try {
+                            archiveCreationProgress = ArchiveCreationProgress("Preparing...", 0, 0, selectedFiles.size, 0L, 0L)
+                            ArchiveCreator.createArchive(
+                                outputPath = fullPath,
+                                files = selectedFiles,
+                                basePath = if (selectedFiles.size == 1) {
+                                    java.io.File(selectedFiles.first()).parentFile?.absolutePath ?: ""
+                                } else {
+                                    findCommonParent(selectedFiles)
+                                },
+                                compressionLevel = compressionLevel
+                            ).collect { prog ->
+                                archiveCreationProgress = prog
+                            }
+                            archiveCreationProgress = null
+                            selectionManager.clearSelection()
+                            refreshFiles()
+                            snackbarHostState.showSnackbar("Archive created successfully")
+                        } catch (e: Exception) {
+                            archiveCreationProgress = null
+                            snackbarHostState.showSnackbar("Error: ${e.message}")
+                        }
                     }
                 }
             )
@@ -876,57 +873,62 @@ fun ExplorerScreen(path: String, navController: NavController) {
         
         // Custom Path Dialog
         showCustomPathDialogFor?.let { file ->
-            AlertDialog(
+            id.xms.xarchiver.ui.components.FolderPickerDialog(
+                title = "Extract to...",
                 onDismissRequest = { showCustomPathDialogFor = null },
-                title = { Text("Custom Extract Path") },
-                text = {
-                    Column {
-                        Text(
-                            text = "Enter the path where you want to extract the archive:",
-                            style = MaterialTheme.typography.bodyMedium
+                onFolderSelected = { selectedPath ->
+                    showCustomPathDialogFor = null
+                    scope.launch {
+                        extractionProgress = ExtractionProgress(
+                            0, "Starting...", ExtractionState.STARTED
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedTextField(
-                            value = customPath,
-                            onValueChange = { customPath = it },
-                            label = { Text("Path") },
-                            placeholder = { Text(downloadsPath) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showCustomPathDialogFor = null
-                            scope.launch {
-                                extractionProgress = ExtractionProgress(
-                                    0, "Starting...", ExtractionState.STARTED
-                                )
-                                val targetFolder = customPath + "/" + java.io.File(file.path).nameWithoutExtension
-                                archiveManager.extractArchive(
-                                    file.path, 
-                                    targetFolder
-                                ).collect { progress ->
-                                    extractionProgress = progress
-                                    if (progress.state == ExtractionState.COMPLETED) {
-                                        extractionProgress = null
-                                        refreshFiles()
-                                        snackbarHostState.showSnackbar("Extracted to $targetFolder")
-                                    } else if (progress.state == ExtractionState.ERROR) {
-                                        extractionProgress = null
-                                        snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
-                                    }
-                                }
+                        val targetFolder = selectedPath + "/" + java.io.File(file.path).nameWithoutExtension
+                        archiveManager.extractArchive(
+                            file.path, 
+                            targetFolder
+                        ).collect { progress ->
+                            extractionProgress = progress
+                            if (progress.state == ExtractionState.COMPLETED) {
+                                extractionProgress = null
+                                refreshFiles()
+                                snackbarHostState.showSnackbar("Extracted to $targetFolder")
+                            } else if (progress.state == ExtractionState.ERROR) {
+                                extractionProgress = null
+                                snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
                             }
                         }
-                    ) {
-                        Text("Extract")
                     }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showCustomPathDialogFor = null }) {
-                        Text("Cancel")
+                }
+            )
+        }
+
+        // Copy/Cut Dialog
+        pendingFileOperation?.let { operation ->
+            id.xms.xarchiver.ui.components.FolderPickerDialog(
+                title = if (operation.first == "COPY") "Copy to..." else "Move to...",
+                onDismissRequest = { pendingFileOperation = null },
+                onFolderSelected = { selectedPath ->
+                    val isCut = operation.first == "CUT"
+                    val paths = operation.second
+                    val itemCount = paths.size
+                    pendingFileOperation = null
+                    scope.launch {
+                        if (isCut) {
+                            FileOperationsManager.cutToClipboard(paths)
+                        } else {
+                            FileOperationsManager.copyToClipboard(paths)
+                        }
+                        
+                        fileOperationProgress = FileOperationProgress("Preparing...", 0, 0, 0, 0, itemCount)
+                        FileOperationsManager.pasteFiles(selectedPath).collect { progress ->
+                            fileOperationProgress = progress
+                        }
+                        fileOperationProgress = null
+                        
+                        refreshFiles()
+                        val action = if (isCut) "moved" else "copied"
+                        snackbarHostState.showSnackbar("$itemCount items $action successfully")
+                        FileOperationsManager.clearClipboard()
                     }
                 }
             )
@@ -955,6 +957,68 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         )
                         Text(
                             "${progress.percentage}% complete",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                },
+                confirmButton = {}
+            )
+        }
+
+        // File Operation Progress Overlay
+        fileOperationProgress?.let { progress ->
+            AlertDialog(
+                onDismissRequest = { /* Can't dismiss during operation */ },
+                title = { Text(if (fileOperationProgress?.totalFiles == 1) "Processing..." else "Moving/Copying...") },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { progress.percentage / 100f }
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text("${progress.percentage}%", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            progress.currentFile,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${progress.filesProcessed} / ${progress.totalFiles} files",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                },
+                confirmButton = {}
+            )
+        }
+
+        // Archive Creation Progress Overlay
+        archiveCreationProgress?.let { progress ->
+            AlertDialog(
+                onDismissRequest = { /* Can't dismiss during compression */ },
+                title = { Text("Compressing...") },
+                text = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(
+                            progress = { progress.percentage / 100f }
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text("${progress.percentage}%", style = MaterialTheme.typography.headlineMedium)
+                        Text(
+                            progress.currentFile,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${progress.filesProcessed} / ${progress.totalFiles} files",
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
@@ -1467,4 +1531,24 @@ private fun ApkInstallDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
+}
+
+private fun findCommonParent(paths: List<String>): String {
+    if (paths.isEmpty()) return ""
+    if (paths.size == 1) return java.io.File(paths.first()).parentFile?.absolutePath ?: ""
+    
+    val splitPaths = paths.map { it.split("/", "\\") }
+    val minLength = splitPaths.minOf { it.size }
+    
+    val commonParts = mutableListOf<String>()
+    for (i in 0 until minLength) {
+        val part = splitPaths[0][i]
+        if (splitPaths.all { it[i] == part }) {
+            commonParts.add(part)
+        } else {
+            break
+        }
+    }
+    
+    return commonParts.joinToString("/")
 }
