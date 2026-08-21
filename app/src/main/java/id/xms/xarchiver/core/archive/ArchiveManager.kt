@@ -28,7 +28,9 @@ data class ExtractionProgress(
     val percentage: Int,
     val currentFile: String,
     val state: ExtractionState,
-    val error: String? = null
+    val error: String? = null,
+    val bytesProcessed: Long = 0,
+    val totalBytes: Long = 0
 )
 
 class ArchiveManager(private val context: Context) {
@@ -88,16 +90,15 @@ class ArchiveManager(private val context: Context) {
         onProgress: (Int, String) -> Unit = { _, _ -> }
     ): Flow<ExtractionProgress> = flow {
         try {
-            emit(ExtractionProgress(0, "Starting extraction...", ExtractionState.STARTED))
-            
             val file = File(archiveFilePath)
+            val archiveSize = file.length()
+            emit(ExtractionProgress(0, "Starting extraction...", ExtractionState.STARTED, null, 0L, archiveSize))
+            
             val outputDirectory = File(outputDir)
             
             if (!outputDirectory.exists()) {
                 outputDirectory.mkdirs()
             }
-            
-            val archiveSize = file.length()
             var processedBytes = 0L
             var extractedCount = 0
             
@@ -125,7 +126,10 @@ class ArchiveManager(private val context: Context) {
                         emit(ExtractionProgress(
                             percentage,
                             entry.name,
-                            ExtractionState.EXTRACTING
+                            ExtractionState.EXTRACTING,
+                            null,
+                            processedBytes,
+                            archiveSize
                         ))
                         
                         // Extract file and track bytes
@@ -148,7 +152,10 @@ class ArchiveManager(private val context: Context) {
                                     emit(ExtractionProgress(
                                         currentPercentage,
                                         entry.name,
-                                        ExtractionState.EXTRACTING
+                                        ExtractionState.EXTRACTING,
+                                        null,
+                                        processedBytes,
+                                        archiveSize
                                     ))
                                     onProgress(currentPercentage, entry.name)
                                 }
@@ -159,7 +166,7 @@ class ArchiveManager(private val context: Context) {
                     entry = archiveStream.nextEntry
                 }
                 
-                emit(ExtractionProgress(100, "Extraction completed", ExtractionState.COMPLETED))
+                emit(ExtractionProgress(100, "Extraction completed", ExtractionState.COMPLETED, null, archiveSize, archiveSize))
             }
         } catch (e: Exception) {
             emit(ExtractionProgress(

@@ -956,6 +956,10 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
+                            "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        Text(
                             "${progress.percentage}% complete",
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -987,6 +991,10 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
+                            "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                        Text(
                             "${progress.filesProcessed} / ${progress.totalFiles} files",
                             style = MaterialTheme.typography.labelMedium
                         )
@@ -1016,6 +1024,10 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             style = MaterialTheme.typography.bodySmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
+                            style = MaterialTheme.typography.labelSmall
                         )
                         Text(
                             "${progress.filesProcessed} / ${progress.totalFiles} files",
@@ -1551,4 +1563,11 @@ private fun findCommonParent(paths: List<String>): String {
     }
     
     return commonParts.joinToString("/")
+}
+
+private fun formatFileSize(size: Long): String {
+    if (size <= 0) return "0 B"
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
+    val digitGroups = (Math.log10(size.toDouble()) / Math.log10(1024.0)).toInt()
+    return String.format(java.util.Locale.US, "%.1f %s", size / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
 }
