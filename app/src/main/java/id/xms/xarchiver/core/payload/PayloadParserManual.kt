@@ -326,15 +326,19 @@ class PayloadParserManual {
                 android.util.Log.d("PayloadParserManual", "  Calculated size from extents: $uncompressedSize")
             }
             
+            val updatedOperations = operations.map { op ->
+                op.copy(dataOffset = dataOffset + op.dataOffset)
+            }
+            
             // Calculate compressed size and detect compression
             var compressedSize = 0L
             var compressionType = CompressionType.NONE
             var firstOffset = 0L
             
-            operations.forEachIndexed { index, op ->
+            updatedOperations.forEachIndexed { index, op ->
                 compressedSize += op.dataLength
                 if (index == 0) {
-                    firstOffset = dataOffset + op.dataOffset
+                    firstOffset = op.dataOffset
                 }
                 
                 when (op.type) {
@@ -383,7 +387,7 @@ class PayloadParserManual {
                 hash = hash,
                 compressionType = compressionType,
                 offset = firstOffset,
-                operations = operations
+                operations = updatedOperations
             )
         } catch (e: Exception) {
             android.util.Log.e("PayloadParserManual", "Error parsing partition", e)

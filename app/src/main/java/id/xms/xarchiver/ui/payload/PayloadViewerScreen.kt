@@ -130,6 +130,7 @@ fun PayloadViewerScreen(
     
     // Extract single partition dialog
     if (showExtractDialog && selectedPartition != null) {
+        val parentFolderName = viewModel.payloadInfo?.filePath?.let { java.io.File(it).parentFile?.name } ?: "UnknownROM"
         AlertDialog(
             onDismissRequest = { 
                 if (!viewModel.isExtracting) {
@@ -146,7 +147,7 @@ fun PayloadViewerScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        text = "Output: Downloads/XArchiver/extracted/",
+                        text = "Output: XArchiver-payload/extracted-payload/$parentFolderName/",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -175,6 +176,7 @@ fun PayloadViewerScreen(
     
     // Extract all partitions dialog
     if (showExtractAllDialog) {
+        val parentFolderName = viewModel.payloadInfo?.filePath?.let { java.io.File(it).parentFile?.name } ?: "UnknownROM"
         AlertDialog(
             onDismissRequest = { 
                 if (!viewModel.isExtracting) {
@@ -192,7 +194,7 @@ fun PayloadViewerScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        text = "Output: Downloads/XArchiver/extracted/",
+                        text = "Output: XArchiver-payload/extracted-payload/$parentFolderName/",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

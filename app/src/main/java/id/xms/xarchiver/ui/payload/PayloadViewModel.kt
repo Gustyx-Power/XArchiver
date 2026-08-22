@@ -101,9 +101,10 @@ class PayloadViewModel(private val context: Context) : ViewModel() {
                 val outputFile = if (outputPath != null) {
                     File(outputPath)
                 } else {
-                    // Default to Downloads/XArchiver/extracted/
-                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    val extractDir = File(downloadsDir, "XArchiver/extracted")
+                    // Default to XArchiver-payload/extracted-payload/<rom-folder-name>/
+                    val rootDir = Environment.getExternalStorageDirectory()
+                    val parentFolderName = payloadFile.parentFile?.name ?: "UnknownROM"
+                    val extractDir = File(rootDir, "XArchiver-payload/extracted-payload/$parentFolderName")
                     extractDir.mkdirs()
                     File(extractDir, "${partition.name}.img")
                 }
@@ -148,8 +149,9 @@ class PayloadViewModel(private val context: Context) : ViewModel() {
                 val outputDir = if (outputPath != null) {
                     File(outputPath)
                 } else {
-                    val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    val extractDir = File(downloadsDir, "XArchiver/extracted")
+                    val rootDir = Environment.getExternalStorageDirectory()
+                    val parentFolderName = payloadFile.parentFile?.name ?: "UnknownROM"
+                    val extractDir = File(rootDir, "XArchiver-payload/extracted-payload/$parentFolderName")
                     extractDir.mkdirs()
                     extractDir
                 }

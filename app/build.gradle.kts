@@ -72,6 +72,12 @@ android {
     packaging {
         resources.excludes.add("META-INF/DEPENDENCIES")
     }
+
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("../native/jniLibs")
+        }
+    }
 }
 
 dependencies {
