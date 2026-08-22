@@ -29,3 +29,4 @@ local.properties
 .idea/misc.xml
 native/payload-parser/target
 xarc-release-key.jks
+xarchiver_public_key.pem
