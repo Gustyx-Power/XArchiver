@@ -40,7 +40,7 @@ fun TextEditorScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = id.xms.xarchiver.ui.components.LocalNotificationHost.current
     
     var content by remember { mutableStateOf("") }
     var originalContent by remember { mutableStateOf("") }
@@ -249,8 +249,7 @@ fun TextEditorScreen(
                     }
                 }
             }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { padding ->
         if (isLoading) {
             Box(

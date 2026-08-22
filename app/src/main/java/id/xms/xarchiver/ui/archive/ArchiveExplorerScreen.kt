@@ -27,6 +27,8 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
+import id.xms.xarchiver.ui.components.LocalNotificationHost
+import id.xms.xarchiver.ui.components.NotificationType
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,8 +40,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -76,7 +76,7 @@ fun ArchiveExplorerScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val notificationHostState = LocalNotificationHost.current
     var showExtractionDialog by remember { mutableStateOf(false) }
     var showCustomPathDialog by remember { mutableStateOf(false) }
     var customPath by remember { mutableStateOf("") }
@@ -198,7 +198,6 @@ fun ArchiveExplorerScreen(
                 }
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -288,13 +287,13 @@ fun ArchiveExplorerScreen(
                                                             }
                                                         }
                                                     } else {
-                                                        snackbarHostState.showSnackbar("Failed to extract ${entry.name}")
+                                                    notificationHostState.showNotification("Failed to extract ${entry.name}", NotificationType.ERROR)
                                                     }
                                                 } else {
-                                                    snackbarHostState.showSnackbar("Failed to extract ${entry.name}")
+                                                    notificationHostState.showNotification("Failed to extract ${entry.name}", NotificationType.ERROR)
                                                 }
                                             } catch (e: Exception) {
-                                                snackbarHostState.showSnackbar("Error: ${e.message}")
+                                                notificationHostState.showNotification("Error: ${e.message}", NotificationType.ERROR)
                                             }
                                         }
                                     }
@@ -338,7 +337,7 @@ fun ArchiveExplorerScreen(
                                             viewModel = viewModel,
                                             archivePath = archivePath,
                                             outputDir = outputDir,
-                                            snackbarHostState = snackbarHostState,
+                                            notificationHostState = notificationHostState,
                                             onProgress = { extractionProgress = it }
                                         )
                                     }
@@ -459,7 +458,7 @@ fun ArchiveExplorerScreen(
                                     viewModel = viewModel,
                                     archivePath = archivePath,
                                     outputDir = outputDir,
-                                    snackbarHostState = snackbarHostState,
+                                    notificationHostState = notificationHostState,
                                     onProgress = { extractionProgress = it }
                                 )
                             }
@@ -534,7 +533,7 @@ private suspend fun extractArchive(
     viewModel: ArchiveViewModel,
     archivePath: String,
     outputDir: String,
-    snackbarHostState: SnackbarHostState,
+    notificationHostState: id.xms.xarchiver.ui.components.NotificationHostState,
     onProgress: (ExtractionProgress?) -> Unit
 ) {
     try {
@@ -550,11 +549,11 @@ private suspend fun extractArchive(
             when (progress.state) {
                 ExtractionState.COMPLETED -> {
                     onProgress(null) // Clear progress
-                    snackbarHostState.showSnackbar("Extraction completed! Files saved to: $outputDir")
+                    notificationHostState.showNotification("Extraction completed! Files saved to: $outputDir", NotificationType.SUCCESS)
                 }
                 ExtractionState.ERROR -> {
                     onProgress(null) // Clear progress
-                    snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
+                    notificationHostState.showNotification("Extraction failed: ${progress.currentFile}", NotificationType.ERROR)
                 }
                 else -> {
                     // Still extracting, progress continues
@@ -563,7 +562,7 @@ private suspend fun extractArchive(
         }
     } catch (e: Exception) {
         onProgress(null) // Clear progress
-        snackbarHostState.showSnackbar("Extraction failed: ${e.message}")
+        notificationHostState.showNotification("Extraction failed: ${e.message}", NotificationType.ERROR)
     }
 }
 

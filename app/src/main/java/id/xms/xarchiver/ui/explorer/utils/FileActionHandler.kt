@@ -2,7 +2,7 @@ package id.xms.xarchiver.ui.explorer.utils
 
 import android.content.Context
 import android.net.Uri
-import androidx.compose.material3.SnackbarHostState
+import id.xms.xarchiver.ui.components.NotificationHostState
 import androidx.navigation.NavController
 import id.xms.xarchiver.core.FileItem
 import id.xms.xarchiver.core.ShareUtils
@@ -19,7 +19,7 @@ object FileActionHandler {
         navController: NavController,
         archiveManager: ArchiveManager,
         scope: CoroutineScope,
-        snackbarHostState: SnackbarHostState,
+        notificationHostState: NotificationHostState,
         onApkClick: (File) -> Unit
     ) {
         val ext = file.name.substringAfterLast('.', "").lowercase()
@@ -51,7 +51,7 @@ object FileActionHandler {
                 navController.navigate("video_player/${Uri.encode(file.path)}")
             }
             FileTypeDetector.isTextExtension(ext) -> {
-                handleTextFile(actualFile, file.path, navController, scope, snackbarHostState)
+                handleTextFile(actualFile, file.path, navController, scope, notificationHostState)
             }
             FileTypeDetector.isDocumentExtension(ext) -> {
                 ShareUtils.openFile(context, file.path)
@@ -60,7 +60,7 @@ object FileActionHandler {
                 handleUnknownFile(
                     actualFile, file.path, ext, 
                     archiveManager, navController, 
-                    scope, snackbarHostState
+                    scope, notificationHostState
                 )
             }
         }
@@ -71,12 +71,12 @@ object FileActionHandler {
         filePath: String,
         navController: NavController,
         scope: CoroutineScope,
-        snackbarHostState: SnackbarHostState
+        notificationHostState: NotificationHostState
     ) {
         val maxSize = 10 * 1024 * 1024 // 10MB
         if (file.length() > maxSize) {
             scope.launch {
-                snackbarHostState.showSnackbar(
+                notificationHostState.showNotification(
                     "File too large to open as text (${file.length() / (1024 * 1024)}MB). Maximum: 10MB"
                 )
             }
@@ -92,7 +92,7 @@ object FileActionHandler {
         archiveManager: ArchiveManager,
         navController: NavController,
         scope: CoroutineScope,
-        snackbarHostState: SnackbarHostState
+        notificationHostState: NotificationHostState
     ) {
         scope.launch {
             if (archiveManager.isArchiveFile(filePath)) {
@@ -100,10 +100,10 @@ object FileActionHandler {
             } else {
                 when {
                     FileTypeDetector.isBinaryExtension(ext) -> {
-                        snackbarHostState.showSnackbar("Cannot open binary file (.${ext}) as text")
+                        notificationHostState.showNotification("Cannot open binary file (.${ext}) as text")
                     }
                     file.length() > 10 * 1024 * 1024 -> {
-                        snackbarHostState.showSnackbar(
+                        notificationHostState.showNotification(
                             "File too large to open as text (${file.length() / (1024 * 1024)}MB). Maximum: 10MB"
                         )
                     }

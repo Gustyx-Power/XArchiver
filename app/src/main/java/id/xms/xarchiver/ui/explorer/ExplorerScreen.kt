@@ -61,7 +61,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
     val archiveManager = remember { ArchiveManager(context) }
     val selectionManager = remember { SelectionManager() }
     val bookmarksManager = remember { BookmarksManager(context) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = id.xms.xarchiver.ui.components.LocalNotificationHost.current
     
     var files by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -468,7 +468,6 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.Transparent
     ) { padding ->
         LazyColumn(
@@ -1288,7 +1287,7 @@ private fun handleFileClick(
     navController: NavController,
     archiveManager: ArchiveManager,
     scope: kotlinx.coroutines.CoroutineScope,
-    snackbarHostState: androidx.compose.material3.SnackbarHostState,
+    snackbarHostState: id.xms.xarchiver.ui.components.NotificationHostState,
     onApkClick: (File) -> Unit
 ) {
     // Use FileActionHandler for consistent file handling
@@ -1298,7 +1297,7 @@ private fun handleFileClick(
         navController = navController,
         archiveManager = archiveManager,
         scope = scope,
-        snackbarHostState = snackbarHostState,
+        notificationHostState = snackbarHostState,
         onApkClick = onApkClick
     )
 }

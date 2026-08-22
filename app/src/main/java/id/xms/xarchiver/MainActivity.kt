@@ -32,6 +32,15 @@ import id.xms.xarchiver.ui.SetupScreen
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import id.xms.xarchiver.ui.components.DynamicIslandNotificationHost
+import id.xms.xarchiver.ui.components.LocalNotificationHost
+import id.xms.xarchiver.ui.components.NotificationHostState
 
 
 class MainActivity : ComponentActivity() {
@@ -48,7 +57,16 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             XArchiverTheme {
-                AppContent()
+                val notificationHostState = remember { NotificationHostState() }
+                CompositionLocalProvider(LocalNotificationHost provides notificationHostState) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AppContent()
+                        DynamicIslandNotificationHost(
+                            hostState = notificationHostState,
+                            modifier = Modifier.align(Alignment.TopCenter)
+                        )
+                    }
+                }
             }
         }
     }

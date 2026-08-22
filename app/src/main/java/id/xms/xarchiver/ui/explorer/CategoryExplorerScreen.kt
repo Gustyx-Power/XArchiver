@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import id.xms.xarchiver.ui.components.LocalNotificationHost
+import id.xms.xarchiver.ui.components.NotificationType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +57,7 @@ fun CategoryExplorerScreen(
     
     val scope = rememberCoroutineScope()
     val archiveManager = remember { id.xms.xarchiver.core.archive.ArchiveManager(context) }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val notificationHostState = LocalNotificationHost.current
     var pendingApk by remember { mutableStateOf<java.io.File?>(null) }
     
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
@@ -70,7 +72,6 @@ fun CategoryExplorerScreen(
     }
     
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -170,7 +171,7 @@ fun CategoryExplorerScreen(
                                     navController = navController,
                                     archiveManager = archiveManager,
                                     scope = scope,
-                                    snackbarHostState = snackbarHostState,
+                                    notificationHostState = notificationHostState,
                                     onApkClick = { pendingApk = it }
                                 )
                             }
