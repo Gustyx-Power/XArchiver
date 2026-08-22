@@ -45,10 +45,13 @@ class NotificationHostState {
         durationMs: Long = 3000L
     ) {
         mutex.withLock {
-            currentNotification = NotificationData(message, type, durationMs)
-            delay(durationMs)
-            if (currentNotification?.message == message) {
-                currentNotification = null
+            try {
+                currentNotification = NotificationData(message, type, durationMs)
+                delay(durationMs)
+            } finally {
+                if (currentNotification?.message == message) {
+                    currentNotification = null
+                }
             }
         }
     }
