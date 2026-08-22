@@ -93,7 +93,13 @@ fun TextEditorScreen(
                     )
                 }
                 
-                file.readText()
+                if (file.canRead()) {
+                    file.readText()
+                } else if (id.xms.xarchiver.core.root.RootService.isGranted() || id.xms.xarchiver.core.root.ShizukuService.isGranted()) {
+                    id.xms.xarchiver.core.root.RootFileService.readText(filePath) ?: throw Exception("Failed to read file with root access")
+                } else {
+                    file.readText() // will likely throw access denied
+                }
             }
             content = text
             originalContent = text
@@ -126,7 +132,14 @@ fun TextEditorScreen(
             isSaving = true
             try {
                 withContext(Dispatchers.IO) {
-                    file.writeText(content)
+                    if (file.canWrite()) {
+                        file.writeText(content)
+                    } else if (id.xms.xarchiver.core.root.RootService.isGranted() || id.xms.xarchiver.core.root.ShizukuService.isGranted()) {
+                        val success = id.xms.xarchiver.core.root.RootFileService.writeText(filePath, content)
+                        if (!success) throw Exception("Failed to save file with root access")
+                    } else {
+                        file.writeText(content) // will likely throw access denied
+                    }
                 }
                 originalContent = content
                 hasChanges = false
