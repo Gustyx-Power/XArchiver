@@ -96,10 +96,46 @@ object FileOperationsManager {
         }
         
         val destination = File(destinationDir)
-        if (!destination.exists()) {
+        if (!destination.exists() && destination.parentFile?.canWrite() == true) {
             destination.mkdirs()
         }
         
+        val isPrivileged = id.xms.xarchiver.core.root.RootService.isGranted() || id.xms.xarchiver.core.root.ShizukuService.isGranted()
+        val isCut = clipboardOperation == ClipboardOperation.CUT
+        
+        // Use RootFileService if privileged access is enabled
+        if (isPrivileged) {
+            val totalFiles = clipboardFiles.size
+            emit(FileOperationProgress(
+                currentFile = "Processing...",
+                percentage = 50,
+                bytesProcessed = 0,
+                totalBytes = 0,
+                filesProcessed = 0,
+                totalFiles = totalFiles
+            ))
+            
+            val success = if (isCut) {
+                id.xms.xarchiver.core.root.RootFileService.move(clipboardFiles, destinationDir)
+            } else {
+                id.xms.xarchiver.core.root.RootFileService.copy(clipboardFiles, destinationDir)
+            }
+            
+            if (success) {
+                emit(FileOperationProgress(
+                    currentFile = "Done",
+                    percentage = 100,
+                    bytesProcessed = 0,
+                    totalBytes = 0,
+                    filesProcessed = totalFiles,
+                    totalFiles = totalFiles
+                ))
+                if (isCut) clearClipboard()
+            }
+            return@flow
+        }
+        
+        // Standard java.io.File implementation
         val totalFiles = countTotalFiles(clipboardFiles)
         var filesProcessed = 0
         val totalBytes = calculateTotalSize(clipboardFiles)
@@ -142,7 +178,7 @@ object FileOperationsManager {
         }
         
         // If this was a CUT operation, delete the source files
-        if (clipboardOperation == ClipboardOperation.CUT) {
+        if (isCut) {
             for (sourcePath in clipboardFiles) {
                 val sourceFile = File(sourcePath)
                 deleteRecursively(sourceFile)
@@ -158,26 +194,11 @@ object FileOperationsManager {
         path: String,
         newName: String
     ): FileOperationResult = withContext(Dispatchers.IO) {
-        try {
-            val file = File(path)
-            if (!file.exists()) {
-                return@withContext FileOperationResult.Error("File not found")
-            }
-            
-            val newFile = File(file.parentFile, newName)
-            
-            if (newFile.exists()) {
-                return@withContext FileOperationResult.Error("A file with that name already exists")
-            }
-            
-            val success = file.renameTo(newFile)
-            if (success) {
-                FileOperationResult.Success("Renamed successfully", 1)
-            } else {
-                FileOperationResult.Error("Failed to rename file")
-            }
-        } catch (e: Exception) {
-            FileOperationResult.Error("Error: ${e.message}", e)
+        val success = FileService.renameFile(path, newName)
+        if (success) {
+            FileOperationResult.Success("Renamed successfully", 1)
+        } else {
+            FileOperationResult.Error("Failed to rename file")
         }
     }
     
@@ -187,28 +208,21 @@ object FileOperationsManager {
     suspend fun deleteFiles(
         paths: List<String>
     ): FileOperationResult = withContext(Dispatchers.IO) {
-        try {
-            var deletedCount = 0
-            var failedCount = 0
-            
-            for (path in paths) {
-                val file = File(path)
-                if (file.exists()) {
-                    if (deleteRecursively(file)) {
-                        deletedCount++
-                    } else {
-                        failedCount++
-                    }
-                }
-            }
-            
-            if (failedCount > 0) {
-                FileOperationResult.Error("Deleted $deletedCount files, $failedCount failed")
+        var deletedCount = 0
+        var failedCount = 0
+        
+        for (path in paths) {
+            if (FileService.deleteFile(path)) {
+                deletedCount++
             } else {
-                FileOperationResult.Success("Deleted $deletedCount items", deletedCount)
+                failedCount++
             }
-        } catch (e: Exception) {
-            FileOperationResult.Error("Error: ${e.message}", e)
+        }
+        
+        if (failedCount > 0) {
+            FileOperationResult.Error("Deleted $deletedCount files, $failedCount failed")
+        } else {
+            FileOperationResult.Success("Deleted $deletedCount items", deletedCount)
         }
     }
     
@@ -219,21 +233,25 @@ object FileOperationsManager {
         parentPath: String,
         folderName: String
     ): FileOperationResult = withContext(Dispatchers.IO) {
-        try {
-            val newFolder = File(parentPath, folderName)
-            
-            if (newFolder.exists()) {
-                return@withContext FileOperationResult.Error("Folder already exists")
-            }
-            
-            val success = newFolder.mkdirs()
-            if (success) {
-                FileOperationResult.Success("Folder created", 1)
-            } else {
-                FileOperationResult.Error("Failed to create folder")
-            }
-        } catch (e: Exception) {
-            FileOperationResult.Error("Error: ${e.message}", e)
+        val newFolder = File(parentPath, folderName)
+        
+        val isPrivileged = id.xms.xarchiver.core.root.RootService.isGranted() || id.xms.xarchiver.core.root.ShizukuService.isGranted()
+        
+        if (newFolder.exists()) {
+            return@withContext FileOperationResult.Error("Folder already exists")
+        }
+        
+        var success = false
+        if (File(parentPath).canWrite()) {
+            success = newFolder.mkdirs()
+        } else if (isPrivileged) {
+            success = id.xms.xarchiver.core.root.RootFileService.createFolder(parentPath, folderName)
+        }
+        
+        if (success) {
+            FileOperationResult.Success("Folder created", 1)
+        } else {
+            FileOperationResult.Error("Failed to create folder")
         }
     }
     
@@ -244,21 +262,25 @@ object FileOperationsManager {
         parentPath: String,
         fileName: String
     ): FileOperationResult = withContext(Dispatchers.IO) {
-        try {
-            val newFile = File(parentPath, fileName)
-            
-            if (newFile.exists()) {
-                return@withContext FileOperationResult.Error("File already exists")
-            }
-            
-            val success = newFile.createNewFile()
-            if (success) {
-                FileOperationResult.Success("File created", 1)
-            } else {
-                FileOperationResult.Error("Failed to create file")
-            }
-        } catch (e: Exception) {
-            FileOperationResult.Error("Error: ${e.message}", e)
+        val newFile = File(parentPath, fileName)
+        
+        val isPrivileged = id.xms.xarchiver.core.root.RootService.isGranted() || id.xms.xarchiver.core.root.ShizukuService.isGranted()
+        
+        if (newFile.exists()) {
+            return@withContext FileOperationResult.Error("File already exists")
+        }
+        
+        var success = false
+        if (File(parentPath).canWrite()) {
+            success = newFile.createNewFile()
+        } else if (isPrivileged) {
+            success = id.xms.xarchiver.core.root.RootFileService.createFile(parentPath, fileName)
+        }
+        
+        if (success) {
+            FileOperationResult.Success("File created", 1)
+        } else {
+            FileOperationResult.Error("Failed to create file")
         }
     }
     

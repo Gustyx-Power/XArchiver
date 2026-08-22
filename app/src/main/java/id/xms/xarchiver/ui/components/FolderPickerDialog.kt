@@ -40,7 +40,7 @@ fun FolderPickerDialog(
     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
     var currentPath by remember { mutableStateOf<String?>(null) }
     var partitions by remember { mutableStateOf<List<StorageInfo>>(emptyList()) }
-    var folders by remember { mutableStateOf<List<File>>(emptyList()) }
+    var folders by remember { mutableStateOf<List<id.xms.xarchiver.core.FileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
 
     // Load partitions initially
@@ -60,13 +60,8 @@ fun FolderPickerDialog(
             isLoading = true
             withContext(Dispatchers.IO) {
                 try {
-                    val dir = File(currentPath!!)
-                    val children = dir.listFiles()
-                    if (children != null) {
-                        folders = children.filter { it.isDirectory && !it.isHidden }.sortedBy { it.name.lowercase() }
-                    } else {
-                        folders = emptyList()
-                    }
+                    val allItems = id.xms.xarchiver.core.FileService.listDirectory(currentPath!!)
+                    folders = allItems.filter { it.isDirectory && !it.name.startsWith(".") }.sortedBy { it.name.lowercase() }
                 } catch (e: Exception) {
                     folders = emptyList()
                 }
@@ -155,7 +150,7 @@ fun FolderPickerDialog(
                                 items(folders) { folder ->
                                     FolderItem(
                                         folder = folder,
-                                        onClick = { currentPath = folder.absolutePath }
+                                        onClick = { currentPath = folder.path }
                                     )
                                 }
                             }
@@ -216,7 +211,7 @@ private fun StorageItem(info: StorageInfo, onClick: () -> Unit) {
 }
 
 @Composable
-private fun FolderItem(folder: File, onClick: () -> Unit) {
+private fun FolderItem(folder: id.xms.xarchiver.core.FileItem, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

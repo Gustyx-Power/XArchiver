@@ -40,7 +40,8 @@ fun PathNavigationBar(
     currentPath: String,
     onNavigate: (String) -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    minPath: String = "/"
 ) {
     val scrollState = rememberScrollState()
     var isEditMode by remember { mutableStateOf(false) }
@@ -49,7 +50,7 @@ fun PathNavigationBar(
     val focusManager = LocalFocusManager.current
     
     // Parse path into segments
-    val segments = remember(currentPath) { parsePathToSegments(currentPath) }
+    val segments = remember(currentPath, minPath) { parsePathToSegments(currentPath, minPath) }
     
     // Auto-scroll to end when path changes
     LaunchedEffect(currentPath) {
@@ -217,7 +218,7 @@ private fun PathChip(
     }
 }
 
-private fun parsePathToSegments(path: String): List<PathSegment> {
+private fun parsePathToSegments(path: String, minPath: String = "/"): List<PathSegment> {
     if (path.isBlank() || path == "/") {
         return listOf(PathSegment("Root", "/"))
     }
@@ -228,6 +229,11 @@ private fun parsePathToSegments(path: String): List<PathSegment> {
     
     parts.forEachIndexed { index, part ->
         currentPath = if (currentPath.isEmpty()) "/$part" else "$currentPath/$part"
+        
+        // Skip adding segments that are higher than minPath
+        if (minPath != "/" && !currentPath.startsWith(minPath)) {
+            return@forEachIndexed
+        }
         
         val displayName = when {
             currentPath == "/storage/emulated/0" -> "Internal Storage"

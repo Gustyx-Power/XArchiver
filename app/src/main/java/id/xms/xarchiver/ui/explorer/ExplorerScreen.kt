@@ -114,13 +114,15 @@ fun ExplorerScreen(path: String, navController: NavController) {
     
     // Refresh function
     fun refreshFiles() {
-        files = FileService.listDirectory(path)
+        scope.launch {
+            isLoading = true
+            files = FileService.listDirectory(path)
+            isLoading = false
+        }
     }
     
     LaunchedEffect(path) {
-        isLoading = true
         refreshFiles()
-        isLoading = false
         selectionManager.clearSelection()
     }
     
@@ -274,8 +276,10 @@ fun ExplorerScreen(path: String, navController: NavController) {
             } else {
                 // Normal navigation bar with search button
                 Column {
+                    val isPrivileged = id.xms.xarchiver.core.root.RootService.isGranted() || id.xms.xarchiver.core.root.ShizukuService.isGranted()
                     PathNavigationBar(
                         currentPath = path,
+                        minPath = if (isPrivileged) "/" else "/storage/emulated/0",
                         onNavigate = { newPath ->
                             navController.navigate("explorer/${Uri.encode(newPath)}") {
                                 launchSingleTop = true
