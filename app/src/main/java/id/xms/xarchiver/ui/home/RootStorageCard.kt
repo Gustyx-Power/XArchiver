@@ -27,13 +27,19 @@ fun RootStorageCard(
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
-    var granted by remember { mutableStateOf(RootService.isGranted()) }
-    var busy by remember { mutableStateOf(!RootService.isGranted()) }
+    val shizukuGranted by id.xms.xarchiver.core.root.ShizukuService.isGrantedFlow.collectAsState()
+    
+    var granted by remember(shizukuGranted) { mutableStateOf(RootService.isGranted() || shizukuGranted) }
+    var busy by remember(shizukuGranted) { mutableStateOf(!(RootService.isGranted() || shizukuGranted)) }
     
     LaunchedEffect(Unit) {
         if (!granted) {
             busy = true
+            // Try Root first, then Shizuku
             granted = RootService.ensureRoot()
+            if (!granted && id.xms.xarchiver.core.root.ShizukuService.isAvailable()) {
+                granted = id.xms.xarchiver.core.root.ShizukuService.ensureShizuku()
+            }
             busy = false
         } else {
             busy = false
@@ -41,12 +47,16 @@ fun RootStorageCard(
     }
 
     if (granted) {
+        val rootGranted = RootService.isGranted()
+        val connectionType = if (rootGranted) "Root" else "Shizuku"
+        val startPath = if (rootGranted) "/" else "/storage/emulated/0"
+        
         StorageCard(
-            info = info,
-            onClick = { onOpenRoot("/") },
+            info = info.copy(fsType = connectionType),
+            onClick = { onOpenRoot(startPath) },
             modifier = modifier,
             icon = Icons.Filled.Security,
-            title = "Root Explorer"
+            title = "Privileged Explorer"
         )
     } else {
         RootRequiredCard(
@@ -56,6 +66,9 @@ fun RootStorageCard(
                     busy = true
                     scope.launch {
                         granted = RootService.ensureRoot()
+                        if (!granted && id.xms.xarchiver.core.root.ShizukuService.isAvailable()) {
+                            granted = id.xms.xarchiver.core.root.ShizukuService.ensureShizuku()
+                        }
                         busy = false
                         if (granted) onOpenRoot("/")
                     }
@@ -161,7 +174,7 @@ private fun RootRequiredCard(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                "Root Explorer",
+                "Privileged Explorer",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 fontWeight = FontWeight.Bold
@@ -170,7 +183,7 @@ private fun RootRequiredCard(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                if (busy) "Requesting root access..." else "Tap to grant superuser access",
+                if (busy) "Requesting privileged access..." else "Tap to grant Root or Shizuku access",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
             )
