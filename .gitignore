@@ -28,3 +28,4 @@ gradle.properties
 local.properties
 .idea/misc.xml
 native/payload-parser/target
+xarc-release-key.jks
