@@ -19,7 +19,6 @@ import id.xms.xarchiver.ui.archive.ArchiveExplorerScreen
 import id.xms.xarchiver.ui.editor.TextEditorScreen
 import id.xms.xarchiver.ui.explorer.CategoryExplorerScreen
 import id.xms.xarchiver.ui.explorer.ExplorerScreen
-import id.xms.xarchiver.ui.explorer.RootExplorerScreen
 import id.xms.xarchiver.ui.home.HomeScreen
 import id.xms.xarchiver.ui.theme.XArchiverTheme
 import id.xms.xarchiver.ui.viewer.AudioPlayerScreen
@@ -116,7 +115,7 @@ private fun AppContent() {
                 val path = Uri.decode(
                     backStackEntry.arguments?.getString("encodedPath") ?: Uri.encode("/")
                 )
-                RootExplorerScreen(path = path, navController = navController)
+                ExplorerScreen(path = path, navController = navController)
             }
 
             // Archive Explorer routes
