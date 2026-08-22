@@ -44,6 +44,8 @@ fun SettingsScreen(navController: NavController) {
     val isDynamicColorEnabled by themePreferences.isDynamicColorEnabled.collectAsState(initial = true)
     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
     
+    var showShizukuGuide by remember { mutableStateOf(false) }
+    
     val scrollState = rememberScrollState()
 
     Box(
@@ -209,12 +211,12 @@ fun SettingsScreen(navController: NavController) {
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Root Access",
+                                "Privileged Access",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Show root storage in home screen",
+                                "Show privileged storage in home screen",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -225,6 +227,60 @@ fun SettingsScreen(navController: NavController) {
                             onCheckedChange = { enabled ->
                                 scope.launch { themePreferences.setRootAccessEnabled(enabled) }
                             }
+                        )
+                    }
+                }
+                
+                SettingsSectionHeader("Shizuku Integration")
+                
+                SettingsCard {
+                    val shizukuAvailable by id.xms.xarchiver.core.root.ShizukuService.isAvailableFlow.collectAsState()
+                    val shizukuGranted by id.xms.xarchiver.core.root.ShizukuService.isGrantedFlow.collectAsState()
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showShizukuGuide = true
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            color = if (shizukuGranted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                            shape = CircleShape,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Terminal, // Using Terminal as Adb is sometimes not available without androidx.compose.material:material-icons-extended
+                                    contentDescription = null,
+                                    tint = if (shizukuGranted) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        Spacer(Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Shizuku Status",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                if (shizukuGranted) "Connected & Permissions Granted"
+                                else if (shizukuAvailable) "Service available but permission denied. Tap for guide."
+                                else "Not running (Tap for setup guide)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -278,6 +334,17 @@ fun SettingsScreen(navController: NavController) {
                 
                 Spacer(Modifier.height(32.dp))
             }
+        }
+        
+        if (showShizukuGuide) {
+            ShizukuGuideDialog(
+                onDismiss = { showShizukuGuide = false },
+                onRequestPermission = {
+                    scope.launch {
+                        id.xms.xarchiver.core.root.ShizukuService.ensureShizuku()
+                    }
+                }
+            )
         }
     }
 }
@@ -376,4 +443,78 @@ private fun SettingsOption(
             )
         )
     }
+}
+
+@Composable
+fun ShizukuGuideDialog(
+    onDismiss: () -> Unit,
+    onRequestPermission: () -> Unit
+) {
+    val isAvailable by id.xms.xarchiver.core.root.ShizukuService.isAvailableFlow.collectAsState()
+    val isGranted by id.xms.xarchiver.core.root.ShizukuService.isGrantedFlow.collectAsState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Shizuku Connection Guide", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Shizuku allows XArchiver to access restricted system folders (like Android/data) without requiring root.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                
+                HorizontalDivider()
+                
+                if (isGranted) {
+                    Text(
+                        "✅ Shizuku is currently connected and granted permission. You can browse restricted folders using the Privileged Explorer on the Home screen.",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else if (isAvailable) {
+                    Text(
+                        "⚠️ Shizuku service is running, but XArchiver does not have permission.",
+                        color = MaterialTheme.colorScheme.error,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text("Tap the 'Request Permission' button below to authorize the app.")
+                } else {
+                    Text("How to start Shizuku:", fontWeight = FontWeight.Bold)
+                    
+                    Text("1. Install the Shizuku app from Google Play or GitHub.")
+                    Text("2. Open Shizuku and follow the instructions to start the service (via Wireless Debugging or ADB).")
+                    Text("3. Once the service says 'Shizuku is running', return here and tap 'Request Permission'.")
+                    Text("4. Alternatively, open the 'Privileged Explorer' on the Home screen to trigger the permission prompt.")
+                }
+            }
+        },
+        confirmButton = {
+            if (!isGranted) {
+                Button(onClick = {
+                    onRequestPermission()
+                    onDismiss()
+                }) {
+                    Text("Request Permission")
+                }
+            } else {
+                Button(onClick = onDismiss) {
+                    Text("Close")
+                }
+            }
+        },
+        dismissButton = {
+            if (!isGranted) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+            }
+        }
+    )
 }
