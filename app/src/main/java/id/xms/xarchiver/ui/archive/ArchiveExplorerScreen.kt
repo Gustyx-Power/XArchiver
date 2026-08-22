@@ -3,7 +3,11 @@ package id.xms.xarchiver.ui.archive
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import id.xms.xarchiver.core.SelectionManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,11 +24,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
 import id.xms.xarchiver.ui.components.LocalNotificationHost
@@ -64,7 +71,7 @@ import kotlinx.coroutines.launch
 import org.apache.commons.compress.archivers.ArchiveEntry
 import java.io.File
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ArchiveExplorerScreen(
     archivePath: String,
@@ -103,6 +110,14 @@ fun ArchiveExplorerScreen(
     var currentPrefix by remember { mutableStateOf("") }
     
     // Filter entries to show only items in current folder
+    val selectionManager = remember { SelectionManager() }
+    val isSelecting = selectionManager.isSelecting
+
+    // Effect to handle back button behavior during selection
+    BackHandler(enabled = isSelecting) {
+        selectionManager.clearSelection()
+    }
+
     val filteredEntries = remember(archiveEntries, currentPrefix) {
         val immediateItems = mutableListOf<ArchiveEntry>()
         val processedNames = mutableSetOf<String>()
@@ -160,43 +175,73 @@ fun ArchiveExplorerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = File(archivePath).name,
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (currentPrefix.isNotEmpty()) {
+            if (isSelecting) {
+                TopAppBar(
+                    title = { Text("${selectionManager.selectedPaths.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { selectionManager.clearSelection() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            if (selectionManager.selectedPaths.size == filteredEntries.size) {
+                                selectionManager.clearSelection()
+                            } else {
+                                selectionManager.selectAll(filteredEntries.map { it.name })
+                            }
+                        }) {
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select All")
+                        }
+                        IconButton(onClick = { showExtractionDialog = true }) {
+                            Icon(Icons.Default.Unarchive, contentDescription = "Extract Selected")
+                        }
+                    }
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Column {
                             Text(
-                                text = "/" + currentPrefix.trimEnd('/'),
-                                style = MaterialTheme.typography.bodySmall,
+                                text = File(archivePath).name,
+                                style = MaterialTheme.typography.titleLarge,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = { 
-                        if (currentPrefix.isNotEmpty()) {
-                            // Go up one directory level
-                            val parts = currentPrefix.trimEnd('/').split("/")
-                            currentPrefix = if (parts.size > 1) {
-                                parts.dropLast(1).joinToString("/") + "/"
-                            } else {
-                                ""
+                            if (currentPrefix.isNotEmpty()) {
+                                Text(
+                                    text = "/" + currentPrefix.trimEnd('/'),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
-                        } else {
-                            navController.popBackStack() 
                         }
-                    }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { 
+                            if (currentPrefix.isNotEmpty()) {
+                                // Go up one directory level
+                                val parts = currentPrefix.trimEnd('/').split("/")
+                                currentPrefix = if (parts.size > 1) {
+                                    parts.dropLast(1).joinToString("/") + "/"
+                                } else {
+                                    ""
+                                }
+                            } else {
+                                navController.popBackStack() 
+                            }
+                        }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showExtractionDialog = true }) {
+                            Icon(Icons.Default.Unarchive, contentDescription = "Extract All")
+                        }
                     }
-                }
-            )
+                )
+            }
         },
     ) { paddingValues ->
         Box(
@@ -219,9 +264,20 @@ fun ArchiveExplorerScreen(
                         items = filteredEntries,
                         key = { index, entry -> "${index}_${entry.name.trimEnd('/')}" }
                     ) { _, entry ->
+                        val isSelected = selectionManager.isSelected(entry.name)
                         ArchiveEntryItem(
                             entry = entry,
+                            isSelected = isSelected,
+                            onLongClick = {
+                                if (!isSelecting) {
+                                    selectionManager.toggleSelection(entry.name)
+                                }
+                            },
                             onClick = {
+                                if (isSelecting) {
+                                    selectionManager.toggleSelection(entry.name)
+                                    return@ArchiveEntryItem
+                                }
                                 if (entry.isDirectory) {
                                     // Navigate into folder
                                     currentPrefix = entry.name.let { 
@@ -332,15 +388,18 @@ fun ArchiveExplorerScreen(
                                 .clickable {
                                     showExtractionDialog = false
                                     val outputDir = "$downloadsPath/$archiveFileName"
+                                    val targetEntries = if (isSelecting) selectionManager.selectedPaths.toList() else null
                                     scope.launch {
                                         extractArchive(
                                             viewModel = viewModel,
                                             archivePath = archivePath,
                                             outputDir = outputDir,
+                                            targetEntries = targetEntries,
                                             notificationHostState = notificationHostState,
                                             onProgress = { extractionProgress = it }
                                         )
                                     }
+                                    selectionManager.clearSelection()
                                 },
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -533,6 +592,7 @@ private suspend fun extractArchive(
     viewModel: ArchiveViewModel,
     archivePath: String,
     outputDir: String,
+    targetEntries: List<String>? = null,
     notificationHostState: id.xms.xarchiver.ui.components.NotificationHostState,
     onProgress: (ExtractionProgress?) -> Unit
 ) {
@@ -544,7 +604,7 @@ private suspend fun extractArchive(
         }
 
         // Start extraction
-        viewModel.extractArchive(archivePath, outputDir).collect { progress ->
+        viewModel.extractArchive(archivePath, outputDir, targetEntries).collect { progress ->
             onProgress(progress)
             when (progress.state) {
                 ExtractionState.COMPLETED -> {
@@ -569,12 +629,18 @@ private suspend fun extractArchive(
 @Composable
 fun ArchiveEntryItem(
     entry: ArchiveEntry,
+    isSelected: Boolean = false,
+    onLongClick: () -> Unit = {},
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

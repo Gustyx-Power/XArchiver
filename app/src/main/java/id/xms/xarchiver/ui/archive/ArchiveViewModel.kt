@@ -54,9 +54,10 @@ class ArchiveViewModel(context: Context) : ViewModel() {
     fun extractArchive(
         archiveFilePath: String,
         outputDir: String,
+        targetEntries: List<String>? = null,
         onProgress: (ExtractionProgress) -> Unit = {}
     ): Flow<ExtractionProgress> {
-        return archiveManager.extractArchive(archiveFilePath, outputDir) { progress, file ->
+        return archiveManager.extractArchive(archiveFilePath, outputDir, targetEntries) { progress, file ->
             // This callback is for the internal progress tracking
             // Don't call onProgress here as it conflicts with the Flow
         }

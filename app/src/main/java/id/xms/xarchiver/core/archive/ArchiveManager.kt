@@ -88,6 +88,7 @@ class ArchiveManager(private val context: Context) {
     fun extractArchive(
         archiveFilePath: String,
         outputDir: String,
+        targetEntries: List<String>? = null,
         onProgress: (Int, String) -> Unit = { _, _ -> }
     ): Flow<ExtractionProgress> = flow {
         try {
@@ -108,6 +109,16 @@ class ArchiveManager(private val context: Context) {
                 var entry = archiveReader.nextEntry()
                 
                 while (entry != null) {
+                    if (targetEntries != null) {
+                        val isTarget = targetEntries.any { target ->
+                            entry!!.name == target || entry!!.name.startsWith("$target/")
+                        }
+                        if (!isTarget) {
+                            entry = archiveReader.nextEntry()
+                            continue
+                        }
+                    }
+                    
                     val outputFile = File(outputDirectory, entry.name)
                     
                     if (entry.isDirectory) {
@@ -194,37 +205,32 @@ class ArchiveManager(private val context: Context) {
                 var entry = archiveReader.nextEntry()
                 while (entry != null) {
                     if (entry.name == entryPath) {
-                        // Check entry size before reading
-                        val maxSize = 10 * 1024 * 1024 // 10MB limit
-                        if (entry.size > maxSize) {
-                            throw IllegalStateException("Entry too large to view as text")
+                        val cacheDir = File(context.cacheDir, "XArchiver_Temp")
+                        cacheDir.mkdirs()
+                        // Use original extension for viewers
+                        val ext = entryPath.substringAfterLast('.', "")
+                        val fileName = if (ext.isNotEmpty()) {
+                            "temp_view_${System.currentTimeMillis()}.$ext"
+                        } else {
+                            "temp_view_${System.currentTimeMillis()}"
                         }
+                        val outputFile = File(cacheDir, fileName)
                         
-                        // Read with size limit
-                        val stringBuilder = java.lang.StringBuilder()
-                        var totalRead = 0
-                        val buffer = ByteArray(8192)
-                        
-                        while (true) {
-                            val read = archiveReader.read(buffer)
-                            if (read == -1) break
-                            
-                            totalRead += read
-                            if (totalRead > maxSize) {
-                                throw IllegalStateException("Entry too large to view as text")
+                        FileOutputStream(outputFile).use { output ->
+                            val buffer = ByteArray(8192)
+                            while (true) {
+                                val read = archiveReader.read(buffer)
+                                if (read == -1) break
+                                output.write(buffer, 0, read)
                             }
-                            
-                            stringBuilder.append(String(buffer, 0, read))
                         }
                         
-                        return@withContext stringBuilder.toString()
+                        return@withContext outputFile.absolutePath
                     }
                     entry = archiveReader.nextEntry()
                 }
             }
             null
-        } catch (e: IllegalStateException) {
-            throw e
         } catch (e: Exception) {
             null
         }
