@@ -1,0 +1,134 @@
+<resources>
+    <string name="app_name">XArchiver</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Pengaturan</string>
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_light_theme">Tema Terang</string>
+    <string name="settings_light_theme_desc">Selalu gunakan tema terang</string>
+    <string name="settings_dark_theme">Tema Gelap</string>
+    <string name="settings_dark_theme_desc">Selalu gunakan tema gelap</string>
+    <string name="settings_system_default">Bawaan Sistem</string>
+    <string name="settings_system_default_desc">Ikuti pengaturan sistem</string>
+    <string name="settings_color_scheme">Skema Warna</string>
+    <string name="settings_material_you">Material You</string>
+    <string name="settings_material_you_desc">Gunakan warna dari wallpaper</string>
+    <string name="settings_dynamic_colors">Warna Dinamis</string>
+    <string name="settings_dynamic_colors_desc">Membutuhkan Android 12+</string>
+    <string name="settings_advanced">Lanjutan</string>
+    <string name="settings_privileged_access">Akses Root / Hak Istimewa</string>
+    <string name="settings_privileged_access_desc">Tampilkan penyimpanan Root di beranda</string>
+    <string name="settings_shizuku_integration">Integrasi Shizuku</string>
+    <string name="settings_shizuku_status">Status Shizuku</string>
+    <string name="settings_shizuku_connected">Terhubung &amp; Izin Diberikan</string>
+    <string name="settings_shizuku_permission_denied">Layanan tersedia namun izin ditolak. Ketuk untuk panduan.</string>
+    <string name="settings_shizuku_not_running">Tidak berjalan (Ketuk untuk panduan penyiapan)</string>
+    <string name="settings_information">Informasi</string>
+    <string name="settings_about">Tentang</string>
+    <string name="settings_about_desc">Versi aplikasi, lisensi, dan info pengembang</string>
+
+    <string name="shizuku_guide_title">Panduan Koneksi Shizuku</string>
+    <string name="shizuku_guide_desc">Shizuku memungkinkan XArchiver mengakses folder sistem yang dibatasi (seperti Android/data) tanpa memerlukan Root.</string>
+    <string name="shizuku_guide_connected">✅ Shizuku saat ini terhubung dan diberikan izin. Anda dapat menelusuri folder yang dibatasi menggunakan Penjelajah Hak Istimewa di layar Beranda.</string>
+    <string name="shizuku_guide_no_permission">⚠️ Layanan Shizuku berjalan, namun XArchiver belum memiliki izin.</string>
+    <string name="shizuku_guide_tap_request">Ketuk tombol \'Minta Izin\' di bawah ini untuk mengizinkan aplikasi.</string>
+    <string name="shizuku_guide_how_to_start">Cara memulai Shizuku:</string>
+    <string name="shizuku_guide_step1">1. Instal aplikasi Shizuku dari Google Play atau GitHub.</string>
+    <string name="shizuku_guide_step2">2. Buka Shizuku dan ikuti petunjuk untuk memulai layanan (via Debugging Nirkabel atau ADB).</string>
+    <string name="shizuku_guide_step3">3. Setelah layanan mengatakan \'Shizuku is running\', kembali ke sini dan ketuk \'Minta Izin\'.</string>
+    <string name="shizuku_guide_step4">4. Atau, buka \'Penjelajah Hak Istimewa\' di layar Beranda untuk memicu permintaan izin.</string>
+    
+    <!-- Actions -->
+    <string name="action_request_permission">Minta Izin</string>
+    <string name="action_close">Tutup</string>
+    <string name="action_cancel">Batal</string>
+    <string name="action_create">Buat</string>
+    <string name="action_extract">Ekstrak</string>
+
+    <!-- Create Archive Dialog -->
+    <string name="archive_create_title">Buat Arsip</string>
+    <string name="archive_name_label">Nama arsip</string>
+    <string name="archive_format_label">Format</string>
+    <string name="archive_compression_label">Kompresi</string>
+    <string name="archive_items_selected_format">%d item dipilih</string>
+    <string name="archive_error_empty_name">Silakan masukkan nama arsip</string>
+
+    <!-- Archive Explorer Screen -->
+    <string name="archive_selected_format">%d dipilih</string>
+    <string name="archive_empty_entries">Tidak ada entri ditemukan dalam arsip ini</string>
+    <string name="archive_empty_folder">Folder kosong</string>
+    <string name="archive_extract_title">Ekstrak Arsip</string>
+    <string name="archive_extract_desc">Pilih tempat untuk mengekstrak arsip:</string>
+    <string name="archive_extract_here">Ekstrak Di Sini</string>
+    <string name="archive_extract_custom">Ekstrak ke Jalur Kustom</string>
+    <string name="archive_extract_custom_desc">Pilih lokasi berbeda</string>
+    <string name="archive_extract_custom_title">Jalur Ekstrak Kustom</string>
+    <string name="archive_extract_custom_prompt">Masukkan jalur tempat Anda ingin mengekstrak arsip:</string>
+    <string name="archive_extract_path_label">Jalur</string>
+    <string name="archive_extracting">Mengekstrak…</string>
+    <string name="archive_toast_extracting_format">Mengekstrak %s…</string>
+    <string name="archive_toast_extracted_format">Diekstrak ke: %s</string>
+    <string name="archive_notification_extract_failed_format">Gagal mengekstrak %s</string>
+    <string name="archive_notification_error_format">Kesalahan: %s</string>
+    <string name="archive_notification_extract_completed">Ekstraksi selesai! File disimpan ke: %s</string>
+    <!-- Home Screen -->
+    <string name="home_storage">Penyimpanan</string>
+    <string name="home_detecting_storage">Mendeteksi Penyimpanan...</string>
+    <string name="home_storage_page_format">%1$d dari %2$d</string>
+    <string name="home_categories">Kategori</string>
+    <string name="home_quick_access">Akses Cepat</string>
+
+    <!-- Storage Card -->
+    <string name="storage_internal">Penyimpanan Internal</string>
+    <string name="storage_open">Buka</string>
+    <string name="storage_usage_format">%1$s dari %2$s</string>
+    <string name="storage_percent_used_format">%.1f%% terpakai</string>
+    <string name="storage_healthy">Sehat</string>
+    <string name="storage_moderate">Sedang</string>
+    <string name="storage_low_space">Ruang Hampir Habis</string>
+
+    <!-- Root Storage Card -->
+    <string name="root_privileged_explorer">Penjelajah Root</string>
+    <string name="root_required">Diperlukan</string>
+    <string name="root_requesting_access">Meminta akses Root...</string>
+    <string name="root_tap_to_grant">Ketuk untuk memberikan akses Root atau Shizuku</string>
+
+    <!-- Explorer Screen & Dialogs -->
+    <string name="action_cancel_selection">Batal Pilih</string>
+    <string name="explorer_selected_count">%1$d terpilih</string>
+    <string name="action_select_all">Pilih Semua</string>
+    <string name="action_reverse_selection">Balik Pilihan</string>
+    <string name="action_select_same_type">Pilih Tipe Sama</string>
+    <string name="action_close_search">Tutup Pencarian</string>
+    <string name="explorer_search_files">Cari file...</string>
+    <string name="explorer_search_no_results">Tidak ditemukan file dengan nama \"%1$s\"</string>
+    <string name="explorer_empty_folder">Folder Kosong</string>
+    
+    <string name="dialog_new_folder">Folder Baru</string>
+    <string name="dialog_new_file">File Baru</string>
+    <string name="dialog_rename">Ubah Nama</string>
+    <string name="dialog_delete_title">Hapus %1$d item%2$s?</string>
+    <string name="dialog_delete_desc">Tindakan ini tidak dapat dibatalkan.</string>
+    <string name="dialog_name">Nama</string>
+    <string name="dialog_install_apk_title">Pasang APK</string>
+    <string name="dialog_install_apk_desc">Apakah Anda ingin memasang %1$s?</string>
+    <string name="action_install">Pasang</string>
+    
+    <!-- Properties Dialog -->
+    <string name="dialog_properties_title">Properti</string>
+    <string name="property_name">Nama</string>
+    <string name="property_location">Lokasi</string>
+    <string name="property_calculating">Menghitung...</string>
+    <string name="property_size">Ukuran</string>
+    <string name="property_contents">Isi</string>
+    <string name="property_contents_format">%1$d file, %2$d folder</string>
+    <string name="property_modified">Dimodifikasi</string>
+    <string name="property_read">Baca </string>
+    <string name="property_write">Tulis </string>
+    <string name="property_execute">Eksekusi</string>
+    <string name="property_none">Tidak Ada</string>
+    <string name="property_permissions">Izin</string>
+    <string name="property_type">Tipe</string>
+    <string name="property_hidden">Tersembunyi</string>
+    <string name="property_yes">Ya</string>
+</resources>

@@ -60,7 +60,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import id.xms.xarchiver.R
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -177,7 +179,7 @@ fun ArchiveExplorerScreen(
         topBar = {
             if (isSelecting) {
                 TopAppBar(
-                    title = { Text("${selectionManager.selectedPaths.size} selected") },
+                    title = { Text(stringResource(R.string.archive_selected_format, selectionManager.selectedPaths.size)) },
                     navigationIcon = {
                         IconButton(onClick = { selectionManager.clearSelection() }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear selection")
@@ -253,7 +255,7 @@ fun ArchiveExplorerScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (filteredEntries.isEmpty()) {
                 Text(
-                    text = if (currentPrefix.isEmpty()) "No entries found in this archive" else "Empty folder",
+                    text = if (currentPrefix.isEmpty()) stringResource(R.string.archive_empty_entries) else stringResource(R.string.archive_empty_folder),
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
@@ -297,7 +299,7 @@ fun ArchiveExplorerScreen(
                                         // Extract and open the file
                                         scope.launch {
                                             try {
-                                                Toast.makeText(context, "Extracting ${entry.name}...", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.archive_toast_extracting_format, entry.name), Toast.LENGTH_SHORT).show()
                                                 
                                                 // Extract to Downloads folder instead of app cache
                                                 val fileName = entry.name.substringAfterLast('/')
@@ -316,7 +318,7 @@ fun ArchiveExplorerScreen(
                                                     if (cacheFile.exists()) {
                                                         cacheFile.copyTo(outputFile, overwrite = true)
                                                         
-                                                        Toast.makeText(context, "Extracted to: ${outputFile.absolutePath}", Toast.LENGTH_SHORT).show()
+                                                        Toast.makeText(context, context.getString(R.string.archive_toast_extracted_format, outputFile.absolutePath), Toast.LENGTH_SHORT).show()
                                                         
                                                         // Open with appropriate viewer
                                                         val ext = extension
@@ -343,13 +345,13 @@ fun ArchiveExplorerScreen(
                                                             }
                                                         }
                                                     } else {
-                                                    notificationHostState.showNotification("Failed to extract ${entry.name}", NotificationType.ERROR)
+                                                    notificationHostState.showNotification(context.getString(R.string.archive_notification_extract_failed_format, entry.name), NotificationType.ERROR)
                                                     }
                                                 } else {
-                                                    notificationHostState.showNotification("Failed to extract ${entry.name}", NotificationType.ERROR)
+                                                    notificationHostState.showNotification(context.getString(R.string.archive_notification_extract_failed_format, entry.name), NotificationType.ERROR)
                                                 }
                                             } catch (e: Exception) {
-                                                notificationHostState.showNotification("Error: ${e.message}", NotificationType.ERROR)
+                                                notificationHostState.showNotification(context.getString(R.string.archive_notification_error_format, e.message), NotificationType.ERROR)
                                             }
                                         }
                                     }
@@ -367,7 +369,7 @@ fun ArchiveExplorerScreen(
                 onDismissRequest = { showExtractionDialog = false },
                 title = {
                     Text(
-                        text = "Extract Archive",
+                        text = stringResource(R.string.archive_extract_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -375,7 +377,7 @@ fun ArchiveExplorerScreen(
                 text = {
                     Column {
                         Text(
-                            text = "Choose where to extract the archive:",
+                            text = stringResource(R.string.archive_extract_desc),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -420,7 +422,7 @@ fun ArchiveExplorerScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = "Extract Here",
+                                        text = stringResource(R.string.archive_extract_here),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -463,12 +465,12 @@ fun ArchiveExplorerScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(
-                                        text = "Extract to Custom Path",
+                                        text = stringResource(R.string.archive_extract_custom),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Medium
                                     )
                                     Text(
-                                        text = "Choose a different location",
+                                        text = stringResource(R.string.archive_extract_custom_desc),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -480,7 +482,7 @@ fun ArchiveExplorerScreen(
                 confirmButton = {},
                 dismissButton = {
                     TextButton(onClick = { showExtractionDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
@@ -490,18 +492,18 @@ fun ArchiveExplorerScreen(
         if (showCustomPathDialog) {
             AlertDialog(
                 onDismissRequest = { showCustomPathDialog = false },
-                title = { Text("Custom Extract Path") },
+                title = { Text(stringResource(R.string.archive_extract_custom_title)) },
                 text = {
                     Column {
                         Text(
-                            text = "Enter the path where you want to extract the archive:",
+                            text = stringResource(R.string.archive_extract_custom_prompt),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         OutlinedTextField(
                             value = customPath,
                             onValueChange = { customPath = it },
-                            label = { Text("Path") },
+                            label = { Text(stringResource(R.string.archive_extract_path_label)) },
                             placeholder = { Text("/storage/emulated/0/Download") },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -523,12 +525,12 @@ fun ArchiveExplorerScreen(
                             }
                         }
                     ) {
-                        Text("Extract")
+                        Text(stringResource(R.string.action_extract))
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showCustomPathDialog = false }) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.action_cancel))
                     }
                 }
             )
@@ -556,7 +558,7 @@ fun ArchiveExplorerScreen(
                                 .padding(16.dp)
                         ) {
                             Text(
-                                text = "Extracting...",
+                                text = stringResource(R.string.archive_extracting),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium
                             )

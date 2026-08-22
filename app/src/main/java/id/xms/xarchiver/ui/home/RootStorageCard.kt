@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.dp
 import id.xms.xarchiver.core.StorageInfo
 import id.xms.xarchiver.core.root.RootService
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import id.xms.xarchiver.R
 
 @Composable
 fun RootStorageCard(
@@ -56,7 +58,7 @@ fun RootStorageCard(
             onClick = { onOpenRoot(startPath) },
             modifier = modifier,
             icon = Icons.Filled.Security,
-            title = "Privileged Explorer"
+            title = stringResource(R.string.root_privileged_explorer)
         )
     } else {
         RootRequiredCard(
@@ -162,7 +164,7 @@ private fun RootRequiredCard(
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Required",
+                            stringResource(R.string.root_required),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.SemiBold
@@ -174,7 +176,7 @@ private fun RootRequiredCard(
             Spacer(Modifier.height(16.dp))
 
             Text(
-                "Privileged Explorer",
+                stringResource(R.string.root_privileged_explorer),
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onErrorContainer,
                 fontWeight = FontWeight.Bold
@@ -183,7 +185,7 @@ private fun RootRequiredCard(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                if (busy) "Requesting privileged access..." else "Tap to grant Root or Shizuku access",
+                if (busy) stringResource(R.string.root_requesting_access) else stringResource(R.string.root_tap_to_grant),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
             )

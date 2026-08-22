@@ -25,6 +25,8 @@ import id.xms.xarchiver.core.StorageInfo
 import id.xms.xarchiver.core.humanReadable
 import id.xms.xarchiver.core.commercialStorageSize
 import id.xms.xarchiver.ui.theme.*
+import androidx.compose.ui.res.stringResource
+import id.xms.xarchiver.R
 
 @Composable
 fun StorageCard(
@@ -142,7 +144,7 @@ fun StorageCard(
                             )
                             Spacer(Modifier.width(4.dp))
                             Text(
-                                "Open",
+                                stringResource(R.string.storage_open),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 fontWeight = FontWeight.SemiBold
@@ -155,8 +157,9 @@ fun StorageCard(
             Spacer(Modifier.height(16.dp))
 
             // Storage label
+            val displayTitle = if (title == "Internal Storage") stringResource(R.string.storage_internal) else title
             Text(
-                title,
+                displayTitle,
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold
@@ -166,7 +169,7 @@ fun StorageCard(
 
             // Usage text
             Text(
-                "${info.used.humanReadable()} of ${info.total.commercialStorageSize()}",
+                stringResource(R.string.storage_usage_format, info.used.humanReadable(), info.total.commercialStorageSize()),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
             )
@@ -194,7 +197,7 @@ fun StorageCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    String.format(Locale.getDefault(), "%.1f%% used", percent * 100),
+                    stringResource(R.string.storage_percent_used_format, percent * 100),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
@@ -212,9 +215,9 @@ fun StorageCard(
                     ) {}
                     Text(
                         when {
-                            percent < 0.5f -> "Healthy"
-                            percent < 0.8f -> "Moderate"
-                            else -> "Low Space"
+                            percent < 0.5f -> stringResource(R.string.storage_healthy)
+                            percent < 0.8f -> stringResource(R.string.storage_moderate)
+                            else -> stringResource(R.string.storage_low_space)
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)

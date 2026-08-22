@@ -1,3 +1,134 @@
 <resources>
     <string name="app_name">XArchiver</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_light_theme">Light Theme</string>
+    <string name="settings_light_theme_desc">Always use light theme</string>
+    <string name="settings_dark_theme">Dark Theme</string>
+    <string name="settings_dark_theme_desc">Always use dark theme</string>
+    <string name="settings_system_default">System Default</string>
+    <string name="settings_system_default_desc">Follow system setting</string>
+    <string name="settings_color_scheme">Color Scheme</string>
+    <string name="settings_material_you">Material You</string>
+    <string name="settings_material_you_desc">Use colors from wallpaper</string>
+    <string name="settings_dynamic_colors">Dynamic Colors</string>
+    <string name="settings_dynamic_colors_desc">Requires Android 12+</string>
+    <string name="settings_advanced">Advanced</string>
+    <string name="settings_privileged_access">Privileged Access</string>
+    <string name="settings_privileged_access_desc">Show privileged storage in home screen</string>
+    <string name="settings_shizuku_integration">Shizuku Integration</string>
+    <string name="settings_shizuku_status">Shizuku Status</string>
+    <string name="settings_shizuku_connected">Connected &amp; Permissions Granted</string>
+    <string name="settings_shizuku_permission_denied">Service available but permission denied. Tap for guide.</string>
+    <string name="settings_shizuku_not_running">Not running (Tap for setup guide)</string>
+    <string name="settings_information">Information</string>
+    <string name="settings_about">About</string>
+    <string name="settings_about_desc">App version, licenses, and developer info</string>
+
+    <string name="shizuku_guide_title">Shizuku Connection Guide</string>
+    <string name="shizuku_guide_desc">Shizuku allows XArchiver to access restricted system folders (like Android/data) without requiring root.</string>
+    <string name="shizuku_guide_connected">✅ Shizuku is currently connected and granted permission. You can browse restricted folders using the Privileged Explorer on the Home screen.</string>
+    <string name="shizuku_guide_no_permission">⚠️ Shizuku service is running, but XArchiver does not have permission.</string>
+    <string name="shizuku_guide_tap_request">Tap the \'Request Permission\' button below to authorize the app.</string>
+    <string name="shizuku_guide_how_to_start">How to start Shizuku:</string>
+    <string name="shizuku_guide_step1">1. Install the Shizuku app from Google Play or GitHub.</string>
+    <string name="shizuku_guide_step2">2. Open Shizuku and follow the instructions to start the service (via Wireless Debugging or ADB).</string>
+    <string name="shizuku_guide_step3">3. Once the service says \'Shizuku is running\', return here and tap \'Request Permission\'.</string>
+    <string name="shizuku_guide_step4">4. Alternatively, open the \'Privileged Explorer\' on the Home screen to trigger the permission prompt.</string>
+    
+    <!-- Actions -->
+    <string name="action_request_permission">Request Permission</string>
+    <string name="action_close">Close</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_create">Create</string>
+    <string name="action_extract">Extract</string>
+
+    <!-- Create Archive Dialog -->
+    <string name="archive_create_title">Create Archive</string>
+    <string name="archive_name_label">Archive name</string>
+    <string name="archive_format_label">Format</string>
+    <string name="archive_compression_label">Compression</string>
+    <string name="archive_items_selected_format">%d item(s) selected</string>
+    <string name="archive_error_empty_name">Please enter an archive name</string>
+
+    <!-- Archive Explorer Screen -->
+    <string name="archive_selected_format">%d selected</string>
+    <string name="archive_empty_entries">No entries found in this archive</string>
+    <string name="archive_empty_folder">Empty folder</string>
+    <string name="archive_extract_title">Extract Archive</string>
+    <string name="archive_extract_desc">Choose where to extract the archive:</string>
+    <string name="archive_extract_here">Extract Here</string>
+    <string name="archive_extract_custom">Extract to Custom Path</string>
+    <string name="archive_extract_custom_desc">Choose a different location</string>
+    <string name="archive_extract_custom_title">Custom Extract Path</string>
+    <string name="archive_extract_custom_prompt">Enter the path where you want to extract the archive:</string>
+    <string name="archive_extract_path_label">Path</string>
+    <string name="archive_extracting">Extracting…</string>
+    <string name="archive_toast_extracting_format">Extracting %s…</string>
+    <string name="archive_toast_extracted_format">Extracted to: %s</string>
+    <string name="archive_notification_extract_failed_format">Failed to extract %s</string>
+    <string name="archive_notification_error_format">Error: %s</string>
+    <string name="archive_notification_extract_completed">Extraction completed! Files saved to: %s</string>
+    <!-- Home Screen -->
+    <string name="home_storage">Storage</string>
+    <string name="home_detecting_storage">Detecting Storage...</string>
+    <string name="home_storage_page_format">%1$d of %2$d</string>
+    <string name="home_categories">Categories</string>
+    <string name="home_quick_access">Quick Access</string>
+
+    <!-- Storage Card -->
+    <string name="storage_internal">Internal Storage</string>
+    <string name="storage_open">Open</string>
+    <string name="storage_usage_format">%1$s of %2$s</string>
+    <string name="storage_percent_used_format">%.1f%% used</string>
+    <string name="storage_healthy">Healthy</string>
+    <string name="storage_moderate">Moderate</string>
+    <string name="storage_low_space">Low Space</string>
+
+    <!-- Root Storage Card -->
+    <string name="root_privileged_explorer">Privileged Explorer</string>
+    <string name="root_required">Required</string>
+    <string name="root_requesting_access">Requesting privileged access...</string>
+    <string name="root_tap_to_grant">Tap to grant Root or Shizuku access</string>
+
+    <!-- Explorer Screen & Dialogs -->
+    <string name="action_cancel_selection">Cancel Selection</string>
+    <string name="explorer_selected_count">%1$d selected</string>
+    <string name="action_select_all">Select All</string>
+    <string name="action_reverse_selection">Reverse Selection</string>
+    <string name="action_select_same_type">Select Same Type</string>
+    <string name="action_close_search">Close Search</string>
+    <string name="explorer_search_files">Search files...</string>
+    <string name="explorer_search_no_results">No files found matching \"%1$s\"</string>
+    <string name="explorer_empty_folder">Empty Folder</string>
+    
+    <string name="dialog_new_folder">New Folder</string>
+    <string name="dialog_new_file">New File</string>
+    <string name="dialog_rename">Rename</string>
+    <string name="dialog_delete_title">Delete %1$d item%2$s?</string>
+    <string name="dialog_delete_desc">This action cannot be undone.</string>
+    <string name="dialog_name">Name</string>
+    <string name="dialog_install_apk_title">Install APK</string>
+    <string name="dialog_install_apk_desc">Do you want to install %1$s?</string>
+    <string name="action_install">Install</string>
+    
+    <!-- Properties Dialog -->
+    <string name="dialog_properties_title">Properties</string>
+    <string name="property_name">Name</string>
+    <string name="property_location">Location</string>
+    <string name="property_calculating">Calculating...</string>
+    <string name="property_size">Size</string>
+    <string name="property_contents">Contents</string>
+    <string name="property_contents_format">%1$d files, %2$d folders</string>
+    <string name="property_modified">Modified</string>
+    <string name="property_read">Read </string>
+    <string name="property_write">Write </string>
+    <string name="property_execute">Execute</string>
+    <string name="property_none">None</string>
+    <string name="property_permissions">Permissions</string>
+    <string name="property_type">Type</string>
+    <string name="property_hidden">Hidden</string>
+    <string name="property_yes">Yes</string>
 </resources>

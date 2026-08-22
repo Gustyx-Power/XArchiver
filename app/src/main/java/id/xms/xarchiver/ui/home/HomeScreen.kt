@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import id.xms.xarchiver.R
 import id.xms.xarchiver.ui.theme.*
@@ -240,7 +241,7 @@ private fun StorageSection(
 
         Box(modifier = Modifier.padding(horizontal = 20.dp)) {
             SectionHeader(
-                title = "Storage",
+                title = stringResource(R.string.home_storage),
                 icon = Icons.Outlined.Storage,
                 trailing = {
                     if (isRefreshing) {
@@ -252,7 +253,7 @@ private fun StorageSection(
                             shape = CircleShape
                         ) {
                             Text(
-                                "${pagerState.currentPage + 1} of $pageCount",
+                                stringResource(R.string.home_storage_page_format, pagerState.currentPage + 1, pageCount),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 fontWeight = FontWeight.Bold,
@@ -271,7 +272,7 @@ private fun StorageSection(
             modifier = Modifier.fillMaxWidth()
         ) { page ->
             if (isRefreshing) {
-                StoragePlaceholderCard(title = "Detecting Storage...")
+                StoragePlaceholderCard(title = stringResource(R.string.home_detecting_storage))
             } else if (page < storages.size) {
                 val storage = storages[page]
                 val icon = when {
@@ -309,7 +310,7 @@ private fun CategoriesSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         SectionHeader(
-            title = "Categories",
+            title = stringResource(R.string.home_categories),
             icon = Icons.Outlined.Category
         )
         
@@ -330,7 +331,7 @@ private fun QuickAccessSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         SectionHeader(
-            title = "Quick Access",
+            title = stringResource(R.string.home_quick_access),
             icon = Icons.Outlined.FolderOpen
         )
         

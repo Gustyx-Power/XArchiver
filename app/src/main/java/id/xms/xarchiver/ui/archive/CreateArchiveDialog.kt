@@ -10,8 +10,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import id.xms.xarchiver.R
 import id.xms.xarchiver.core.archive.ArchiveFormat
 import id.xms.xarchiver.core.archive.CompressionLevel
 
@@ -22,6 +25,7 @@ fun CreateArchiveDialog(
     onDismiss: () -> Unit,
     onCreate: (String, ArchiveFormat, CompressionLevel) -> Unit
 ) {
+    val context = LocalContext.current
     var archiveName by remember { mutableStateOf("archive") }
     var selectedFormat by remember { mutableStateOf(ArchiveFormat.ZIP) }
     var selectedCompression by remember { mutableStateOf(CompressionLevel.NORMAL) }
@@ -35,7 +39,7 @@ fun CreateArchiveDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Archive, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
-                Text("Create Archive")
+                Text(stringResource(R.string.archive_create_title))
             }
         },
         text = {
@@ -49,7 +53,7 @@ fun CreateArchiveDialog(
                 OutlinedTextField(
                     value = archiveName,
                     onValueChange = { archiveName = it.replace(Regex("[\\\\/:*?\"<>|]"), "") },
-                    label = { Text("Archive name") },
+                    label = { Text(stringResource(R.string.archive_name_label)) },
                     suffix = { Text(".$extension") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -61,7 +65,7 @@ fun CreateArchiveDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Format", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.archive_format_label), style = MaterialTheme.typography.labelLarge)
                     Box {
                         var expanded by remember { mutableStateOf(false) }
                         
@@ -103,7 +107,7 @@ fun CreateArchiveDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Compression", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.archive_compression_label), style = MaterialTheme.typography.labelLarge)
                         Box {
                             var expanded by remember { mutableStateOf(false) }
                             OutlinedButton(onClick = { expanded = true }) {
@@ -128,7 +132,7 @@ fun CreateArchiveDialog(
                 // File count info
                 HorizontalDivider()
                 Text(
-                    "$selectedFilesCount item(s) selected",
+                    stringResource(R.string.archive_items_selected_format, selectedFilesCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -147,19 +151,19 @@ fun CreateArchiveDialog(
             Button(
                 onClick = {
                     if (archiveName.isBlank()) {
-                        error = "Please enter an archive name"
+                        error = context.getString(R.string.archive_error_empty_name)
                         return@Button
                     }
                     onCreate(archiveName, selectedFormat, selectedCompression)
                 },
                 enabled = archiveName.isNotBlank()
             ) {
-                Text("Create")
+                Text(stringResource(R.string.action_create))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
         shape = RoundedCornerShape(20.dp)

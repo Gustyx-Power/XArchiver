@@ -1,6 +1,8 @@
 package id.xms.xarchiver.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.stringResource
+import id.xms.xarchiver.R
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -65,7 +67,7 @@ fun PropertiesDialog(
                            else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    "Properties",
+                    stringResource(R.string.dialog_properties_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -79,7 +81,7 @@ fun PropertiesDialog(
                 // Name
                 PropertyRow(
                     icon = Icons.Default.Label,
-                    label = "Name",
+                    label = stringResource(R.string.property_name),
                     value = file.name
                 )
                 
@@ -88,7 +90,7 @@ fun PropertiesDialog(
                 // Path
                 PropertyRow(
                     icon = Icons.Default.FolderOpen,
-                    label = "Location",
+                    label = stringResource(R.string.property_location),
                     value = file.parent ?: "/"
                 )
                 
@@ -96,13 +98,13 @@ fun PropertiesDialog(
                 
                 // Size
                 val displaySize = if (file.isDirectory) {
-                    directorySize?.humanReadable() ?: "Calculating..."
+                    directorySize?.humanReadable() ?: stringResource(R.string.property_calculating)
                 } else {
                     file.length().humanReadable()
                 }
                 PropertyRow(
                     icon = Icons.Default.Storage,
-                    label = "Size",
+                    label = stringResource(R.string.property_size),
                     value = displaySize
                 )
                 
@@ -111,8 +113,8 @@ fun PropertiesDialog(
                     HorizontalDivider()
                     PropertyRow(
                         icon = Icons.Default.Folder,
-                        label = "Contents",
-                        value = "$fileCount files, $folderCount folders"
+                        label = stringResource(R.string.property_contents),
+                        value = stringResource(R.string.property_contents_format, fileCount, folderCount)
                     )
                 }
                 
@@ -121,22 +123,26 @@ fun PropertiesDialog(
                 // Last Modified
                 PropertyRow(
                     icon = Icons.Default.Schedule,
-                    label = "Modified",
+                    label = stringResource(R.string.property_modified),
                     value = dateFormatter.format(Date(file.lastModified()))
                 )
                 
                 HorizontalDivider()
                 
                 // Permissions
+                val readStr = stringResource(R.string.property_read)
+                val writeStr = stringResource(R.string.property_write)
+                val execStr = stringResource(R.string.property_execute)
+                val noneStr = stringResource(R.string.property_none)
                 val permissions = buildString {
-                    if (file.canRead()) append("Read ")
-                    if (file.canWrite()) append("Write ")
-                    if (file.canExecute()) append("Execute")
-                }.trim().ifEmpty { "None" }
+                    if (file.canRead()) append(readStr)
+                    if (file.canWrite()) append(writeStr)
+                    if (file.canExecute()) append(execStr)
+                }.trim().ifEmpty { noneStr }
                 
                 PropertyRow(
                     icon = Icons.Default.Security,
-                    label = "Permissions",
+                    label = stringResource(R.string.property_permissions),
                     value = permissions
                 )
                 
@@ -145,7 +151,7 @@ fun PropertiesDialog(
                     HorizontalDivider()
                     PropertyRow(
                         icon = Icons.Default.Extension,
-                        label = "Type",
+                        label = stringResource(R.string.property_type),
                         value = ".${file.extension.uppercase()}"
                     )
                 }
@@ -155,15 +161,15 @@ fun PropertiesDialog(
                     HorizontalDivider()
                     PropertyRow(
                         icon = Icons.Default.VisibilityOff,
-                        label = "Hidden",
-                        value = "Yes"
+                        label = stringResource(R.string.property_hidden),
+                        value = stringResource(R.string.property_yes)
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.action_close))
             }
         },
         shape = MaterialTheme.shapes.extraLarge

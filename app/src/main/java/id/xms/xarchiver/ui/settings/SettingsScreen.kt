@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import id.xms.xarchiver.ui.theme.ThemeMode
 import id.xms.xarchiver.ui.theme.ThemePreferences
+import androidx.compose.ui.res.stringResource
+import id.xms.xarchiver.R
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,14 +73,14 @@ fun SettingsScreen(navController: NavController) {
                     TopAppBar(
                         title = { 
                             Text(
-                                "Settings", 
+                                stringResource(R.string.settings_title), 
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold
                             ) 
                         },
                         navigationIcon = {
                             IconButton(onClick = { navController.navigateUp() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_close))
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -100,35 +102,35 @@ fun SettingsScreen(navController: NavController) {
             ) {
                 Spacer(Modifier.height(8.dp))
                 
-                SettingsSectionHeader("Appearance")
+                SettingsSectionHeader(stringResource(R.string.settings_appearance))
                 
                 SettingsCard {
                     SettingsOption(
-                        title = "Light Theme",
-                        description = "Always use light theme",
+                        title = stringResource(R.string.settings_light_theme),
+                        description = stringResource(R.string.settings_light_theme_desc),
                         icon = Icons.Default.LightMode,
                         selected = currentThemeMode == ThemeMode.LIGHT,
                         onClick = { scope.launch { themePreferences.setThemeMode(ThemeMode.LIGHT) } }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                     SettingsOption(
-                        title = "Dark Theme",
-                        description = "Always use dark theme",
+                        title = stringResource(R.string.settings_dark_theme),
+                        description = stringResource(R.string.settings_dark_theme_desc),
                         icon = Icons.Default.DarkMode,
                         selected = currentThemeMode == ThemeMode.DARK,
                         onClick = { scope.launch { themePreferences.setThemeMode(ThemeMode.DARK) } }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                     SettingsOption(
-                        title = "System Default",
-                        description = "Follow system setting",
+                        title = stringResource(R.string.settings_system_default),
+                        description = stringResource(R.string.settings_system_default_desc),
                         icon = Icons.Default.SettingsBrightness,
                         selected = currentThemeMode == ThemeMode.SYSTEM,
                         onClick = { scope.launch { themePreferences.setThemeMode(ThemeMode.SYSTEM) } }
                     )
                 }
                 
-                SettingsSectionHeader("Color Scheme")
+                SettingsSectionHeader(stringResource(R.string.settings_color_scheme))
                 
                 SettingsCard {
                     val isSOrAbove = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -160,12 +162,12 @@ fun SettingsScreen(navController: NavController) {
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                if (isSOrAbove) "Material You" else "Dynamic Colors",
+                                if (isSOrAbove) stringResource(R.string.settings_material_you) else stringResource(R.string.settings_dynamic_colors),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                if (isSOrAbove) "Use colors from wallpaper" else "Requires Android 12+",
+                                if (isSOrAbove) stringResource(R.string.settings_material_you_desc) else stringResource(R.string.settings_dynamic_colors_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -181,7 +183,7 @@ fun SettingsScreen(navController: NavController) {
                     }
                 }
                 
-                SettingsSectionHeader("Advanced")
+                SettingsSectionHeader(stringResource(R.string.settings_advanced))
                 
                 SettingsCard {
                     Row(
@@ -211,12 +213,12 @@ fun SettingsScreen(navController: NavController) {
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Privileged Access",
+                                stringResource(R.string.settings_privileged_access),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Show privileged storage in home screen",
+                                stringResource(R.string.settings_privileged_access_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -231,7 +233,7 @@ fun SettingsScreen(navController: NavController) {
                     }
                 }
                 
-                SettingsSectionHeader("Shizuku Integration")
+                SettingsSectionHeader(stringResource(R.string.settings_shizuku_integration))
                 
                 SettingsCard {
                     val shizukuAvailable by id.xms.xarchiver.core.root.ShizukuService.isAvailableFlow.collectAsState()
@@ -264,14 +266,14 @@ fun SettingsScreen(navController: NavController) {
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Shizuku Status",
+                                stringResource(R.string.settings_shizuku_status),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                if (shizukuGranted) "Connected & Permissions Granted"
-                                else if (shizukuAvailable) "Service available but permission denied. Tap for guide."
-                                else "Not running (Tap for setup guide)",
+                                if (shizukuGranted) stringResource(R.string.settings_shizuku_connected)
+                                else if (shizukuAvailable) stringResource(R.string.settings_shizuku_permission_denied)
+                                else stringResource(R.string.settings_shizuku_not_running),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -285,7 +287,7 @@ fun SettingsScreen(navController: NavController) {
                     }
                 }
                 
-                SettingsSectionHeader("Information")
+                SettingsSectionHeader(stringResource(R.string.settings_information))
                 
                 SettingsCard {
                     Row(
@@ -313,12 +315,12 @@ fun SettingsScreen(navController: NavController) {
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "About",
+                                stringResource(R.string.settings_about),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "App version, licenses, and developer info",
+                                stringResource(R.string.settings_about_desc),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -456,7 +458,7 @@ fun ShizukuGuideDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Shizuku Connection Guide", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.shizuku_guide_title), fontWeight = FontWeight.Bold)
         },
         text = {
             Column(
@@ -466,7 +468,7 @@ fun ShizukuGuideDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    "Shizuku allows XArchiver to access restricted system folders (like Android/data) without requiring root.",
+                    stringResource(R.string.shizuku_guide_desc),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 
@@ -474,24 +476,24 @@ fun ShizukuGuideDialog(
                 
                 if (isGranted) {
                     Text(
-                        "✅ Shizuku is currently connected and granted permission. You can browse restricted folders using the Privileged Explorer on the Home screen.",
+                        stringResource(R.string.shizuku_guide_connected),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 } else if (isAvailable) {
                     Text(
-                        "⚠️ Shizuku service is running, but XArchiver does not have permission.",
+                        stringResource(R.string.shizuku_guide_no_permission),
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.Bold
                     )
-                    Text("Tap the 'Request Permission' button below to authorize the app.")
+                    Text(stringResource(R.string.shizuku_guide_tap_request))
                 } else {
-                    Text("How to start Shizuku:", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.shizuku_guide_how_to_start), fontWeight = FontWeight.Bold)
                     
-                    Text("1. Install the Shizuku app from Google Play or GitHub.")
-                    Text("2. Open Shizuku and follow the instructions to start the service (via Wireless Debugging or ADB).")
-                    Text("3. Once the service says 'Shizuku is running', return here and tap 'Request Permission'.")
-                    Text("4. Alternatively, open the 'Privileged Explorer' on the Home screen to trigger the permission prompt.")
+                    Text(stringResource(R.string.shizuku_guide_step1))
+                    Text(stringResource(R.string.shizuku_guide_step2))
+                    Text(stringResource(R.string.shizuku_guide_step3))
+                    Text(stringResource(R.string.shizuku_guide_step4))
                 }
             }
         },
@@ -501,18 +503,18 @@ fun ShizukuGuideDialog(
                     onRequestPermission()
                     onDismiss()
                 }) {
-                    Text("Request Permission")
+                    Text(stringResource(R.string.action_request_permission))
                 }
             } else {
                 Button(onClick = onDismiss) {
-                    Text("Close")
+                    Text(stringResource(R.string.action_close))
                 }
             }
         },
         dismissButton = {
             if (!isGranted) {
                 TextButton(onClick = onDismiss) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         }

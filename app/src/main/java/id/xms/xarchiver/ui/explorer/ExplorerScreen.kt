@@ -19,6 +19,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
@@ -28,8 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +51,8 @@ import id.xms.xarchiver.core.install.ApkInstaller
 import id.xms.xarchiver.ui.archive.CreateArchiveDialog
 import id.xms.xarchiver.ui.components.PathNavigationBar
 import id.xms.xarchiver.ui.components.PropertiesDialog
+import androidx.compose.ui.res.stringResource
+import id.xms.xarchiver.R
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -203,19 +210,19 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = { selectionManager.clearSelection() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancel Selection")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_cancel_selection))
                         }
                         Text(
-                            "$selectedCount selected",
+                            stringResource(R.string.explorer_selected_count, selectedCount),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
                         )
                         IconButton(onClick = { selectionManager.selectAll(files.map { it.path }) }) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Select All")
+                            Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.action_select_all))
                         }
                         IconButton(onClick = { selectionManager.reverseSelection(files.map { it.path }) }) {
-                            Icon(Icons.Default.FlipToBack, contentDescription = "Reverse Selection")
+                            Icon(Icons.Default.FlipToBack, contentDescription = stringResource(R.string.action_reverse_selection))
                         }
                         if (selectedCount == 1) {
                             IconButton(onClick = {
@@ -224,7 +231,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                     selectionManager.selectedPaths.first()
                                 )
                             }) {
-                                Icon(Icons.Default.FilterList, contentDescription = "Select Same Type")
+                                Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.action_select_same_type))
                             }
                         }
                     }
@@ -251,19 +258,32 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             isSearching = false
                             searchQuery = ""
                         }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close Search")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close_search))
                         }
                         
-                        OutlinedTextField(
+                        BasicTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
-                            placeholder = { Text("Search files...") },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier
+                                .weight(1f),
+                            textStyle = TextStyle(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = MaterialTheme.typography.bodyLarge.fontSize
+                            ),
                             singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = Color.Transparent
-                            )
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            decorationBox = { innerTextField ->
+                                Box(contentAlignment = Alignment.CenterStart) {
+                                    if (searchQuery.isEmpty()) {
+                                        Text(
+                                            stringResource(R.string.explorer_search_files),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                            }
                         )
                         
                         if (searchQuery.isNotEmpty()) {
@@ -445,7 +465,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                     showNewFolderDialog = true
                                 },
                                 icon = { Icon(Icons.Default.CreateNewFolder, null) },
-                                text = { Text("New Folder") },
+                                text = { Text(stringResource(R.string.dialog_new_folder)) },
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer
                             )
                             ExtendedFloatingActionButton(
@@ -454,7 +474,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                     showNewFileDialog = true
                                 },
                                 icon = { Icon(Icons.Default.NoteAdd, null) },
-                                text = { Text("New File") },
+                                text = { Text(stringResource(R.string.dialog_new_file)) },
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer
                             )
                         }
@@ -507,7 +527,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             }
                             Spacer(Modifier.height(24.dp))
                             Text(
-                                if (searchQuery.isNotEmpty()) "No files found matching \"$searchQuery\"" else "Empty Folder",
+                                if (searchQuery.isNotEmpty()) stringResource(R.string.explorer_search_no_results, searchQuery) else stringResource(R.string.explorer_empty_folder),
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -869,7 +889,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 },
                 confirmButton = {},
                 dismissButton = {
-                    TextButton(onClick = { showQuickExtractDialog = null }) { Text("Cancel") }
+                    TextButton(onClick = { showQuickExtractDialog = null }) { Text(stringResource(R.string.action_cancel)) }
                 }
             )
         }
@@ -1448,12 +1468,12 @@ private fun RenameDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename") },
+        title = { Text(stringResource(R.string.dialog_rename)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.dialog_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -1462,10 +1482,10 @@ private fun RenameDialog(
             TextButton(
                 onClick = { onConfirm(name) },
                 enabled = name.isNotBlank() && name != currentName
-            ) { Text("Rename") }
+            ) { Text(stringResource(R.string.dialog_rename)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
@@ -1479,15 +1499,15 @@ private fun DeleteConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-        title = { Text("Delete $count item${if (count > 1) "s" else ""}?") },
-        text = { Text("This action cannot be undone.") },
+        title = { Text(stringResource(R.string.dialog_delete_title, count, if (count > 1) "s" else "")) },
+        text = { Text(stringResource(R.string.dialog_delete_desc)) },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text("Delete", color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
@@ -1508,7 +1528,7 @@ private fun NewItemDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.dialog_name)) },
                 placeholder = { Text(placeholder) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
@@ -1518,10 +1538,10 @@ private fun NewItemDialog(
             TextButton(
                 onClick = { onConfirm(name) },
                 enabled = name.isNotBlank()
-            ) { Text("Create") }
+            ) { Text(stringResource(R.string.action_create)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
@@ -1535,15 +1555,15 @@ private fun ApkInstallDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = { Icon(Icons.Default.Android, null, tint = Color(0xFF4CAF50)) },
-        title = { Text("Install APK") },
+        title = { Text(stringResource(R.string.dialog_install_apk_title)) },
         text = {
-            Text("Do you want to install ${apkFile.name}?")
+            Text(stringResource(R.string.dialog_install_apk_desc, apkFile.name))
         },
         confirmButton = {
-            TextButton(onClick = onInstall) { Text("Install") }
+            TextButton(onClick = onInstall) { Text(stringResource(R.string.action_install)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         }
     )
 }
