@@ -140,6 +140,10 @@ dependencies {
     // Coil for image and video preview
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("io.coil-kt:coil-video:2.6.0")
+    
+    // Shizuku
+    implementation("dev.rikka.shizuku:api:13.1.5")
+    implementation("dev.rikka.shizuku:provider:13.1.5")
 }
 
 tasks.register("sendTelegramMessage", SendTelegramMessageTask::class) {
