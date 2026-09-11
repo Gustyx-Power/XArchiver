@@ -249,6 +249,7 @@ object FileOperationsManager {
         }
         
         if (success) {
+            id.xms.xarchiver.core.recent.RecentManager.recordFile(newFolder.absolutePath)
             FileOperationResult.Success("Folder created", 1)
         } else {
             FileOperationResult.Error("Failed to create folder")
@@ -278,6 +279,7 @@ object FileOperationsManager {
         }
         
         if (success) {
+            id.xms.xarchiver.core.recent.RecentManager.recordFile(newFile.absolutePath)
             FileOperationResult.Success("File created", 1)
         } else {
             FileOperationResult.Error("Failed to create file")

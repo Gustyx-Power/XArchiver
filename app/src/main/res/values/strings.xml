@@ -113,6 +113,9 @@
     
     <string name="fab_recent">Recent</string>
     <string name="fab_files">Files</string>
+    <string name="recent_today">Today</string>
+    <string name="recent_empty">No recent files</string>
+    <string name="recent_empty_desc">Files or folders recently created or modified will appear here</string>
     <string name="dialog_rename">Rename</string>
     <string name="dialog_delete_title">Delete %1$d item%2$s?</string>
     <string name="dialog_delete_desc">This action cannot be undone.</string>

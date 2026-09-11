@@ -13,6 +13,7 @@
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <application
+        android:name=".XArchiverApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"

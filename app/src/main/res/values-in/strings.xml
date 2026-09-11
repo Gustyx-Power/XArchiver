@@ -113,6 +113,9 @@
     
     <string name="fab_recent">Terbaru</string>
     <string name="fab_files">File</string>
+    <string name="recent_today">Hari ini</string>
+    <string name="recent_empty">Tidak ada file terbaru</string>
+    <string name="recent_empty_desc">File atau folder yang baru dibuat atau diubah akan muncul di sini</string>
     <string name="dialog_rename">Ubah Nama</string>
     <string name="dialog_delete_title">Hapus %1$d item%2$s?</string>
     <string name="dialog_delete_desc">Tindakan ini tidak dapat dibatalkan.</string>

@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import id.xms.xarchiver.core.*
+import id.xms.xarchiver.core.recent.RecentManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -65,71 +66,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun loadRecentFiles() {
         viewModelScope.launch {
             isLoadingRecent.value = true
-            val recents = withContext(Dispatchers.IO) { getRecentFiles(getApplication()) }
+            val recents = RecentManager.getRecentFilesGrouped(getApplication())
             recentFilesGrouped.value = recents
             isLoadingRecent.value = false
         }
-    }
-
-    private suspend fun getRecentFiles(context: android.content.Context): Map<String, List<FileItem>> = withContext(Dispatchers.IO) {
-        val recentFiles = mutableListOf<Pair<String, FileItem>>()
-        val projection = arrayOf(
-            MediaStore.Files.FileColumns._ID,
-            MediaStore.Files.FileColumns.DISPLAY_NAME,
-            MediaStore.Files.FileColumns.SIZE,
-            MediaStore.Files.FileColumns.MIME_TYPE,
-            MediaStore.Files.FileColumns.DATE_MODIFIED,
-            MediaStore.Files.FileColumns.DATA
-        )
-        val sortOrder = "${MediaStore.Files.FileColumns.DATE_MODIFIED} DESC LIMIT 50"
-        
-        // Simpler selection: anything with size > 0 and a valid name
-        val selection = "${MediaStore.Files.FileColumns.SIZE} > 0"
-        
-        try {
-            val uri = MediaStore.Files.getContentUri("external")
-            context.contentResolver.query(uri, projection, selection, null, sortOrder)?.use { cursor ->
-                val idCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
-                val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
-                val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE)
-                val mimeCol = cursor.getColumnIndex(MediaStore.Files.FileColumns.MIME_TYPE)
-                val dateCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_MODIFIED)
-                val dataCol = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
-                
-                while (cursor.moveToNext()) {
-                    val id = cursor.getLong(idCol)
-                    val name = cursor.getString(nameCol) ?: continue
-                    val size = cursor.getLong(sizeCol)
-                    val mime = if (mimeCol != -1) cursor.getString(mimeCol) else null
-                    val date = cursor.getLong(dateCol) * 1000L
-                    val data = cursor.getString(dataCol)
-                    
-                    val contentUri = ContentUris.withAppendedId(uri, id)
-                    
-                    var bucketName: String? = null
-                    if (data != null) {
-                        val file = File(data)
-                        bucketName = file.parentFile?.name
-                    }
-                    if (bucketName == null) bucketName = "Recent"
-                    
-                    val fileItem = FileItem(
-                        name = name,
-                        path = data ?: "",
-                        isDirectory = false,
-                        size = size,
-                        lastModified = date
-                    )
-                    // we'll actually set a fake "parentPath" as the bucketName for UI convenience if needed, but FileItem doesn't have parentPath
-                    // We'll store pair
-                    recentFiles.add(bucketName to fileItem)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        
-        return@withContext recentFiles.groupBy({ it.first }, { it.second })
     }
 
     fun refreshStorage() {

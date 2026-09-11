@@ -1,12 +1,15 @@
 package id.xms.xarchiver.ui.home
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -28,6 +31,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,6 +40,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Image
 import id.xms.xarchiver.R
+import id.xms.xarchiver.core.FileItem
+import id.xms.xarchiver.core.humanReadable
+import id.xms.xarchiver.core.ShareUtils
 import id.xms.xarchiver.ui.theme.*
 import id.xms.xarchiver.ui.theme.*
 import kotlinx.coroutines.delay
@@ -213,10 +220,39 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     }
                 } else if (groupedFiles.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(32.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(80.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Filled.History,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(40.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text("Tidak ada file terbaru", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                            Text(
+                                stringResource(R.string.recent_empty),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                stringResource(R.string.recent_empty_desc),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
                         }
                     }
                 } else {
@@ -225,67 +261,195 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(padding),
-                        contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
+                        contentPadding = PaddingValues(bottom = 88.dp, top = 16.dp, start = 16.dp, end = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.recent_today),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                            )
+                        }
+                        
                         groupedFiles.forEach { (bucketName, files) ->
                             item(key = bucketName) {
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
                                     ),
                                     shape = RoundedCornerShape(20.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
+                                        // Folder Header
+                                        val parentDir = files.firstOrNull()?.let { java.io.File(it.path).parent }
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.padding(bottom = 12.dp)
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .clickable {
+                                                    if (parentDir != null) {
+                                                        navController.navigate("explorer/${Uri.encode(parentDir)}")
+                                                    }
+                                                }
+                                                .padding(vertical = 4.dp)
                                         ) {
+                                            val headerIcon = when {
+                                                bucketName.contains("tangkapan layar", ignoreCase = true) || bucketName.contains("screenshot", ignoreCase = true) -> Icons.Filled.PhotoLibrary
+                                                bucketName.contains("kamera", ignoreCase = true) || bucketName.contains("camera", ignoreCase = true) -> Icons.Filled.CameraAlt
+                                                bucketName.contains("pictures", ignoreCase = true) || bucketName.contains("gambar", ignoreCase = true) -> Icons.Filled.Image
+                                                bucketName.contains("download", ignoreCase = true) || bucketName.contains("unduhan", ignoreCase = true) -> Icons.Filled.Download
+                                                bucketName.contains("whatsapp", ignoreCase = true) -> Icons.Filled.Chat
+                                                else -> Icons.Filled.Folder
+                                            }
                                             Icon(
-                                                imageVector = Icons.Filled.PhotoLibrary, // generic
+                                                imageVector = headerIcon,
                                                 contentDescription = null,
                                                 tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(24.dp)
                                             )
-                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Spacer(modifier = Modifier.width(10.dp))
                                             Text(
                                                 text = bucketName,
                                                 style = MaterialTheme.typography.titleMedium,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSurface
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Icon(
+                                                imageVector = Icons.Default.ChevronRight,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                         
-                                        // Row of files
-                                        androidx.compose.foundation.lazy.LazyRow(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            items(files.size) { index ->
-                                                val file = files[index]
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(100.dp)
-                                                        .clip(RoundedCornerShape(12.dp))
-                                                        .background(MaterialTheme.colorScheme.surface)
-                                                ) {
-                                                    // Simple preview
-                                                    val isImageOrVideo = file.name.lowercase().let { it.endsWith(".jpg") || it.endsWith(".png") || it.endsWith(".jpeg") || it.endsWith(".mp4") || it.endsWith(".gif") || it.endsWith(".webp") }
-                                                    if (isImageOrVideo) {
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        
+                                        val allMedia = files.all { f ->
+                                            val lower = f.name.lowercase()
+                                            lower.endsWith(".jpg") || lower.endsWith(".png") || lower.endsWith(".jpeg") || lower.endsWith(".webp") || lower.endsWith(".gif") || lower.endsWith(".mp4")
+                                        }
+                                        
+                                        if (allMedia) {
+                                            // Horizontal thumbnail preview row
+                                            androidx.compose.foundation.lazy.LazyRow(
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                items(files.size) { index ->
+                                                    val file = files[index]
+                                                    val isVideo = file.name.lowercase().endsWith(".mp4")
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(104.dp)
+                                                            .clip(RoundedCornerShape(14.dp))
+                                                            .background(MaterialTheme.colorScheme.surface)
+                                                            .clickable {
+                                                                openRecentItem(context, file, navController)
+                                                            }
+                                                    ) {
                                                         androidx.compose.foundation.Image(
                                                             painter = coil.compose.rememberAsyncImagePainter(java.io.File(file.path)),
                                                             contentDescription = file.name,
                                                             modifier = Modifier.fillMaxSize(),
                                                             contentScale = androidx.compose.ui.layout.ContentScale.Crop
                                                         )
-                                                    } else {
-                                                        Column(
-                                                            modifier = Modifier.fillMaxSize().padding(8.dp),
-                                                            verticalArrangement = Arrangement.Center,
-                                                            horizontalAlignment = Alignment.CenterHorizontally
+                                                        if (isVideo) {
+                                                            Box(
+                                                                modifier = Modifier.fillMaxSize(),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Surface(
+                                                                    shape = CircleShape,
+                                                                    color = Color.Black.copy(alpha = 0.5f),
+                                                                    modifier = Modifier.size(28.dp)
+                                                                ) {
+                                                                    Box(contentAlignment = Alignment.Center) {
+                                                                        Icon(
+                                                                            Icons.Filled.PlayArrow,
+                                                                            contentDescription = null,
+                                                                            tint = Color.White,
+                                                                            modifier = Modifier.size(18.dp)
+                                                                        )
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        } else {
+                                            // List item style (like Download card in Origin OS)
+                                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                files.take(4).forEach { file ->
+                                                    val isDir = file.isDirectory
+                                                    val isApk = file.name.endsWith(".apk", ignoreCase = true)
+                                                    val isArchive = file.name.lowercase().let { it.endsWith(".zip") || it.endsWith(".rar") || it.endsWith(".7z") || it.endsWith(".tar") || it.endsWith(".gz") }
+                                                    val isImage = file.name.lowercase().let { it.endsWith(".jpg") || it.endsWith(".png") || it.endsWith(".jpeg") || it.endsWith(".webp") || it.endsWith(".gif") }
+                                                    
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clip(RoundedCornerShape(12.dp))
+                                                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+                                                            .clickable {
+                                                                openRecentItem(context, file, navController)
+                                                            }
+                                                            .padding(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        // Icon Box
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .size(44.dp)
+                                                                .clip(RoundedCornerShape(10.dp))
+                                                                .background(
+                                                                    when {
+                                                                        isDir -> MaterialTheme.colorScheme.primaryContainer
+                                                                        isApk -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                                                                        isArchive -> MaterialTheme.colorScheme.secondaryContainer
+                                                                        else -> MaterialTheme.colorScheme.surfaceVariant
+                                                                    }
+                                                                ),
+                                                            contentAlignment = Alignment.Center
                                                         ) {
-                                                            Icon(Icons.Filled.InsertDriveFile, contentDescription = null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
-                                                            Text(file.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                                            when {
+                                                                isImage -> {
+                                                                    androidx.compose.foundation.Image(
+                                                                        painter = coil.compose.rememberAsyncImagePainter(java.io.File(file.path)),
+                                                                        contentDescription = null,
+                                                                        modifier = Modifier.fillMaxSize(),
+                                                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                                                    )
+                                                                }
+                                                                isDir -> Icon(Icons.Filled.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                isApk -> Icon(Icons.Filled.Android, contentDescription = null, tint = Color(0xFF4CAF50))
+                                                                isArchive -> Icon(Icons.Filled.Archive, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                                                else -> Icon(Icons.Filled.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                            }
+                                                        }
+                                                        
+                                                        Spacer(modifier = Modifier.width(12.dp))
+                                                        
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = file.name,
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                fontWeight = FontWeight.SemiBold,
+                                                                color = MaterialTheme.colorScheme.onSurface,
+                                                                maxLines = 1,
+                                                                overflow = TextOverflow.Ellipsis
+                                                            )
+                                                            Spacer(modifier = Modifier.height(2.dp))
+                                                            Text(
+                                                                text = if (isDir) "Folder" else file.size.humanReadable(),
+                                                                style = MaterialTheme.typography.bodySmall,
+                                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                            )
                                                         }
                                                     }
                                                 }
@@ -531,3 +695,52 @@ private fun SectionHeader(
 }
 
 private val EaseOutCubic = CubicBezierEasing(0.33f, 1f, 0.68f, 1f)
+
+private fun openRecentItem(context: Context, file: FileItem, navController: NavController) {
+    val actualFile = java.io.File(file.path)
+    if (!actualFile.exists()) return
+    
+    if (file.isDirectory) {
+        navController.navigate("explorer/${Uri.encode(file.path)}")
+        return
+    }
+    
+    val ext = file.name.substringAfterLast('.', "").lowercase()
+    when {
+        file.name.endsWith(".apk", ignoreCase = true) -> {
+            try {
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        actualFile
+                    )
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                ShareUtils.openFile(context, file.path)
+            }
+        }
+        ext in listOf("jpg", "jpeg", "png", "webp", "gif", "bmp") -> {
+            navController.navigate("image_viewer/${Uri.encode(file.path)}")
+        }
+        ext in listOf("mp4", "mkv", "webm", "avi", "3gp") -> {
+            navController.navigate("video_player/${Uri.encode(file.path)}")
+        }
+        ext in listOf("mp3", "m4a", "wav", "flac", "ogg", "aac") -> {
+            navController.navigate("audio_player/${Uri.encode(file.path)}")
+        }
+        ext in listOf("zip", "rar", "7z", "tar", "gz", "xz", "bz2") -> {
+            navController.navigate("archive_explorer/${Uri.encode(file.path)}")
+        }
+        ext in listOf("txt", "log", "json", "xml", "html", "css", "js", "kt", "java", "md", "sh") -> {
+            navController.navigate("text_editor/${Uri.encode(file.path)}")
+        }
+        else -> {
+            ShareUtils.openFile(context, file.path)
+        }
+    }
+}
+
