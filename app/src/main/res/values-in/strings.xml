@@ -106,6 +106,13 @@
     
     <string name="dialog_new_folder">Folder Baru</string>
     <string name="dialog_new_file">File Baru</string>
+    <string name="dialog_file_exists_title">File Sudah Ada</string>
+    <string name="dialog_file_exists_desc">File dengan nama \'%1$s\' sudah ada. Apa yang ingin Anda lakukan?</string>
+    <string name="action_overwrite">Timpa</string>
+    <string name="action_duplicate">Duplikat</string>
+    
+    <string name="fab_recent">Terbaru</string>
+    <string name="fab_files">File</string>
     <string name="dialog_rename">Ubah Nama</string>
     <string name="dialog_delete_title">Hapus %1$d item%2$s?</string>
     <string name="dialog_delete_desc">Tindakan ini tidak dapat dibatalkan.</string>

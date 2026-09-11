@@ -81,6 +81,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var showDeleteDialog by remember { mutableStateOf<List<String>?>(null) }
     var showNewFolderDialog by remember { mutableStateOf(false) }
     var showNewFileDialog by remember { mutableStateOf(false) }
+    var showFileExistsDialog by remember { mutableStateOf<String?>(null) }
     var showSelectionBottomSheet by remember { mutableStateOf(false) }
     var showCreateArchiveDialog by remember { mutableStateOf(false) }
     var showQuickExtractDialog by remember { mutableStateOf<FileItem?>(null) }
@@ -694,17 +695,77 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 title = "New File",
                 placeholder = "filename.txt",
                 onConfirm = { name ->
-                    scope.launch {
-                        val result = FileOperationsManager.createFile(path, name)
-                        refreshFiles()
-                        when (result) {
-                            is FileOperationResult.Success -> snackbarHostState.showSnackbar("File created")
-                            is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                    if (files.any { it.name == name }) {
+                        showFileExistsDialog = name
+                        showNewFileDialog = false
+                    } else {
+                        scope.launch {
+                            val result = FileOperationsManager.createFile(path, name)
+                            refreshFiles()
+                            when (result) {
+                                is FileOperationResult.Success -> snackbarHostState.showSnackbar("File created")
+                                is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                            }
                         }
+                        showNewFileDialog = false
                     }
-                    showNewFileDialog = false
                 },
                 onDismiss = { showNewFileDialog = false }
+            )
+        }
+        
+        showFileExistsDialog?.let { name ->
+            AlertDialog(
+                onDismissRequest = { showFileExistsDialog = null },
+                title = { Text(stringResource(R.string.dialog_file_exists_title)) },
+                text = { Text(stringResource(R.string.dialog_file_exists_desc, name)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        scope.launch {
+                            // Overwrite: delete existing and create new
+                            FileOperationsManager.deleteFiles(listOf("$path/$name"))
+                            val result = FileOperationsManager.createFile(path, name)
+                            refreshFiles()
+                            when (result) {
+                                is FileOperationResult.Success -> snackbarHostState.showSnackbar("File overwritten")
+                                is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                            }
+                        }
+                        showFileExistsDialog = null
+                    }) {
+                        Text(stringResource(R.string.action_overwrite))
+                    }
+                },
+                dismissButton = {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = {
+                            // Duplicate
+                            val nameWithoutExtension = name.substringBeforeLast(".", name)
+                            val extension = if (name.contains(".")) ".${name.substringAfterLast(".")}" else ""
+                            var index = 1
+                            var newName = "${nameWithoutExtension}($index)$extension"
+                            while (files.any { it.name == newName }) {
+                                index++
+                                newName = "${nameWithoutExtension}($index)$extension"
+                            }
+                            
+                            scope.launch {
+                                val result = FileOperationsManager.createFile(path, newName)
+                                refreshFiles()
+                                when (result) {
+                                    is FileOperationResult.Success -> snackbarHostState.showSnackbar("File created as $newName")
+                                    is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                                }
+                            }
+                            showFileExistsDialog = null
+                        }) {
+                            Text(stringResource(R.string.action_duplicate))
+                        }
+                        TextButton(onClick = { showFileExistsDialog = null }) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
+                    }
+                }
             )
         }
         

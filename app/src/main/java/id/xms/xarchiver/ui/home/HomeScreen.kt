@@ -40,6 +40,10 @@ import id.xms.xarchiver.ui.theme.*
 import id.xms.xarchiver.ui.theme.*
 import kotlinx.coroutines.delay
 
+enum class HomeTab {
+    Recent, Files
+}
+
 @SuppressLint("SdCardPath")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +52,16 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val themePreferences = remember { ThemePreferences(context) }
     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
     
+    var currentTab by remember { mutableStateOf(HomeTab.Files) }
+    
+    LaunchedEffect(currentTab) {
+        if (currentTab == HomeTab.Recent) {
+            viewModel.loadRecentFiles()
+        }
+    }
+    
     val listState = rememberLazyListState()
+    val recentListState = rememberLazyListState()
     
     // Staggered entrance animation
     var showContent by remember { mutableStateOf(false) }
@@ -60,8 +73,10 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     // Parallax effect for header based on scroll
     val scrollOffset by remember {
         derivedStateOf {
-            if (listState.firstVisibleItemIndex == 0) {
+            if (currentTab == HomeTab.Files && listState.firstVisibleItemIndex == 0) {
                 listState.firstVisibleItemScrollOffset.toFloat()
+            } else if (currentTab == HomeTab.Recent && recentListState.firstVisibleItemIndex == 0) {
+                recentListState.firstVisibleItemScrollOffset.toFloat()
             } else {
                 300f
             }
@@ -80,68 +95,206 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     scrollOffset = scrollOffset
                 )
             },
+            floatingActionButton = {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        val isRecent = currentTab == HomeTab.Recent
+                        TextButton(
+                            onClick = { currentTab = HomeTab.Recent },
+                            colors = ButtonDefaults.textButtonColors(
+                                containerColor = if (isRecent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                contentColor = if (isRecent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            shape = CircleShape,
+                            modifier = Modifier.padding(end = 4.dp)
+                        ) {
+                            Icon(if (isRecent) Icons.Filled.History else Icons.Outlined.History, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                            Text(stringResource(R.string.fab_recent), fontWeight = if (isRecent) FontWeight.Bold else FontWeight.Normal)
+                        }
+                        
+                        val isFiles = currentTab == HomeTab.Files
+                        TextButton(
+                            onClick = { currentTab = HomeTab.Files },
+                            colors = ButtonDefaults.textButtonColors(
+                                containerColor = if (isFiles) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                contentColor = if (isFiles) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            shape = CircleShape,
+                            modifier = Modifier.padding(start = 4.dp)
+                        ) {
+                            Icon(if (isFiles) Icons.Filled.Folder else Icons.Outlined.Folder, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                            Text(stringResource(R.string.fab_files), fontWeight = if (isFiles) FontWeight.Bold else FontWeight.Normal)
+                        }
+                    }
+                }
+            },
+            floatingActionButtonPosition = FabPosition.Center,
             containerColor = Color.Transparent
         ) { padding ->
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Header removed as requested
+            if (currentTab == HomeTab.Files) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Storage Section
+                    item(key = "storage") {
+                        AnimatedVisibility(
+                            visible = showContent,
+                            enter = fadeIn(tween(600, delayMillis = 100)) + slideInVertically(
+                                initialOffsetY = { 50 },
+                                animationSpec = tween(600, 100, EaseOutCubic)
+                            )
+                        ) {
+                            StorageSection(
+                                viewModel = viewModel,
+                                navController = navController,
+                                isRootAccessEnabled = isRootAccessEnabled
+                            )
+                        }
+                    }
 
-                // Storage Section
-                item(key = "storage") {
-                    AnimatedVisibility(
-                        visible = showContent,
-                        enter = fadeIn(tween(600, delayMillis = 100)) + slideInVertically(
-                            initialOffsetY = { 50 },
-                            animationSpec = tween(600, 100, EaseOutCubic)
-                        )
-                    ) {
-                        StorageSection(
-                            viewModel = viewModel,
-                            navController = navController,
-                            isRootAccessEnabled = isRootAccessEnabled
-                        )
+                    // Quick Categories - Grid layout
+                    item(key = "categories") {
+                        AnimatedVisibility(
+                            visible = showContent,
+                            enter = fadeIn(tween(600, delayMillis = 200)) + slideInVertically(
+                                initialOffsetY = { 50 },
+                                animationSpec = tween(600, 200, EaseOutCubic)
+                            )
+                        ) {
+                            CategoriesSection(
+                                categories = viewModel.categories.value,
+                                onCategoryClick = { category ->
+                                    navController.navigate("category_explorer/${Uri.encode(category.name)}")
+                                }
+                            )
+                        }
+                    }
+
+                    // Quick Access Folders
+                    item(key = "shortcuts") {
+                        AnimatedVisibility(
+                            visible = showContent,
+                            enter = fadeIn(tween(600, delayMillis = 300)) + slideInVertically(
+                                initialOffsetY = { 50 },
+                                animationSpec = tween(600, 300, EaseOutCubic)
+                            )
+                        ) {
+                            QuickAccessSection(
+                                shortcuts = viewModel.shortcuts,
+                                onShortcutClick = { shortcut ->
+                                    navController.navigate("explorer/${Uri.encode(shortcut.path)}")
+                                }
+                            )
+                        }
                     }
                 }
-
-                // Quick Categories - Grid layout
-                item(key = "categories") {
-                    AnimatedVisibility(
-                        visible = showContent,
-                        enter = fadeIn(tween(600, delayMillis = 200)) + slideInVertically(
-                            initialOffsetY = { 50 },
-                            animationSpec = tween(600, 200, EaseOutCubic)
-                        )
-                    ) {
-                        CategoriesSection(
-                            categories = viewModel.categories.value,
-                            onCategoryClick = { category ->
-                                navController.navigate("category_explorer/${Uri.encode(category.name)}")
-                            }
-                        )
+            } else {
+                // Recent Files Screen
+                val groupedFiles = viewModel.recentFilesGrouped.value
+                val isLoading = viewModel.isLoadingRecent.value
+                
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-                }
-
-                // Quick Access Folders
-                item(key = "shortcuts") {
-                    AnimatedVisibility(
-                        visible = showContent,
-                        enter = fadeIn(tween(600, delayMillis = 300)) + slideInVertically(
-                            initialOffsetY = { 50 },
-                            animationSpec = tween(600, 300, EaseOutCubic)
-                        )
+                } else if (groupedFiles.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Tidak ada file terbaru", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        state = recentListState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                        contentPadding = PaddingValues(bottom = 80.dp, top = 16.dp, start = 16.dp, end = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        QuickAccessSection(
-                            shortcuts = viewModel.shortcuts,
-                            onShortcutClick = { shortcut ->
-                                navController.navigate("explorer/${Uri.encode(shortcut.path)}")
+                        groupedFiles.forEach { (bucketName, files) ->
+                            item(key = bucketName) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ),
+                                    shape = RoundedCornerShape(20.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(bottom = 12.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.PhotoLibrary, // generic
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = bucketName,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        
+                                        // Row of files
+                                        androidx.compose.foundation.lazy.LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            items(files.size) { index ->
+                                                val file = files[index]
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(100.dp)
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .background(MaterialTheme.colorScheme.surface)
+                                                ) {
+                                                    // Simple preview
+                                                    val isImageOrVideo = file.name.lowercase().let { it.endsWith(".jpg") || it.endsWith(".png") || it.endsWith(".jpeg") || it.endsWith(".mp4") || it.endsWith(".gif") || it.endsWith(".webp") }
+                                                    if (isImageOrVideo) {
+                                                        androidx.compose.foundation.Image(
+                                                            painter = coil.compose.rememberAsyncImagePainter(java.io.File(file.path)),
+                                                            contentDescription = file.name,
+                                                            modifier = Modifier.fillMaxSize(),
+                                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                                        )
+                                                    } else {
+                                                        Column(
+                                                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                                                            verticalArrangement = Arrangement.Center,
+                                                            horizontalAlignment = Alignment.CenterHorizontally
+                                                        ) {
+                                                            Icon(Icons.Filled.InsertDriveFile, contentDescription = null, modifier = Modifier.size(32.dp), tint = MaterialTheme.colorScheme.primary)
+                                                            Text(file.name, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
-                        )
+                        }
                     }
                 }
             }

@@ -106,6 +106,13 @@
     
     <string name="dialog_new_folder">New Folder</string>
     <string name="dialog_new_file">New File</string>
+    <string name="dialog_file_exists_title">File Already Exists</string>
+    <string name="dialog_file_exists_desc">A file named \'%1$s\' already exists. What would you like to do?</string>
+    <string name="action_overwrite">Overwrite</string>
+    <string name="action_duplicate">Duplicate</string>
+    
+    <string name="fab_recent">Recent</string>
+    <string name="fab_files">Files</string>
     <string name="dialog_rename">Rename</string>
     <string name="dialog_delete_title">Delete %1$d item%2$s?</string>
     <string name="dialog_delete_desc">This action cannot be undone.</string>
