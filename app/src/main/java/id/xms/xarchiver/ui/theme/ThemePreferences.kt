@@ -17,6 +17,7 @@ class ThemePreferences(private val context: Context) {
         private val THEME_MODE_KEY = intPreferencesKey("theme_mode")
         private val DYNAMIC_COLOR_KEY = booleanPreferencesKey("dynamic_color")
         private val ROOT_ACCESS_KEY = booleanPreferencesKey("root_access")
+        private val MIUIX_UI_KEY = booleanPreferencesKey("miuix_ui")
     }
 
     val themeMode: Flow<ThemeMode> = context.dataStore.data.map { preferences ->
@@ -54,6 +55,16 @@ class ThemePreferences(private val context: Context) {
     suspend fun setRootAccessEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ROOT_ACCESS_KEY] = enabled
+        }
+    }
+
+    val isMiuixUiEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[MIUIX_UI_KEY] ?: false
+    }
+
+    suspend fun setMiuixUiEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[MIUIX_UI_KEY] = enabled
         }
     }
 }

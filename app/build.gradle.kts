@@ -20,11 +20,11 @@ plugins {
 
 android {
     namespace = "id.xms.xarchiver"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "id.xms.xarchiver"
-        minSdk = 28
+        minSdk = 33
         targetSdk = 36
         versionCode = 1
         versionName = "2.0.0-$buildDate"
@@ -75,6 +75,7 @@ android {
     }
 
     kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf("-Xskip-metadata-version-check")
         jvmTarget = "17"
     }
 
@@ -90,6 +91,9 @@ android {
 }
 
 dependencies {
+    implementation(libs.miuix.ui)
+    implementation(libs.miuix.blur)
+    implementation(libs.miuix.icons)
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation(project(":core-storage"))

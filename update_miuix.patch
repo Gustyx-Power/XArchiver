@@ -1,0 +1,54 @@
+--- app/src/main/java/id/xms/xarchiver/ui/home/MiuixHomeScreen.kt
++++ app/src/main/java/id/xms/xarchiver/ui/home/MiuixHomeScreen.kt
+@@ -17,6 +17,8 @@
+ import id.xms.xarchiver.ui.theme.ThemePreferences
+ import top.yukonga.miuix.kmp.basic.*
+ import top.yukonga.miuix.kmp.theme.MiuixTheme
++import top.yukonga.miuix.kmp.blur.*
++import androidx.compose.ui.graphics.Color
+ 
+ @Composable
+ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
+@@ -24,6 +26,7 @@
+     val themePreferences = remember { ThemePreferences(context) }
+     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
+     var currentTab by remember { mutableStateOf(HomeTab.Files) }
++    val backdrop = rememberLayerBackdrop()
+ 
+     LaunchedEffect(currentTab) {
+         if (currentTab == HomeTab.Recent) {
+@@ -32,7 +35,7 @@
+     }
+ 
+     Scaffold(
+-        containerColor = MiuixTheme.colorScheme.background,
++        containerColor = Color.Black,
+         topBar = {
+             TopAppBar(
+                 title = stringResource(R.string.app_name),
+@@ -47,8 +50,14 @@
+         floatingActionButton = {
+             Surface(
+-                modifier = Modifier.padding(bottom = 16.dp),
+-                color = MiuixTheme.colorScheme.surface,
++                modifier = Modifier
++                    .padding(bottom = 16.dp)
++                    .textureBlur(
++                        backdrop = backdrop,
++                        shape = RoundedCornerShape(100),
++                        blurRadiusX = 20f,
++                        blurRadiusY = 20f
++                    ),
++                color = MiuixTheme.colorScheme.surface.copy(alpha = 0.5f),
+                 shape = RoundedCornerShape(100)
+             ) {
+                 Row(
+@@ -93,7 +102,7 @@
+         floatingActionButtonPosition = FabPosition.Center
+     ) { padding ->
+         androidx.compose.foundation.lazy.LazyColumn(
+-            modifier = Modifier.fillMaxSize().padding(padding)
++            modifier = Modifier.fillMaxSize().padding(padding).layerBackdrop(backdrop)
+         ) {
+             item {
+                 if (currentTab == HomeTab.Files) {

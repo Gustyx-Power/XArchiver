@@ -5,13 +5,14 @@ plugins {
 
 android {
     namespace = "id.xms.xarchiver.core.extract"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
-        minSdk = 28
+        minSdk = 33
     }
 
     kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf("-Xskip-metadata-version-check")
         jvmTarget = "17"
     }
 }

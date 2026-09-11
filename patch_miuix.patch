@@ -1,0 +1,11 @@
+--- app/src/main/java/id/xms/xarchiver/ui/home/MiuixHomeScreen.kt
++++ app/src/main/java/id/xms/xarchiver/ui/home/MiuixHomeScreen.kt
+@@ -24,6 +24,8 @@
+ import top.yukonga.miuix.kmp.theme.MiuixTheme
+ import top.yukonga.miuix.kmp.blur.*
+ import androidx.compose.ui.graphics.Color
++import top.yukonga.miuix.kmp.icon.MiuixIcons
++import top.yukonga.miuix.kmp.icon.extended.*
+ 
+ @Composable
+ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {

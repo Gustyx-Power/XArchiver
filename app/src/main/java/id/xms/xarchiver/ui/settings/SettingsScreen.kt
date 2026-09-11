@@ -181,6 +181,55 @@ fun SettingsScreen(navController: NavController) {
                             enabled = isSOrAbove
                         )
                     }
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+
+                    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = false)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                scope.launch { themePreferences.setMiuixUiEnabled(!isMiuixUiEnabled) }
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = CircleShape,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.PhoneAndroid,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
+                        
+                        Spacer(Modifier.width(16.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "MIUIX UI Mode (Beta)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "Use Xiaomi HyperOS style components (Restart app)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        Switch(
+                            checked = isMiuixUiEnabled,
+                            onCheckedChange = { enabled ->
+                                scope.launch { themePreferences.setMiuixUiEnabled(enabled) }
+                            }
+                        )
+                    }
                 }
                 
                 SettingsSectionHeader(stringResource(R.string.settings_advanced))

@@ -5,10 +5,10 @@ plugins {
 
 android {
     namespace = "id.xms.xarchiver.core.archive"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
-        minSdk = 28
+        minSdk = 33
     }
 
     // Add Java compatibility configuration
@@ -18,6 +18,7 @@ android {
     }
 
     kotlinOptions {
+        freeCompilerArgs = freeCompilerArgs + listOf("-Xskip-metadata-version-check")
         jvmTarget = "17"
     }
 }

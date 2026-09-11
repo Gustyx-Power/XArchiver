@@ -78,6 +78,7 @@ fun XArchiverTheme(
 
     val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val isDynamicColorEnabled by themePreferences.isDynamicColorEnabled.collectAsState(initial = true)
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = false)
 
     val darkTheme = when (themeMode) {
         ThemeMode.LIGHT -> false
@@ -104,10 +105,21 @@ fun XArchiverTheme(
         }
     }
 
+    val wrappedContent = @Composable {
+        if (isMiuixUiEnabled) {
+            top.yukonga.miuix.kmp.theme.MiuixTheme(
+                colors = if (darkTheme) top.yukonga.miuix.kmp.theme.darkColorScheme() else top.yukonga.miuix.kmp.theme.lightColorScheme(),
+                content = content
+            )
+        } else {
+            content()
+        }
+    }
+
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
         shapes = ExpressiveShapes,
-        content = content
+        content = wrappedContent
     )
 }
