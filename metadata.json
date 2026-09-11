@@ -1,0 +1,8 @@
+{
+  "name": "XArchiver",
+  "description": "Android file manager and archive utility with support for ZIP, payload.bin, and storage management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
