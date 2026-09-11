@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -442,7 +443,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                                                 fontWeight = FontWeight.SemiBold,
                                                                 color = MaterialTheme.colorScheme.onSurface,
                                                                 maxLines = 1,
-                                                                overflow = TextOverflow.Ellipsis
+                                                                modifier = Modifier.basicMarquee()
                                                             )
                                                             Spacer(modifier = Modifier.height(2.dp))
                                                             Text(
@@ -624,7 +625,7 @@ private fun CategoriesSection(
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         SectionHeader(
             title = stringResource(R.string.home_categories),
@@ -645,7 +646,7 @@ private fun QuickAccessSection(
 ) {
     Column(
         modifier = Modifier.padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         SectionHeader(
             title = stringResource(R.string.home_quick_access),
