@@ -17,6 +17,10 @@ All notable changes to XArchiver will be documented in this file.
 - **Dedicated Detailed App Specs Screen**: Standalone screens for both MIUIX (`MiuixAppSpecsScreen`) and Material 3 (`AppSpecsScreen`) displaying comprehensive app architecture, archiver engines, UI framework, and system parameters.
 - **Dedicated Supported Formats Screen**: Standalone catalog screens (`MiuixSupportedFormatsScreen` and `SupportedFormatsScreen`) detailing archive types, single-file streams, packaging specs, and capability badges.
 
+### Added - In-App Release Notes Screen
+- **Native In-App Changelog Viewer**: Added dedicated `ChangelogScreen` and `MiuixChangelogScreen` accessible directly from the top bar next to Settings.
+- **Proportional Full-Width Typography**: Clean full-width layouts for release items, micro-category pills, version filter pills, copy release notes, and summary callout cards.
+
 ### Added - Intelligent Device Auto-Detection
 - **Xiaomi / Redmi / Poco Auto-Switch**: Automatic activation of MIUIX UI mode on Xiaomi family devices running MIUI or Xiaomi HyperOS.
 - **Multi-tier Detection**: Checks hardware brand/manufacturer identity, MIUI/HyperOS system properties, and framework introspection.
