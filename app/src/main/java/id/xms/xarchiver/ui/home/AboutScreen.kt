@@ -224,6 +224,13 @@ fun AboutScreen(navController: NavController) {
                     onClick = { navController.navigate("about/specs") }
                 )
 
+                AboutLinkItem(
+                    icon = Icons.Outlined.NewReleases,
+                    title = stringResource(R.string.about_changelog),
+                    subtitle = stringResource(R.string.about_changelog_desc),
+                    onClick = { navController.navigate("changelog") }
+                )
+
                 Spacer(Modifier.height(16.dp))
 
                 // Developer Card (Material 3 Style)

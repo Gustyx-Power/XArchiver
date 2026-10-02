@@ -55,6 +55,9 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
                 largeTitle = stringResource(R.string.app_name),
                 color = pageBgColor,
                 actions = {
+                    IconButton(onClick = { navController.navigate("changelog") }) {
+                        Icon(MiuixIcons.Notes, contentDescription = stringResource(R.string.about_changelog))
+                    }
                     IconButton(onClick = { navController.navigate("settings") }) {
                         Icon(MiuixIcons.Settings, contentDescription = "Settings")
                     }

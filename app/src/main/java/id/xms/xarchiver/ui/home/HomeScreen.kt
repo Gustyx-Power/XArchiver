@@ -105,6 +105,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         Scaffold(
             topBar = {
                 ModernTopBar(
+                    onChangelogClick = { navController.navigate("changelog") },
                     onSettingsClick = { navController.navigate("settings") },
                     scrollOffset = scrollOffset
                 )
@@ -478,6 +479,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ModernTopBar(
+    onChangelogClick: () -> Unit,
     onSettingsClick: () -> Unit,
     scrollOffset: Float
 ) {
@@ -518,6 +520,14 @@ private fun ModernTopBar(
                 }
             },
             actions = {
+                // Changelog button
+                IconButton(onClick = onChangelogClick) {
+                    Icon(
+                        Icons.Outlined.NewReleases,
+                        contentDescription = stringResource(R.string.about_changelog),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 // Settings button
                 IconButton(onClick = onSettingsClick) {
                     Icon(

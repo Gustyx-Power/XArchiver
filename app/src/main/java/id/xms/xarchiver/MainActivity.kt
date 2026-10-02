@@ -26,6 +26,7 @@ import id.xms.xarchiver.ui.viewer.ImageViewerScreen
 import id.xms.xarchiver.ui.home.AboutScreen
 import id.xms.xarchiver.ui.home.AppSpecsScreen
 import id.xms.xarchiver.ui.home.SupportedFormatsScreen
+import id.xms.xarchiver.ui.changelog.ChangelogScreen
 import id.xms.xarchiver.ui.settings.SettingsScreen
 import id.xms.xarchiver.ui.viewer.VideoPlayerScreen
 import id.xms.xarchiver.ui.payload.PayloadViewerScreen
@@ -198,6 +199,11 @@ private fun AppContent() {
             // About Formats Screen route
             composable("about/formats") {
                 SupportedFormatsScreen(navController = navController)
+            }
+
+            // Changelog Screen route
+            composable("changelog") {
+                ChangelogScreen(navController = navController)
             }
             
             // Settings Screen route

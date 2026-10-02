@@ -349,6 +349,20 @@ fun MiuixAboutScreen(navController: NavController) {
                                 chevronColor = chevronColor,
                                 onClick = { navController.navigate("about/specs") }
                             )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                thickness = 0.5.dp,
+                                color = dividerColor
+                            )
+                            AboutSpecRow(
+                                title = stringResource(R.string.about_changelog),
+                                value = stringResource(R.string.about_changelog_desc),
+                                showChevron = true,
+                                primaryText = primaryTextColor,
+                                secondaryText = secondaryTextColor,
+                                chevronColor = chevronColor,
+                                onClick = { navController.navigate("changelog") }
+                            )
                         }
                     }
                 }
