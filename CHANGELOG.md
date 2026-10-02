@@ -2,6 +2,67 @@
 
 All notable changes to XArchiver will be documented in this file.
 
+## [2.1.0] - 2026-10-03
+
+### Added - Recent Files & Activity Tracking
+- **Recent Files Manager**: Added `RecentManager` to track recently accessed, modified, and extracted archives and files.
+- **Dedicated Recent Files Tab**: Built-in tab on the Home Screen with category grouping, file metadata, and quick access actions.
+- **Text Marquee Animation**: Implemented animated marquee for filenames and overflowing card titles.
+
+### Added - MIUIX / HyperOS Aesthetic Interface
+- **MIUIX KMP Integration**: Integrated MIUIX Kotlin Multiplatform design components (`miuix-ui`, `miuix-blur`, `miuix-icons` v0.9.3).
+- **HyperOS-styled Home Screen (`MiuixHomeScreen`)**: Features squircle cards, texture blur headers, and modern floating navigation pill.
+- **HyperOS-styled Settings (`MiuixSettingsScreen`)**: Grouped settings cards, smooth switch tiles, and themed icons.
+- **HyperOS "About Phone" Style About Screen (`MiuixAboutScreen`)**: Detailed app identity card, storage quick info, and specs navigation.
+- **Dedicated Detailed App Specs Screen**: Standalone screens for both MIUIX (`MiuixAppSpecsScreen`) and Material 3 (`AppSpecsScreen`) displaying comprehensive app architecture, archiver engines, UI framework, and system parameters.
+- **Dedicated Supported Formats Screen**: Standalone catalog screens (`MiuixSupportedFormatsScreen` and `SupportedFormatsScreen`) detailing archive types, single-file streams, packaging specs, and capability badges.
+
+### Added - Intelligent Device Auto-Detection
+- **Xiaomi / Redmi / Poco Auto-Switch**: Automatic activation of MIUIX UI mode on Xiaomi family devices running MIUI or Xiaomi HyperOS.
+- **Multi-tier Detection**: Checks hardware brand/manufacturer identity, MIUI/HyperOS system properties, and framework introspection.
+- **User Preference Override**: Manual toggle in Settings remains fully respected and persisted in DataStore.
+
+### Changed & Modernized
+- **Minimum SDK Raised**: Increased `minSdk` from Android 8.0 (API 26) to Android 10 (API 29) across all app and core modules (`core-storage`, `core-archive`, `core-extract`, `core-root`).
+- **Manifest Merger Compatibility**: Added `tools:overrideLibrary` configuration for MIUIX KMP libraries to ensure smooth runtime execution on Android 10+.
+- **Full Localization (English & Indonesian)**: Complete resource-based localization (`strings.xml` and `values-in/strings.xml`) for all About, Specs, and Supported Formats screens and badges.
+- **App Version Bump**: Bumped to version `2.1.0` (versionCode `2`).
+
+---
+
+## [2.0.0] - 2026-08-19
+
+### Added - Elevated Privileges & Root Integration
+- **Shizuku Integration**: Added support for Shizuku API (v13+) via `dev.rikka.shizuku` for privileged file operations without root.
+- **Root Shell Service**: Integrated `com.github.topjohnwu.libsu:core` v6.0.0 for full superuser (su) capabilities.
+- **Privileged File Operations**: Implemented `ShizukuFileService` and `RootFileService` with automated fallback in `FileOperationsManager`.
+- **Privileged Text Editing**: Enabled reading and writing protected system files via `TextEditorScreen`.
+- **Privileged Access UI**: Added dedicated Shizuku status indicator, setup guide, and root toggle in Settings.
+
+### Added - Storage Management & File Explorer Overhaul
+- **Multi-Storage Horizontal Pager**: Redesigned home storage section supporting Internal Storage, SD Card, OTG USB, and Root partitions.
+- **Robust Storage Detection**: Implemented Android `StorageManager` volume discovery with automatic polling and refresh for OTG drives.
+- **Filesystem Diagnostics**: Real-time filesystem type detection (F2FS, ext4, FAT32) and storage health metrics.
+- **Enhanced File Explorer**: Multi-file selection mode (`SelectionManager`), batch extraction, copy, move, delete, and rename.
+- **Media Previews & APK Badges**: Integrated Coil image and video thumbnail decoding; extracted application icons for APK files.
+- **Conflict Resolution**: Added file collision dialog for duplicate file handling during extraction/copying.
+
+### Added - Native Payload Parser & Archive Capabilities
+- **Rust Native Payload Engine**: Integrated native Rust `payload-parser` JNI module for rapid Android OTA system image extraction.
+- **`PayloadViewerScreen`**: Interactive partition browser with individual/batch extraction and SHA256 integrity verification.
+- **Unified `ArchiveReader`**: Standardized stream-based archive reader architecture.
+- **Streaming Extraction Progress**: Byte-level real-time extraction progress updates.
+- **Selective Extraction**: Temporary storage extraction and inspection without uncompressing full archives.
+
+### Added - UI/UX & Dynamic Island Notifications
+- **Expressive Material 3 Design**: Overhauled color palette, custom squircle shapes, and AMOLED dark mode.
+- **Dynamic Island Notifications**: Replaced stock snackbars with animated pill notification banners (`DynamicIslandNotificationHost`).
+- **Modernized Settings & About**: Full-screen Settings redesign and dynamic version metadata in About screen.
+- **Permission Flow Setup**: Streamlined onboarding with permission-gated `SetupScreen`.
+- **String Internationalization**: Standardized string resources for multi-language support.
+
+---
+
 ## [1.1-Release] - 2026-02-26
 
 ### Added - Payload.bin Viewer (NEW!)
