@@ -134,6 +134,29 @@ XArchiver features full resource-level internationalization:
 
 ---
 
+## Credits and Acknowledgements
+
+### Architectural and Design References
+XArchiver draws valuable inspiration, design paradigms, and operational workflows from leading mobile file managers and archive tools:
+- **MT Manager**: Inspiration for advanced archive inspection, payload.bin partition browsing, and privileged file editing capabilities.
+- **OriginOS File**: Inspiration for sleek squircle card layouts, clean typographic balance, and modern UI aesthetic.
+- **ZArchiver**: Inspiration for dependable, comprehensive archive management, on-the-fly streaming extraction, and broad compression format support.
+
+### Open-Source Libraries and Dependencies
+Special gratitude to the open-source projects and communities that make XArchiver possible:
+- **MIUIX KMP** (`top.yukonga.miuix.kmp` by yukonga): Xiaomi HyperOS and MIUI design system components, squircle shapes, real-time texture blur, and extended icon sets.
+- **Apache Commons Compress & Commons IO**: Battle-tested archive manipulation and streaming decompression engine (ZIP, TAR, GZ, BZIP2, 7Z).
+- **Tukaani XZ for Java**: Native Java implementation of the XZ and LZMA data compression standards.
+- **Google Protocol Buffers** (`protobuf-javalite`): Lightweight serialization framework for parsing Android OTA payload manifests.
+- **Rikka Shizuku** (`dev.rikka.shizuku`): Standardized framework enabling elevated Android system file operations without requiring full root access.
+- **topjohnwu libsu**: Robust, high-performance root shell implementation and superuser service bridge.
+- **Coil** (`io.coil-kt:coil-compose`): Fast, memory-efficient asynchronous image and video thumbnail decoding pipeline for Jetpack Compose.
+- **Google Jetpack Media3 (ExoPlayer)**: Audio and video playback foundation for in-app media previews.
+- **Square Okio**: High-performance I/O and byte-stream library for efficient file and buffer handling.
+- **Google Android Jetpack**: Compose, DataStore, Lifecycle, Navigation, and Material Design 3 foundation.
+
+---
+
 ## Contributing
 
 Contributions, bug reports, and feature requests are welcome. When submitting a pull request:
@@ -146,3 +169,4 @@ Contributions, bug reports, and feature requests are welcome. When submitting a 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for complete details.
+
