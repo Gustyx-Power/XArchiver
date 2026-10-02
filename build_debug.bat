@@ -11,6 +11,9 @@ echo [INFO] Starting complete debug build pipeline...
 REM Check prerequisites
 echo [INFO] Checking prerequisites...
 
+if "%JAVA_HOME%"=="" if exist "C:\jdk-17.0.2" set "JAVA_HOME=C:\jdk-17.0.2"
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin" set "PATH=%JAVA_HOME%\bin;%PATH%"
+
 where java >nul 2>nul
 if %errorlevel% neq 0 (
     echo [ERROR] Java not found. Please install Java or Android Studio

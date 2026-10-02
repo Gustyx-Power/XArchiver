@@ -7,6 +7,16 @@ echo    XArchiver - Clean Debug Build Script
 echo ============================================
 echo.
 
+:: Setup Java & Android SDK paths if not present in current session
+if "%JAVA_HOME%"=="" if exist "C:\jdk-17.0.2" set "JAVA_HOME=C:\jdk-17.0.2"
+if defined JAVA_HOME if exist "%JAVA_HOME%\bin" set "PATH=%JAVA_HOME%\bin;%PATH%"
+
+if "%ANDROID_HOME%"=="" if exist "%LOCALAPPDATA%\Android\Sdk" set "ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk"
+if defined ANDROID_HOME (
+    if exist "%ANDROID_HOME%\platform-tools" set "PATH=%ANDROID_HOME%\platform-tools;%PATH%"
+    if exist "%ANDROID_HOME%\cmdline-tools\latest\bin" set "PATH=%ANDROID_HOME%\cmdline-tools\latest\bin;%PATH%"
+)
+
 :: Detect connected Android devices
 echo Mendeteksi perangkat Android yang terhubung...
 set DEVICE_COUNT=0
