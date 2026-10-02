@@ -129,7 +129,7 @@ XArchiver/
 ## Localization
 
 XArchiver features full resource-level internationalization:
-- **English**: Default locale (`values/strings.xml`, `CHANGELOG.md`, `changelogs.md`)
+- **English**: Default locale (`values/strings.xml` `changelogs-en.md`)
 - **Indonesian**: Indonesian locale (`values-in/strings.xml`, `changelogs-id.md`)
 
 ---
