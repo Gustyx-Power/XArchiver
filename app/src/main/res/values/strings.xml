@@ -39,6 +39,7 @@
     <string name="shizuku_guide_step4">4. Alternatively, open the \'Privileged Explorer\' on the Home screen to trigger the permission prompt.</string>
     
     <!-- Actions -->
+    <string name="action_back">Back</string>
     <string name="action_request_permission">Request Permission</string>
     <string name="action_close">Close</string>
     <string name="action_cancel">Cancel</string>
@@ -141,4 +142,87 @@
     <string name="property_type">Type</string>
     <string name="property_hidden">Hidden</string>
     <string name="property_yes">Yes</string>
+
+    <!-- About Screen & Sub-Screens -->
+    <string name="about_title">About</string>
+    <string name="about_app_desc">A Modern File Manager &amp; Archive Handler</string>
+    <string name="about_application">Application</string>
+    <string name="about_version">Version</string>
+    <string name="about_package_name">Package name</string>
+    <string name="about_storage">Storage</string>
+    <string name="about_supported_formats">Supported formats</string>
+    <string name="about_supported_formats_desc">ZIP, 7Z, TAR, GZ, RAR…</string>
+    <string name="about_detailed_specs">Detailed app specs</string>
+    <string name="about_detailed_specs_desc">Apache Commons Compress, Jetpack Compose, Rust</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_source_code">Source Code</string>
+    <string name="about_github_repo">GitHub Repository</string>
+    <string name="about_issue_tracker">Issue Tracker</string>
+    <string name="about_report_bugs">Report bugs &amp; feedback</string>
+    <string name="about_license">License</string>
+    <string name="about_license_mit">MIT License</string>
+    <string name="about_third_party_licenses">Third-Party Licenses</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
+    <string name="about_copied_format">Copied %s</string>
+    <string name="about_easter_egg_format">XArchiver v%s • By GustyxPower</string>
+
+    <!-- Detailed App Specs Screen -->
+    <string name="specs_title">Detailed app specs</string>
+    <string name="specs_tag_version">VERSION</string>
+    <string name="specs_tag_core_engine">CORE ENGINE</string>
+    <string name="specs_tag_target_os">TARGET OS</string>
+    <string name="specs_tag_ui_arch">UI ARCHITECTURE</string>
+    <string name="specs_debug_build">Debug Build</string>
+    <string name="specs_section_general">General</string>
+    <string name="specs_section_identity">Application Identity</string>
+    <string name="specs_app_name">Application Name</string>
+    <string name="specs_package_id">Package Identifier</string>
+    <string name="specs_version">App Version</string>
+    <string name="specs_build_env">Build Environment</string>
+    <string name="specs_section_engine">Archiver Engine</string>
+    <string name="specs_section_core_engines">Core Archiving Engines</string>
+    <string name="specs_primary_compressor">Primary Compression Library</string>
+    <string name="specs_payload_engine">OTA Payload &amp; Firmware Engine</string>
+    <string name="specs_lzma_engine">LZMA / XZ Engine</string>
+    <string name="specs_io_buffering">I/O Buffering Utilities</string>
+    <string name="specs_concurrency">Concurrency &amp; Threading</string>
+    <string name="specs_section_ui">User Interface &amp; Design</string>
+    <string name="specs_section_ui_arch">UI Framework &amp; Architecture</string>
+    <string name="specs_ui_toolkit">UI Toolkit</string>
+    <string name="specs_design_framework">Design Framework</string>
+    <string name="specs_aesthetic_theme">Aesthetic Theme</string>
+    <string name="specs_section_system">System &amp; Permissions</string>
+    <string name="specs_section_storage_permissions">Storage &amp; Permissions</string>
+    <string name="specs_storage_engine">Storage Engine</string>
+    <string name="specs_privileged_mode">Privileged Mode</string>
+    <string name="specs_min_sdk">Minimum Android SDK</string>
+    <string name="specs_target_sdk">Target Android SDK</string>
+    <string name="specs_host_os">Host Device OS</string>
+
+    <!-- Supported Formats Screen -->
+    <string name="formats_title">Supported formats</string>
+    <string name="formats_group_standard">Standard Archives</string>
+    <string name="formats_group_tarballs">Compressed Tarballs</string>
+    <string name="formats_group_streams">Single-File Streams</string>
+    <string name="formats_group_specialized">Specialized &amp; Packages</string>
+    <string name="formats_group_specialized_alt">Specialized &amp; Android Formats</string>
+    <string name="formats_desc_zip">Standard ZIP archive with Deflate / Store compression and password encryption.</string>
+    <string name="formats_desc_7z">High-ratio 7-Zip archive with LZMA / LZMA2 / BCJ filters.</string>
+    <string name="formats_desc_tar">POSIX standard tape archive format without compression.</string>
+    <string name="formats_desc_targz">Tar archive compressed with GNU Gzip stream.</string>
+    <string name="formats_desc_tarbz2">Tar archive compressed with Burrows-Wheeler Bzip2.</string>
+    <string name="formats_desc_tarxz">Tar archive compressed with LZMA2 XZ high-compression stream.</string>
+    <string name="formats_desc_gz">GNU zip compressed stream decompression.</string>
+    <string name="formats_desc_bz2">High efficiency block-sorting data compression stream.</string>
+    <string name="formats_desc_xz">High-compression LZMA2 container stream.</string>
+    <string name="formats_desc_rar">Roshal Archive decompression support.</string>
+    <string name="formats_desc_apk">Android package archives with asset inspection &amp; extraction.</string>
+    <string name="formats_desc_payload">Android OTA firmware partition unpacker &amp; extractor, powered by Rust Native Engine (libpayload_parser.so) with high-efficiency stream extraction.</string>
+    <string name="formats_cap_create">Create</string>
+    <string name="formats_cap_extract">Extract</string>
+    <string name="formats_cap_encrypt">Encrypt</string>
+    <string name="formats_cap_decompress">Decompress</string>
+    <string name="formats_cap_inspect">Inspect</string>
+    <string name="formats_cap_high_ratio">High-Ratio</string>
+    <string name="formats_cap_rust_native">Rust Native</string>
 </resources>
