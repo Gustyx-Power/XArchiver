@@ -42,6 +42,13 @@ fun SettingsScreen(navController: NavController) {
     val themePreferences = remember { ThemePreferences(context) }
     val scope = rememberCoroutineScope()
 
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = ThemePreferences.isMiuiOrHyperOsDevice)
+    
+    if (isMiuixUiEnabled) {
+        MiuixSettingsScreen(navController = navController, themePreferences = themePreferences)
+        return
+    }
+    
     val currentThemeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val isDynamicColorEnabled by themePreferences.isDynamicColorEnabled.collectAsState(initial = true)
     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
@@ -184,7 +191,7 @@ fun SettingsScreen(navController: NavController) {
 
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
 
-                    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = false)
+                    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = ThemePreferences.isMiuiOrHyperOsDevice)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -212,12 +219,12 @@ fun SettingsScreen(navController: NavController) {
                         
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "MIUIX UI Mode (Beta)",
+                                "MIUIX UI Mode",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Use Xiaomi HyperOS style components (Restart app)",
+                                "Gaya antarmuka HyperOS / MIUI (Otomatis aktif di Xiaomi/Redmi/Poco)",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

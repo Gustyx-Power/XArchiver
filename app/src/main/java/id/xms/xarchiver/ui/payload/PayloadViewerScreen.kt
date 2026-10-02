@@ -252,6 +252,7 @@ private fun PayloadContent(
                     InfoRow("Total Size", payloadInfo.totalSize.humanReadable())
                     InfoRow("Partitions", payloadInfo.partitions.size.toString())
                     InfoRow("Block Size", "${payloadInfo.header.blockSize} bytes")
+                    InfoRow("Engine", "Rust Native (libpayload_parser.so)")
                 }
             }
         }

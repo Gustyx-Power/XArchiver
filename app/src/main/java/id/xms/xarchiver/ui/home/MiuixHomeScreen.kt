@@ -1,6 +1,7 @@
 package id.xms.xarchiver.ui.home
 
 import android.net.Uri
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,6 +34,8 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val themePreferences = remember { ThemePreferences(context) }
     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
+    val themeMode by themePreferences.themeMode.collectAsState(initial = id.xms.xarchiver.ui.theme.ThemeMode.SYSTEM)
+    val isDark = id.xms.xarchiver.ui.theme.isAppInDarkTheme(context, themeMode)
     var currentTab by remember { mutableStateOf(HomeTab.Files) }
     val backdrop = rememberLayerBackdrop()
 
@@ -41,12 +45,15 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
         }
     }
 
+    val pageBgColor = if (isDark) Color.Black else Color(0xFFF2F4F7)
+
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = pageBgColor,
         topBar = {
             TopAppBar(
                 title = stringResource(R.string.app_name),
                 largeTitle = stringResource(R.string.app_name),
+                color = pageBgColor,
                 actions = {
                     IconButton(onClick = { navController.navigate("settings") }) {
                         Icon(MiuixIcons.Settings, contentDescription = "Settings")
@@ -58,13 +65,24 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
             Surface(
                 modifier = Modifier
                     .padding(bottom = 16.dp)
+                    .shadow(
+                        elevation = if (isDark) 12.dp else 10.dp,
+                        shape = RoundedCornerShape(100),
+                        spotColor = if (isDark) Color.Black.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.14f),
+                        ambientColor = if (isDark) Color.Black.copy(alpha = 0.4f) else Color.Black.copy(alpha = 0.08f)
+                    )
+                    .border(
+                        width = 0.5.dp,
+                        color = if (isDark) Color(0xFF2C2C2F) else Color(0xFFE2E4E9),
+                        shape = RoundedCornerShape(100)
+                    )
                     .textureBlur(
                         backdrop = backdrop,
                         shape = RoundedCornerShape(100),
-                        blurRadiusX = 30f,
-                        blurRadiusY = 30f
+                        blurRadiusX = 25f,
+                        blurRadiusY = 25f
                     ),
-                color = MiuixTheme.colorScheme.surface.copy(alpha = 0.5f),
+                color = if (isDark) Color(0xFF1A1A1C).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.85f),
                 shape = RoundedCornerShape(100)
             ) {
                 Row(
@@ -78,7 +96,7 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
                         colors = if (isRecent) ButtonDefaults.buttonColorsPrimary() else ButtonDefaults.buttonColors(color = androidx.compose.ui.graphics.Color.Transparent, contentColor = MiuixTheme.colorScheme.onSurface)
                     ) {
                         androidx.compose.material3.Icon(
-                            if (isRecent) MiuixIcons.Recent else MiuixIcons.Recent, 
+                            MiuixIcons.Recent, 
                             contentDescription = null, 
                             modifier = Modifier.padding(end = 8.dp).size(18.dp),
                             tint = if (isRecent) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface
@@ -93,7 +111,7 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
                         colors = if (isFiles) ButtonDefaults.buttonColorsPrimary() else ButtonDefaults.buttonColors(color = androidx.compose.ui.graphics.Color.Transparent, contentColor = MiuixTheme.colorScheme.onSurface)
                     ) {
                         androidx.compose.material3.Icon(
-                            if (isFiles) MiuixIcons.Folder else MiuixIcons.Folder, 
+                            MiuixIcons.Folder, 
                             contentDescription = null, 
                             modifier = Modifier.padding(end = 8.dp).size(18.dp),
                             tint = if (isFiles) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSurface
@@ -110,9 +128,9 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
         ) {
             item {
                 if (currentTab == HomeTab.Files) {
-                    MiuixFilesContent(viewModel, navController, isRootAccessEnabled, backdrop)
+                    MiuixFilesContent(viewModel, navController, isRootAccessEnabled, isDark)
                 } else {
-                    MiuixRecentContent(viewModel, navController, backdrop)
+                    MiuixRecentContent(viewModel, navController, isDark)
                 }
                 Spacer(modifier = Modifier.height(100.dp)) // padding for bottom FAB
             }
@@ -121,7 +139,22 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
 }
 
 @Composable
-fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, isRootAccessEnabled: Boolean, backdrop: LayerBackdrop) {
+fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, isRootAccessEnabled: Boolean, isDark: Boolean) {
+    val cardColor = if (isDark) Color(0xFF141416) else Color.White
+    val cardModifier = Modifier
+        .fillMaxWidth()
+        .shadow(
+            elevation = if (isDark) 0.dp else 1.dp,
+            shape = RoundedCornerShape(16.dp),
+            spotColor = Color.Black.copy(alpha = 0.04f)
+        )
+        .border(
+            width = 0.5.dp,
+            color = if (isDark) Color(0xFF222225) else Color(0xFFE5E7EB),
+            shape = RoundedCornerShape(16.dp)
+        )
+    val dividerColor = if (isDark) Color(0xFF222225) else Color(0xFFF0F0F2)
+
     Column(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -132,7 +165,7 @@ fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, is
         
         Column {
             SmallTitle(text = stringResource(R.string.home_storage))
-            Card(modifier = Modifier.fillMaxWidth().textureBlur(backdrop = backdrop, shape = RoundedCornerShape(16.dp), blurRadiusX = 20f, blurRadiusY = 20f), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))) {
+            Card(modifier = cardModifier, colors = CardDefaults.defaultColors(color = cardColor)) {
                 if (isRefreshing) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         Text("Detecting storage...", color = MiuixTheme.colorScheme.onSurfaceVariantSummary)
@@ -145,7 +178,7 @@ fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, is
                     
                     allStorages.forEachIndexed { index, item ->
                         if (index > 0) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = dividerColor)
                         }
                         
                         if (item is id.xms.xarchiver.core.StorageInfo) {
@@ -179,20 +212,20 @@ fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, is
         if (categories.isNotEmpty()) {
             Column {
                 SmallTitle(text = stringResource(R.string.home_categories))
-                Card(modifier = Modifier.fillMaxWidth().textureBlur(backdrop = backdrop, shape = RoundedCornerShape(16.dp), blurRadiusX = 20f, blurRadiusY = 20f), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))) {
+                Card(modifier = cardModifier, colors = CardDefaults.defaultColors(color = cardColor)) {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                             categories.take(3).forEach { category ->
-                                MiuixCategoryItem(category) { navController.navigate("category_explorer/${Uri.encode(category.name)}") }
+                                MiuixCategoryItem(category, isDark) { navController.navigate("category_explorer/${Uri.encode(category.name)}") }
                             }
                         }
                         if (categories.size > 3) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 categories.drop(3).take(3).forEach { category ->
-                                    MiuixCategoryItem(category) { navController.navigate("category_explorer/${Uri.encode(category.name)}") }
+                                    MiuixCategoryItem(category, isDark) { navController.navigate("category_explorer/${Uri.encode(category.name)}") }
                                 }
                             }
                         }
@@ -206,10 +239,10 @@ fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, is
         if (shortcuts.isNotEmpty()) {
             Column {
                 SmallTitle(text = stringResource(R.string.home_quick_access))
-                Card(modifier = Modifier.fillMaxWidth().textureBlur(backdrop = backdrop, shape = RoundedCornerShape(16.dp), blurRadiusX = 20f, blurRadiusY = 20f), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))) {
+                Card(modifier = cardModifier, colors = CardDefaults.defaultColors(color = cardColor)) {
                     shortcuts.forEachIndexed { index, shortcut ->
                         if (index > 0) {
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = dividerColor)
                         }
                         MiuixListItem(
                             title = shortcut.name,
@@ -225,8 +258,23 @@ fun MiuixFilesContent(viewModel: HomeViewModel, navController: NavController, is
 }
 
 @Composable
-fun MiuixRecentContent(viewModel: HomeViewModel, navController: NavController, backdrop: LayerBackdrop) {
+fun MiuixRecentContent(viewModel: HomeViewModel, navController: NavController, isDark: Boolean) {
     val recentFiles = viewModel.recentFilesGrouped.value
+    val cardColor = if (isDark) Color(0xFF141416) else Color.White
+    val cardModifier = Modifier
+        .fillMaxWidth()
+        .shadow(
+            elevation = if (isDark) 0.dp else 1.dp,
+            shape = RoundedCornerShape(16.dp),
+            spotColor = Color.Black.copy(alpha = 0.04f)
+        )
+        .border(
+            width = 0.5.dp,
+            color = if (isDark) Color(0xFF222225) else Color(0xFFE5E7EB),
+            shape = RoundedCornerShape(16.dp)
+        )
+    val dividerColor = if (isDark) Color(0xFF222225) else Color(0xFFF0F0F2)
+
     Column(
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -239,10 +287,10 @@ fun MiuixRecentContent(viewModel: HomeViewModel, navController: NavController, b
             recentFiles.forEach { (group, items) ->
                 Column {
                     SmallTitle(text = group)
-                    Card(modifier = Modifier.fillMaxWidth().textureBlur(backdrop = backdrop, shape = RoundedCornerShape(16.dp), blurRadiusX = 20f, blurRadiusY = 20f), colors = CardDefaults.defaultColors(color = MiuixTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f))) {
+                    Card(modifier = cardModifier, colors = CardDefaults.defaultColors(color = cardColor)) {
                         items.forEachIndexed { index, file ->
                             if (index > 0) {
-                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = dividerColor)
                             }
                             MiuixListItem(
                                 title = file.name,
@@ -304,7 +352,7 @@ fun MiuixListItem(title: String, subtitle: String, icon: androidx.compose.ui.gra
 }
 
 @Composable
-fun MiuixCategoryItem(category: Category, onClick: () -> Unit) {
+fun MiuixCategoryItem(category: Category, isDark: Boolean, onClick: () -> Unit) {
     val icon = when (category.name.lowercase()) {
         "images" -> MiuixIcons.Image
         "videos" -> MiuixIcons.Play
@@ -320,7 +368,7 @@ fun MiuixCategoryItem(category: Category, onClick: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
-            color = MiuixTheme.colorScheme.surfaceVariant,
+            color = if (isDark) Color(0xFF222225) else Color(0xFFF2F4F7),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.size(48.dp)
         ) {

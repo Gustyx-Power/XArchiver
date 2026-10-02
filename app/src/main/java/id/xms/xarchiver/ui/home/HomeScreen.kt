@@ -59,7 +59,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     val context = androidx.compose.ui.platform.LocalContext.current
     val themePreferences = remember { ThemePreferences(context) }
     val isRootAccessEnabled by themePreferences.isRootAccessEnabled.collectAsState(initial = false)
-    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = false)
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = ThemePreferences.isMiuiOrHyperOsDevice)
 
     if (isMiuixUiEnabled) {
         MiuixHomeScreen(navController, viewModel)

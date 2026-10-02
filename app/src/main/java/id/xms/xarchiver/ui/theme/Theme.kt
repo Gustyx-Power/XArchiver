@@ -69,6 +69,21 @@ private val ExpressiveDarkColorScheme = darkColorScheme(
     onSurfaceVariant = onSurfaceVariantDark
 )
 
+fun isAppInDarkTheme(context: android.content.Context, themeMode: ThemeMode): Boolean {
+    return when (themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM -> {
+            val appConfigDark = (context.applicationContext.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            if (appConfigDark) return true
+            val activityConfigDark = (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            if (activityConfigDark) return true
+            val uiModeManager = context.getSystemService(android.content.Context.UI_MODE_SERVICE) as? android.app.UiModeManager
+            uiModeManager?.nightMode == android.app.UiModeManager.MODE_NIGHT_YES
+        }
+    }
+}
+
 @Composable
 fun XArchiverTheme(
     content: @Composable () -> Unit
@@ -78,13 +93,9 @@ fun XArchiverTheme(
 
     val themeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
     val isDynamicColorEnabled by themePreferences.isDynamicColorEnabled.collectAsState(initial = true)
-    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = false)
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = ThemePreferences.isMiuiOrHyperOsDevice)
 
-    val darkTheme = when (themeMode) {
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-    }
+    val darkTheme = isAppInDarkTheme(context, themeMode)
 
     val colorScheme = when {
         // Use Material You colors if available and enabled
@@ -100,7 +111,14 @@ fun XArchiverTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.background.toArgb() // Use background for a flatter immersive look
+            val statusBarBg = if (darkTheme) {
+                android.graphics.Color.BLACK
+            } else if (isMiuixUiEnabled) {
+                android.graphics.Color.parseColor("#F2F4F7")
+            } else {
+                colorScheme.background.toArgb()
+            }
+            window.statusBarColor = statusBarBg
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
