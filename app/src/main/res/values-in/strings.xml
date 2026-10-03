@@ -263,6 +263,8 @@
     <string name="changelog_item_2_1_perf_desc">Peningkatan performa scrolling daftar folder dengan daur ulang item LazyColumn, cache memori ikon APK (LruCache), penghapusan animasi sentuh yang berat, dan reduksi overdraw render.</string>
     <string name="changelog_item_2_1_html_title">Runner &amp; Pratinjau Web HTML Dalam Aplikasi</string>
     <string name="changelog_item_2_1_html_desc">Jalankan dan render situs web HTML secara langsung dengan tombol Play di dalam text editor, mendukung live reload, aset relatif (CSS/JS/gambar), serta beralih tampilan ponsel/desktop.</string>
+    <string name="changelog_item_2_1_ota_title">Pembaruan Mandiri (OTA) &amp; Penampil Markdown</string>
+    <string name="changelog_item_2_1_ota_desc">Pembaruan aplikasi otomatis via GitHub Releases tanpa Firebase, layar pembaruan adaptif MIUIX dan Material 3, tombol kapsul progres interaktif (progress-filling pill), dan render catatan rilis berbasis Markdown.</string>
     <string name="changelog_item_2_0_root_title">Akses Khusus Shizuku &amp; Root</string>
     <string name="changelog_item_2_0_root_desc">Membaca, menulis, dan mengedit berkas sistem terlindungi menggunakan Shizuku API v13+ atau superuser (su) via libsu 6.0.</string>
     <string name="changelog_item_2_0_storage_title">Pager Horizontal Multi-Penyimpanan</string>
@@ -289,4 +291,32 @@
     <string name="preview_mobile_mode">Tampilan Ponsel</string>
     <string name="preview_refresh">Segarkan</string>
     <string name="preview_open_browser">Buka di Browser</string>
+
+    <!-- OTA Update Strings -->
+    <string name="update_check_title">Periksa Pembaruan</string>
+    <string name="update_check_subtitle">Versi saat ini: %s</string>
+    <string name="update_checking">Memeriksa pembaruan…</string>
+    <string name="update_available_title">Pembaruan Tersedia</string>
+    <string name="update_available_version">Versi %s telah tersedia</string>
+    <string name="update_uptodate_title">Versi Terbaru</string>
+    <string name="update_uptodate_desc">XArchiver sudah menggunakan versi rilis terbaru (%s).</string>
+    <string name="update_download_btn">Unduh &amp; Pasang</string>
+    <string name="update_install_btn">Pasang Sekarang</string>
+    <string name="update_downloading">Mengunduh pembaruan (%s)…</string>
+    <string name="update_download_complete">Pengunduhan selesai. Siap dipasang.</string>
+    <string name="update_error_title">Gagal Memeriksa Pembaruan</string>
+    <string name="update_error_network">Tidak dapat memeriksa pembaruan. Pastikan perangkat terhubung ke internet.</string>
+    <string name="update_size_label">Ukuran Berkas</string>
+    <string name="update_changelog_label">Catatan Pembaruan</string>
+    <string name="update_later_btn">Nanti</string>
+    <string name="notification_update_channel_name">Pembaruan Aplikasi</string>
+    <string name="notification_update_channel_desc">Notifikasi untuk versi rilis terbaru XArchiver.</string>
+    <string name="notification_update_title">Pembaruan Baru Tersedia: v%s</string>
+    <string name="notification_update_desc">Ketuk untuk melihat pembaruan dan memasang versi baru.</string>
+    <string name="badge_new">BARU</string>
+    <string name="update_screen_title">Pembaruan perangkat lunak</string>
+    <string name="update_software_version">Versi perangkat lunak</string>
+    <string name="update_checking_pill">Memeriksa pembaruan</string>
+    <string name="update_uptodate_pill">Versi perangkat lunak Anda adalah yang terbaru</string>
+    <string name="update_check_again">Periksa lagi</string>
 </resources>

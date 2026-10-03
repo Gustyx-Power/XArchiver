@@ -263,6 +263,8 @@
     <string name="changelog_item_2_1_perf_desc">Optimized folder scrolling performance with LazyColumn item recycling, APK icon memory caching (LruCache), eliminated heavy touch animations, and reduced render overdraw.</string>
     <string name="changelog_item_2_1_html_title">In-App HTML Web Runner &amp; Preview</string>
     <string name="changelog_item_2_1_html_desc">Directly run and render HTML websites with a dedicated Play button inside the text editor, featuring live reload, relative resource support, and mobile/desktop viewport toggle.</string>
+    <string name="changelog_item_2_1_ota_title">Standalone OTA Updates &amp; Markdown Viewer</string>
+    <string name="changelog_item_2_1_ota_desc">Automated GitHub Releases updates without Firebase, adaptive MIUIX and Material 3 update screens, interactive progress-filling pill download button, and rich Markdown release notes rendering.</string>
     <string name="changelog_item_2_0_root_title">Shizuku &amp; Root Privileged Access</string>
     <string name="changelog_item_2_0_root_desc">Read, write, and edit protected system files using Shizuku API v13+ or superuser (su) via libsu 6.0.</string>
     <string name="changelog_item_2_0_storage_title">Multi-Storage Horizontal Pager</string>
@@ -289,4 +291,32 @@
     <string name="preview_mobile_mode">Mobile View</string>
     <string name="preview_refresh">Refresh</string>
     <string name="preview_open_browser">Open in Browser</string>
+
+    <!-- OTA Update Strings -->
+    <string name="update_check_title">Check for Updates</string>
+    <string name="update_check_subtitle">Current version: %s</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_version">Version %s is available</string>
+    <string name="update_uptodate_title">You\'re Up to Date</string>
+    <string name="update_uptodate_desc">XArchiver is running the latest available version (%s).</string>
+    <string name="update_download_btn">Download &amp; Install</string>
+    <string name="update_install_btn">Install Now</string>
+    <string name="update_downloading">Downloading update (%s)…</string>
+    <string name="update_download_complete">Download complete. Ready to install.</string>
+    <string name="update_error_title">Update Check Failed</string>
+    <string name="update_error_network">Unable to check for updates. Please check your internet connection.</string>
+    <string name="update_size_label">Package Size</string>
+    <string name="update_changelog_label">What\'s New</string>
+    <string name="update_later_btn">Later</string>
+    <string name="notification_update_channel_name">App Updates</string>
+    <string name="notification_update_channel_desc">Notifications for new XArchiver updates and releases.</string>
+    <string name="notification_update_title">New Update Available: v%s</string>
+    <string name="notification_update_desc">Tap to review what\'s new and install the update.</string>
+    <string name="badge_new">NEW</string>
+    <string name="update_screen_title">Software update</string>
+    <string name="update_software_version">Software version</string>
+    <string name="update_checking_pill">Checking for updates</string>
+    <string name="update_uptodate_pill">Your software is up to date</string>
+    <string name="update_check_again">Check for updates</string>
 </resources>

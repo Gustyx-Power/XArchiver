@@ -9,6 +9,13 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 - **Tab Berkas Terkini Khusus**: Tab bawaan di Layar Beranda dengan pengelompokan kategori, metadata berkas, dan aksi akses cepat.
 - **Animasi Teks Berjalan (Marquee)**: Mengimplementasikan animasi teks berjalan untuk nama berkas panjang dan judul kartu yang melebihi batas.
 
+### Ditambahkan - Pembaruan Aplikasi Mandiri (OTA Update) & Rendering Markdown
+- **Layar Pembaruan Khusus (Update Screen)**: Halaman pembaruan perangkat lunak mandiri yang mendukung tema MIUIX / HyperOS dan Material Design 3 tanpa popup dialog.
+- **Pengecekan Otomatis GitHub Releases**: Mendeteksi versi rilis terbaru langsung dari repository GitHub tanpa ketergantungan Firebase.
+- **Progress-Filling Pill**: Tombol aksi unduh berupa kapsul interaktif yang terisi halus dari kiri ke kanan secara proporsional dengan persentase unduhan dan bytes.
+- **Renderer Markdown Native**: Mendukung tampilan catatan rilis berbasis Markdown lengkap dengan heading, daftar poin beraksen, kode inline monospace, dan tautan.
+- **Notifikasi & Indikator Lencana**: Menampilkan titik indikator lencana pembaruan baru pada ikon Pengaturan dan kartu Tentang serta notifikasi sistem Android.
+
 ### Ditambahkan - Antarmuka Estetika MIUIX / HyperOS
 - **Integrasi MIUIX KMP**: Mengintegrasikan komponen desain MIUIX Kotlin Multiplatform (`miuix-ui`, `miuix-blur`, `miuix-icons` v0.9.3).
 - **Layar Beranda Bergaya HyperOS (`MiuixHomeScreen`)**: Menampilkan kartu squircle, header blur tekstur real-time, dan pil navigasi mengambang modern.

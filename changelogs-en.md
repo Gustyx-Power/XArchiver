@@ -9,6 +9,13 @@ All notable changes to XArchiver will be documented in this file.
 - **Dedicated Recent Files Tab**: Built-in tab on the Home Screen with category grouping, file metadata, and quick access actions.
 - **Text Marquee Animation**: Implemented animated marquee for filenames and overflowing card titles.
 
+### Added - Standalone OTA App Updates & Markdown Rendering
+- **Dedicated Update Screen**: Standalone software update screen tailored for both MIUIX / HyperOS and Material Design 3 modes without dialog popups.
+- **Automatic GitHub Releases Checker**: Detects new app releases directly from GitHub Releases API without Firebase dependencies.
+- **Progress-Filling Pill**: Download action button with an interactive pill that fills smoothly horizontally as download progresses in real-time.
+- **Native Markdown Renderer**: Renders rich release notes with headers, accented bullet lists, monospace inline code chips, and clickable links.
+- **Notifications & Badge Indicators**: Displays an update badge dot on the Settings icon, About screen rows, and posts high-priority system notifications.
+
 ### Added - MIUIX / HyperOS Aesthetic Interface
 - **MIUIX KMP Integration**: Integrated MIUIX Kotlin Multiplatform design components (`miuix-ui`, `miuix-blur`, `miuix-icons` v0.9.3).
 - **HyperOS-styled Home Screen (`MiuixHomeScreen`)**: Features squircle cards, texture blur headers, and modern floating navigation pill.

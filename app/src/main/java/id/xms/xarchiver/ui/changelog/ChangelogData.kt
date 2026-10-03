@@ -90,6 +90,12 @@ object ChangelogRepository {
                     descRes = R.string.changelog_item_2_1_html_desc,
                     category = ChangelogCategory.FEATURES,
                     tags = listOf("HTML Runner", "WebView", "Desktop Mode", "Live Preview")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_ota_title,
+                    descRes = R.string.changelog_item_2_1_ota_desc,
+                    category = ChangelogCategory.FEATURES,
+                    tags = listOf("OTA Update", "GitHub Releases", "Markdown", "Progress Pill")
                 )
             )
         ),
