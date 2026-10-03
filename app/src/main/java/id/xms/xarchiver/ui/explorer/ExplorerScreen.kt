@@ -545,7 +545,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
             } else {
                 itemsIndexed(
                     items = filteredFiles,
-                    key = { _, file -> file.path }
+                    key = { _, file -> file.path },
+                    contentType = { _, file -> if (file.isDirectory) "folder" else "file" }
                 ) { _, file ->
                     FileItemCard(
                         file = file,
@@ -1126,6 +1127,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
 }
 }
 
+private val apkIconCache = android.util.LruCache<String, android.graphics.drawable.Drawable>(64)
+
 @Composable
 internal fun FileItemCard(
     file: FileItem,
@@ -1136,26 +1139,13 @@ internal fun FileItemCard(
 ) {
     val fileIcon = remember(file.name, file.isDirectory) { getFileIcon(file) }
     val fileColor = getFileColor(file)
-    val formattedDate = remember(file.lastModified) {
-        dateFormatter.format(Date(file.lastModified))
+    val formattedSubtitle = remember(file.isDirectory, file.size, file.lastModified) {
+        if (file.isDirectory) "Folder" else "${file.size.humanReadable()} • ${dateFormatter.format(Date(file.lastModified))}"
     }
-    
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "scale"
-    )
-    
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .scale(scale)
             .then(
                 if (isSelected) Modifier.border(
                     2.dp,
@@ -1164,8 +1154,6 @@ internal fun FileItemCard(
                 ) else Modifier
             )
             .combinedClickable(
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
                 onClick = onClick,
                 onLongClick = onLongClick
             ),
@@ -1206,10 +1194,12 @@ internal fun FileItemCard(
                     file.name.substringAfterLast('.', "").lowercase() == "apk"
                 }
 
-                var apkIconDrawable by remember { mutableStateOf<android.graphics.drawable.Drawable?>(null) }
+                var apkIconDrawable by remember(file.path) {
+                    mutableStateOf(if (isApk) apkIconCache.get(file.path) else null)
+                }
                 val context = LocalContext.current
 
-                if (isApk) {
+                if (isApk && apkIconDrawable == null) {
                     LaunchedEffect(file.path) {
                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                             try {
@@ -1218,9 +1208,13 @@ internal fun FileItemCard(
                                 pi?.applicationInfo?.let { appInfo ->
                                     appInfo.sourceDir = file.path
                                     appInfo.publicSourceDir = file.path
-                                    apkIconDrawable = appInfo.loadIcon(pm)
+                                    val icon = appInfo.loadIcon(pm)
+                                    if (icon != null) {
+                                        apkIconCache.put(file.path, icon)
+                                        apkIconDrawable = icon
+                                    }
                                 }
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 // Ignore if extracting icon fails
                             }
                         }
@@ -1277,7 +1271,7 @@ internal fun FileItemCard(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = if (file.isDirectory) "Folder" else "${file.size.humanReadable()} • $formattedDate",
+                    text = formattedSubtitle,
                     style = MaterialTheme.typography.labelMedium,
                     color = if (file.isDirectory) MaterialTheme.colorScheme.primary 
                             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)

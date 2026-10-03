@@ -151,7 +151,8 @@ fun CategoryExplorerScreen(
                 ) {
                     items(
                         items = files,
-                        key = { it.id }
+                        key = { it.id },
+                        contentType = { "media_file" }
                     ) { file ->
                         MediaFileCard(
                             file = file,
@@ -201,6 +202,8 @@ fun CategoryExplorerScreen(
     }
 }
 
+private val categoryApkCache = android.util.LruCache<String, android.graphics.drawable.Drawable>(64)
+
 @Composable
 private fun MediaFileCard(
     file: MediaFileItem,
@@ -208,16 +211,18 @@ private fun MediaFileCard(
     dateFormatter: SimpleDateFormat,
     onClick: () -> Unit
 ) {
-    val iconColor = getCategoryColor(categoryName)
+    val iconColor = remember(categoryName) { getCategoryColor(categoryName) }
     val context = LocalContext.current
     
     val isImage = categoryName.lowercase() == "images"
     val isVideo = categoryName.lowercase() == "videos"
     val isApk = categoryName.lowercase() == "apk"
 
-    var apkIconDrawable by remember { mutableStateOf<android.graphics.drawable.Drawable?>(null) }
+    var apkIconDrawable by remember(file.path) {
+        mutableStateOf(if (isApk) categoryApkCache.get(file.path) else null)
+    }
     
-    if (isApk) {
+    if (isApk && apkIconDrawable == null) {
         LaunchedEffect(file.path) {
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 try {
@@ -226,9 +231,13 @@ private fun MediaFileCard(
                     pi?.applicationInfo?.let { appInfo ->
                         appInfo.sourceDir = file.path
                         appInfo.publicSourceDir = file.path
-                        apkIconDrawable = appInfo.loadIcon(pm)
+                        val icon = appInfo.loadIcon(pm)
+                        if (icon != null) {
+                            categoryApkCache.put(file.path, icon)
+                            apkIconDrawable = icon
+                        }
                     }
-                } catch (e: Exception) { }
+                } catch (_: Exception) { }
             }
         }
     }
@@ -241,7 +250,7 @@ private fun MediaFileCard(
             containerColor = MaterialTheme.colorScheme.surface
         ),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier

@@ -45,9 +45,15 @@ import id.xms.xarchiver.ui.components.LocalNotificationHost
 import id.xms.xarchiver.ui.components.NotificationHostState
 
 
+import android.content.Context
+import android.hardware.display.DisplayManager
+import android.view.Display
+import android.view.Surface
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        unlockHighRefreshRate()
 
         // Initialize Coil for video frame decoding
         val imageLoader = coil.ImageLoader.Builder(this)
@@ -71,6 +77,31 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        unlockHighRefreshRate()
+    }
+
+    private fun unlockHighRefreshRate() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val currentDisplay = display ?: (getSystemService(Context.DISPLAY_SERVICE) as? DisplayManager)?.getDisplay(Display.DEFAULT_DISPLAY)
+                val modes = currentDisplay?.supportedModes ?: emptyArray()
+                val maxMode = modes.maxByOrNull { it.refreshRate }
+                if (maxMode != null && maxMode.refreshRate > 60f) {
+                    val params = window.attributes
+                    params.preferredDisplayModeId = maxMode.modeId
+                    window.attributes = params
+                }
+            } else {
+                val params = window.attributes
+                @Suppress("DEPRECATION")
+                params.preferredRefreshRate = 120f
+                window.attributes = params
+            }
+        } catch (_: Exception) {}
     }
 }
 

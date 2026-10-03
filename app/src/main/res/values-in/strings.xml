@@ -259,6 +259,8 @@
     <string name="changelog_item_2_1_minsdk_desc">Menaikkan SDK minimum dari Android 8.0 ke Android 10 dengan override pustaka manifest untuk dukungan API modern.</string>
     <string name="changelog_item_2_1_i18n_title">Lokalisasi Bilingual Penuh</string>
     <string name="changelog_item_2_1_i18n_desc">Lokalisasi berbasis resource lengkap untuk Tentang, Spesifikasi, Format, dan Catatan Rilis dalam Bahasa Inggris dan Bahasa Indonesia.</string>
+    <string name="changelog_item_2_1_perf_title">Optimasi Scrolling &amp; Memori</string>
+    <string name="changelog_item_2_1_perf_desc">Peningkatan performa scrolling daftar folder dengan daur ulang item LazyColumn, cache memori ikon APK (LruCache), penghapusan animasi sentuh yang berat, dan reduksi overdraw render.</string>
     <string name="changelog_item_2_0_root_title">Akses Khusus Shizuku &amp; Root</string>
     <string name="changelog_item_2_0_root_desc">Membaca, menulis, dan mengedit berkas sistem terlindungi menggunakan Shizuku API v13+ atau superuser (su) via libsu 6.0.</string>
     <string name="changelog_item_2_0_storage_title">Pager Horizontal Multi-Penyimpanan</string>

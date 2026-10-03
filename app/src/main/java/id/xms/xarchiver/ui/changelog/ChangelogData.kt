@@ -78,6 +78,12 @@ object ChangelogRepository {
                     descRes = R.string.changelog_item_2_1_i18n_desc,
                     category = ChangelogCategory.FEATURES,
                     tags = listOf("Bilingual", "Indonesian", "English")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_perf_title,
+                    descRes = R.string.changelog_item_2_1_perf_desc,
+                    category = ChangelogCategory.ENGINE,
+                    tags = listOf("Performance", "LazyColumn", "LruCache", "Smooth Scroll")
                 )
             )
         ),

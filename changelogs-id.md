@@ -32,6 +32,12 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 - **Lokalisasi Penuh (Bahasa Indonesia & Bahasa Inggris)**: Lokalisasi berbasis resource lengkap (`strings.xml` dan `values-in/strings.xml`) untuk seluruh layar Tentang, Spesifikasi, Format yang Didukung, dan Catatan Rilis.
 - **Peningkatan Versi Aplikasi**: Naik ke versi `2.1.0` (versionCode `2`).
 
+### Dioptimasi - Performa Penjelajah Berkas & Scrolling
+- **Daur Ulang Item LazyColumn (`contentType`)**: Mengimplementasikan `contentType` untuk membedakan item folder dan berkas agar komposisi UI didaur ulang secara efisien saat scrolling cepat.
+- **Cache Memori Ikon APK (`LruCache`)**: Menambahkan in-memory cache untuk ikon berkas APK guna menghindari pembacaan ulang berkas dari disk saat scroll.
+- **Penghapusan Animasi Sentuh Berat**: Menghapus animasi fisika spring pada interaksi kartu item guna menghasilkan respons scrolling instan tanpa lag.
+- **Reduksi Overdraw & Memoization**: Mengoptimalkan bayangan kartu dan menerapkan memoization pada format metadata berkas serta warna kategori.
+
 ---
 
 ## [2.0.0] - 2026-08-19

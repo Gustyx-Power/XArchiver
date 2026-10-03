@@ -32,6 +32,12 @@ All notable changes to XArchiver will be documented in this file.
 - **Full Localization (English & Indonesian)**: Complete resource-based localization (`strings.xml` and `values-in/strings.xml`) for all About, Specs, and Supported Formats screens and badges.
 - **App Version Bump**: Bumped to version `2.1.0` (versionCode `2`).
 
+### Optimized - File Explorer & Scrolling Performance
+- **LazyColumn Item Recycling (`contentType`)**: Implemented `contentType` distinguishing folders and files to allow optimal composition slot recycling during fast scrolling.
+- **In-Memory APK Icon Cache (`LruCache`)**: Added memory caching for APK icons to prevent repeated disk I/O and zip manifest parsing during scrolling.
+- **Eliminated Heavy Touch Animations**: Removed coroutine-based spring physics animations on card interaction to ensure instantaneous, stutter-free scroll response.
+- **Overdraw Reduction & Memoization**: Reduced unnecessary card shadow overdraw and memoized file metadata formatting and category color lookups.
+
 ---
 
 ## [2.0.0] - 2026-08-19
