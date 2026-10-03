@@ -1,6 +1,11 @@
 package id.xms.xarchiver.ui.editor
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -21,12 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import id.xms.xarchiver.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -59,6 +66,11 @@ fun TextEditorScreen(
     
     val file = remember { File(filePath) }
     val fileName = remember { file.name }
+    val isHtmlFile = remember(fileName) {
+        val ext = fileName.substringAfterLast('.', "").lowercase()
+        ext in listOf("html", "htm", "xhtml")
+    }
+    var showWebPreview by remember { mutableStateOf(false) }
     
     // Calculate line count
     val lines = remember(content) { content.split("\n") }
@@ -180,8 +192,13 @@ fun TextEditorScreen(
             navController.navigateUp()
         }
     }
+
+    BackHandler(enabled = !showWebPreview) {
+        handleBack()
+    }
     
-    Scaffold(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
         topBar = {
             TopAppBar(
                 title = {
@@ -205,6 +222,15 @@ fun TextEditorScreen(
                     }
                 },
                 actions = {
+                    if (isHtmlFile) {
+                        IconButton(onClick = { showWebPreview = true }) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = stringResource(R.string.action_preview_web),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                     IconButton(
                         onClick = { undo() },
                         enabled = undoStack.isNotEmpty()
@@ -336,6 +362,21 @@ fun TextEditorScreen(
                     )
                 }
             }
+        }
+    }
+
+        // Web Preview Overlay
+        AnimatedVisibility(
+            visible = isHtmlFile && showWebPreview,
+            enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { it }) + fadeOut()
+        ) {
+            HtmlPreviewScreen(
+                fileName = fileName,
+                htmlContent = content,
+                file = file,
+                onClose = { showWebPreview = false }
+            )
         }
     }
     

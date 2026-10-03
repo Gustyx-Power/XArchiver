@@ -279,4 +279,12 @@
     <string name="changelog_item_1_1_fixes_desc">Memperbaiki crash Flow invariant pada pratinjau arsip dan mencegah OutOfMemoryError pada berkas biner besar.</string>
     <string name="changelog_item_1_0_initial_title">Rilis Perdana</string>
     <string name="changelog_item_1_0_initial_desc">Pengelola berkas dan utilitas arsip inti yang mendukung ZIP, TAR, GZ, dan TGZ dengan Material Design 3.</string>
+
+    <!-- Web Preview in Text Editor -->
+    <string name="action_preview_web">Pratinjau Web</string>
+    <string name="preview_web_title">Pratinjau Web</string>
+    <string name="preview_desktop_mode">Tampilan Desktop</string>
+    <string name="preview_mobile_mode">Tampilan Ponsel</string>
+    <string name="preview_refresh">Segarkan</string>
+    <string name="preview_open_browser">Buka di Browser</string>
 </resources>

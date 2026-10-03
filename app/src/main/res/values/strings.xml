@@ -279,4 +279,12 @@
     <string name="changelog_item_1_1_fixes_desc">Resolved Flow invariant crash on archive previews and prevented OutOfMemoryError on large binary files.</string>
     <string name="changelog_item_1_0_initial_title">Initial Release</string>
     <string name="changelog_item_1_0_initial_desc">Core file manager and archive utility supporting ZIP, TAR, GZ, and TGZ with Material Design 3.</string>
+
+    <!-- Web Preview in Text Editor -->
+    <string name="action_preview_web">Preview Web</string>
+    <string name="preview_web_title">Web Preview</string>
+    <string name="preview_desktop_mode">Desktop View</string>
+    <string name="preview_mobile_mode">Mobile View</string>
+    <string name="preview_refresh">Refresh</string>
+    <string name="preview_open_browser">Open in Browser</string>
 </resources>
