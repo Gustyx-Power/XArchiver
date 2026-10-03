@@ -44,6 +44,12 @@ object ChangelogRepository {
             badgeRes = R.string.changelog_badge_latest,
             items = listOf(
                 ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_ota_title,
+                    descRes = R.string.changelog_item_2_1_ota_desc,
+                    category = ChangelogCategory.FEATURES,
+                    tags = listOf("OTA Update", "GitHub Releases", "Markdown", "Progress Pill")
+                ),
+                ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_miuix_title,
                     descRes = R.string.changelog_item_2_1_miuix_desc,
                     category = ChangelogCategory.UI,
@@ -54,6 +60,12 @@ object ChangelogRepository {
                     descRes = R.string.changelog_item_2_1_recent_desc,
                     category = ChangelogCategory.FEATURES,
                     tags = listOf("RecentManager", "File Tracking", "Marquee")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_html_title,
+                    descRes = R.string.changelog_item_2_1_html_desc,
+                    category = ChangelogCategory.FEATURES,
+                    tags = listOf("HTML Runner", "WebView", "Desktop Mode", "Live Preview")
                 ),
                 ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_specs_title,
@@ -84,18 +96,6 @@ object ChangelogRepository {
                     descRes = R.string.changelog_item_2_1_perf_desc,
                     category = ChangelogCategory.ENGINE,
                     tags = listOf("Performance", "LazyColumn", "LruCache", "Smooth Scroll")
-                ),
-                ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_html_title,
-                    descRes = R.string.changelog_item_2_1_html_desc,
-                    category = ChangelogCategory.FEATURES,
-                    tags = listOf("HTML Runner", "WebView", "Desktop Mode", "Live Preview")
-                ),
-                ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_ota_title,
-                    descRes = R.string.changelog_item_2_1_ota_desc,
-                    category = ChangelogCategory.FEATURES,
-                    tags = listOf("OTA Update", "GitHub Releases", "Markdown", "Progress Pill")
                 )
             )
         ),

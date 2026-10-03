@@ -243,7 +243,7 @@
     <string name="changelog_date_2_0_0">August 19, 2026</string>
     <string name="changelog_date_1_1_0">February 26, 2026</string>
     <string name="changelog_date_1_0_0">Initial Release</string>
-    <string name="changelog_summary_2_1_0">MIUIX HyperOS UI mode, Recent Files manager, raised Min SDK to Android 10, and comprehensive localization.</string>
+    <string name="changelog_summary_2_1_0">Standalone OTA updates via GitHub Releases, MIUIX HyperOS UI mode, Recent Files manager, in-app HTML runner, raised Min SDK to Android 10, and comprehensive localization.</string>
     <string name="changelog_summary_2_0_0">Shizuku &amp; Root privileged access, multi-storage horizontal pager, native Rust payload parser, and Material 3 overhaul.</string>
     <string name="changelog_summary_1_1_0">Initial Android OTA Payload.bin extraction with Protocol Buffers, and streaming XZ/BZIP2 decompression.</string>
     <string name="changelog_summary_1_0_0">Initial release of XArchiver with essential archive handling and Material Design 3 file explorer.</string>
