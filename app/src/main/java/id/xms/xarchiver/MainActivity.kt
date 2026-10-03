@@ -50,10 +50,21 @@ import android.hardware.display.DisplayManager
 import android.view.Display
 import android.view.Surface
 
+import id.xms.xarchiver.core.update.UpdateNotificationHelper
+import id.xms.xarchiver.ui.update.UpdateScreen
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 class MainActivity : ComponentActivity() {
+    private var shouldOpenUpdateScreen by mutableStateOf(false)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         unlockHighRefreshRate()
+        requestNotificationPermission()
+        handleUpdateIntent(intent)
 
         // Initialize Coil for video frame decoding
         val imageLoader = coil.ImageLoader.Builder(this)
@@ -68,13 +79,35 @@ class MainActivity : ComponentActivity() {
                 val notificationHostState = remember { NotificationHostState() }
                 CompositionLocalProvider(LocalNotificationHost provides notificationHostState) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        AppContent()
+                        AppContent(
+                            openUpdateScreen = shouldOpenUpdateScreen,
+                            onUpdateScreenOpened = { shouldOpenUpdateScreen = false }
+                        )
                         DynamicIslandNotificationHost(
                             hostState = notificationHostState,
                             modifier = Modifier.align(Alignment.TopCenter)
                         )
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleUpdateIntent(intent)
+    }
+
+    private fun handleUpdateIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(UpdateNotificationHelper.EXTRA_OPEN_UPDATE_DIALOG, false) == true) {
+            shouldOpenUpdateScreen = true
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1002)
             }
         }
     }
@@ -106,10 +139,21 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun AppContent() {
+private fun AppContent(
+    openUpdateScreen: Boolean = false,
+    onUpdateScreenOpened: () -> Unit = {}
+) {
     MaterialTheme {
         val navController = rememberNavController()
         val context = LocalContext.current
+
+        LaunchedEffect(openUpdateScreen) {
+            if (openUpdateScreen) {
+                navController.navigate("update")
+                onUpdateScreenOpened()
+            }
+        }
+
         val isAndroid11OrAbove = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
         val hasPermission = if (isAndroid11OrAbove) {
             Environment.isExternalStorageManager()
@@ -240,6 +284,11 @@ private fun AppContent() {
             // Settings Screen route
             composable("settings") {
                 SettingsScreen(navController = navController)
+            }
+
+            // Software Update Screen route (ColorOS style)
+            composable("update") {
+                UpdateScreen(navController = navController)
             }
         }
     }

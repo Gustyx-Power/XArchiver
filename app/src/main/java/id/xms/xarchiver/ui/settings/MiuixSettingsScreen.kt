@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -275,12 +276,22 @@ fun MiuixSettingsScreen(
                         isDark = isDark,
                         onClick = { navController.navigate("about") },
                         trailing = {
-                            Icon(
-                                imageVector = MiuixIcons.ChevronForward,
-                                contentDescription = null,
-                                tint = if (isDark) Color(0xFF8E8E93) else Color(0xFF9CA3AF),
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (id.xms.xarchiver.core.update.UpdateManager.availableUpdate != null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(Color(0xFFEF4444), CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                }
+                                Icon(
+                                    imageVector = MiuixIcons.ChevronForward,
+                                    contentDescription = null,
+                                    tint = if (isDark) Color(0xFF8E8E93) else Color(0xFF9CA3AF),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
                         }
                     )
                 }

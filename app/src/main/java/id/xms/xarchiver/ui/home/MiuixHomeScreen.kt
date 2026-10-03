@@ -1,6 +1,7 @@
 package id.xms.xarchiver.ui.home
 
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -58,8 +59,19 @@ fun MiuixHomeScreen(navController: NavController, viewModel: HomeViewModel) {
                     IconButton(onClick = { navController.navigate("changelog") }) {
                         Icon(MiuixIcons.Notes, contentDescription = stringResource(R.string.about_changelog))
                     }
-                    IconButton(onClick = { navController.navigate("settings") }) {
-                        Icon(MiuixIcons.Settings, contentDescription = "Settings")
+                    Box(contentAlignment = Alignment.Center) {
+                        IconButton(onClick = { navController.navigate("settings") }) {
+                            Icon(MiuixIcons.Settings, contentDescription = "Settings")
+                        }
+                        if (id.xms.xarchiver.core.update.UpdateManager.availableUpdate != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-6).dp, y = 6.dp)
+                                    .background(Color(0xFFEF4444), androidx.compose.foundation.shape.CircleShape)
+                            )
+                        }
                     }
                 }
             )

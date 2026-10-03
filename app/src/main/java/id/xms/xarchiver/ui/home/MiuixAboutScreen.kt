@@ -16,6 +16,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -41,6 +42,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import id.xms.xarchiver.R
 import id.xms.xarchiver.core.StorageUtils
+import id.xms.xarchiver.core.update.UpdateManager
+
+import kotlinx.coroutines.launch
 import id.xms.xarchiver.core.humanReadable
 import id.xms.xarchiver.ui.theme.GradientEnd
 import id.xms.xarchiver.ui.theme.GradientStart
@@ -99,6 +103,7 @@ fun MiuixAboutScreen(navController: NavController) {
 
     var showLicenseDialog by remember { mutableStateOf(false) }
     var easterEggTaps by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -363,6 +368,28 @@ fun MiuixAboutScreen(navController: NavController) {
                                 chevronColor = chevronColor,
                                 onClick = { navController.navigate("changelog") }
                             )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                thickness = 0.5.dp,
+                                color = dividerColor
+                            )
+                            val isUpdateAvail = UpdateManager.availableUpdate != null
+                            AboutSpecRow(
+                                title = stringResource(R.string.update_check_title),
+                                value = if (isUpdateAvail) {
+                                    stringResource(R.string.update_available_version, UpdateManager.availableUpdate!!.versionName)
+                                } else {
+                                    stringResource(R.string.update_check_subtitle, versionName)
+                                },
+                                showChevron = true,
+                                hasBadge = isUpdateAvail,
+                                primaryText = primaryTextColor,
+                                secondaryText = if (isUpdateAvail) Color(0xFFEF4444) else secondaryTextColor,
+                                chevronColor = chevronColor,
+                                onClick = {
+                                    navController.navigate("update")
+                                }
+                            )
                         }
                     }
                 }
@@ -504,6 +531,7 @@ private fun AboutSpecRow(
     title: String,
     value: String? = null,
     showChevron: Boolean = false,
+    hasBadge: Boolean = false,
     primaryText: Color,
     secondaryText: Color,
     chevronColor: Color,
@@ -526,13 +554,25 @@ private fun AboutSpecRow(
             .padding(horizontal = 16.dp, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = title,
-            color = primaryText,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier.weight(1f)
-        )
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = primaryText,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Normal
+            )
+            if (hasBadge) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Box(
+                    modifier = Modifier
+                        .size(7.dp)
+                        .background(Color(0xFFEF4444), CircleShape)
+                )
+            }
+        }
 
         if (!value.isNullOrBlank()) {
             Text(

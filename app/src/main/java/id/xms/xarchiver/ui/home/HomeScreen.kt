@@ -529,12 +529,23 @@ private fun ModernTopBar(
                     )
                 }
                 // Settings button
-                IconButton(onClick = onSettingsClick) {
-                    Icon(
-                        Icons.Outlined.Settings,
-                        contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                Box(contentAlignment = Alignment.Center) {
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            Icons.Outlined.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (id.xms.xarchiver.core.update.UpdateManager.availableUpdate != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-6).dp, y = 6.dp)
+                                .background(MaterialTheme.colorScheme.error, CircleShape)
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

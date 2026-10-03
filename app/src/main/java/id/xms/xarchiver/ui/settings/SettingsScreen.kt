@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import id.xms.xarchiver.ui.theme.ThemeMode
 import id.xms.xarchiver.ui.theme.ThemePreferences
@@ -370,11 +371,28 @@ fun SettingsScreen(navController: NavController) {
                         Spacer(Modifier.width(16.dp))
                         
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.settings_about),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    stringResource(R.string.settings_about),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (id.xms.xarchiver.core.update.UpdateManager.availableUpdate != null) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.error,
+                                        shape = CircleShape
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.badge_new),
+                                            color = MaterialTheme.colorScheme.onError,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
                             Text(
                                 stringResource(R.string.settings_about_desc),
                                 style = MaterialTheme.typography.bodyMedium,

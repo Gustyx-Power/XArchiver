@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import id.xms.xarchiver.R
 import id.xms.xarchiver.core.StorageUtils
+import id.xms.xarchiver.core.update.UpdateManager
+import kotlinx.coroutines.launch
 import id.xms.xarchiver.core.humanReadable
 import id.xms.xarchiver.ui.theme.GradientEnd
 import id.xms.xarchiver.ui.theme.GradientStart
@@ -86,6 +88,8 @@ fun AboutScreen(navController: NavController) {
             "Internal Storage"
         }
     }
+
+    val scope = rememberCoroutineScope()
 
 
 
@@ -231,6 +235,21 @@ fun AboutScreen(navController: NavController) {
                     onClick = { navController.navigate("changelog") }
                 )
 
+                val isUpdateAvail = UpdateManager.availableUpdate != null
+                AboutLinkItem(
+                    icon = Icons.Outlined.SystemUpdate,
+                    title = stringResource(R.string.update_check_title),
+                    subtitle = if (isUpdateAvail) {
+                        stringResource(R.string.update_available_version, UpdateManager.availableUpdate!!.versionName)
+                    } else {
+                        stringResource(R.string.update_check_subtitle, versionName)
+                    },
+                    hasBadge = isUpdateAvail,
+                    onClick = {
+                        navController.navigate("update")
+                    }
+                )
+
                 Spacer(Modifier.height(16.dp))
 
                 // Developer Card (Material 3 Style)
@@ -368,6 +387,7 @@ private fun AboutLinkItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
+    hasBadge: Boolean = false,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -422,15 +442,32 @@ private fun AboutLinkItem(
             Spacer(Modifier.width(16.dp))
 
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (hasBadge) {
+                        Spacer(Modifier.width(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.error,
+                            shape = CircleShape
+                        ) {
+                            Text(
+                                text = stringResource(R.string.badge_new),
+                                color = MaterialTheme.colorScheme.onError,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    color = if (hasBadge) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
 
