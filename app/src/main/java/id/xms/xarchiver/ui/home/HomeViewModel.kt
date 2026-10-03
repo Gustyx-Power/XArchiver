@@ -61,6 +61,14 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             loadCategoryCounts()
         }
+        // Check for updates in background
+        viewModelScope.launch {
+            try {
+                id.xms.xarchiver.core.update.UpdateManager.checkSilently(getApplication())
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
     
     fun loadRecentFiles() {
