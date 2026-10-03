@@ -13,7 +13,11 @@ echo ========================================
 echo.
 
 REM --- Configuration ---
-set KEYSTORE_PATH=C:\Users\putri\Documents\Project\XMS\Keystore\Keystore-XArchive\xarc-release-key.jks
+if exist "C:\Users\Gustyx-Power\Downloads\xarc-release-key.jks" (
+    set "KEYSTORE_PATH=C:\Users\Gustyx-Power\Downloads\xarc-release-key.jks"
+) else (
+    set KEYSTORE_PATH=C:\Users\putri\Documents\Project\XMS\Keystore\Keystore-XArchive\xarc-release-key.jks
+)
 set KEY_ALIAS=xarckey
 set KEY_PASSWORD=gusti717
 set KEYSTORE_PASSWORD=gusti717
