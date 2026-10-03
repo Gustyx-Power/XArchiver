@@ -26,6 +26,11 @@ All notable changes to XArchiver will be documented in this file.
 - **Multi-tier Detection**: Checks hardware brand/manufacturer identity, MIUI/HyperOS system properties, and framework introspection.
 - **User Preference Override**: Manual toggle in Settings remains fully respected and persisted in DataStore.
 
+### Added - In-App HTML Web Runner & Preview
+- **Interactive HTML Runner**: Added a Play button in the Text Editor when opening or editing `.html`/`.htm` files to render and test websites directly in-app without launching an external browser.
+- **Full Relative Asset Support**: Automatically resolves and loads local CSS stylesheets, JavaScript scripts, and images in the same folder or subdirectories.
+- **Mobile / Desktop Viewport Toggle**: Desktop mode switcher that overrides the viewport meta tag (1280px width), enables overview scaling, and simulates desktop Chrome to test responsive layouts.
+
 ### Changed & Modernized
 - **Minimum SDK Raised**: Increased `minSdk` from Android 8.0 (API 26) to Android 10 (API 29) across all app and core modules (`core-storage`, `core-archive`, `core-extract`, `core-root`).
 - **Manifest Merger Compatibility**: Added `tools:overrideLibrary` configuration for MIUIX KMP libraries to ensure smooth runtime execution on Android 10+.

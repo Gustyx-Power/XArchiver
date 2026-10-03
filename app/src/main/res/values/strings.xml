@@ -261,6 +261,8 @@
     <string name="changelog_item_2_1_i18n_desc">Complete resource-based localization for About, Specs, Formats, and Changelogs in English and Indonesian.</string>
     <string name="changelog_item_2_1_perf_title">List Scrolling &amp; Memory Optimization</string>
     <string name="changelog_item_2_1_perf_desc">Optimized folder scrolling performance with LazyColumn item recycling, APK icon memory caching (LruCache), eliminated heavy touch animations, and reduced render overdraw.</string>
+    <string name="changelog_item_2_1_html_title">In-App HTML Web Runner &amp; Preview</string>
+    <string name="changelog_item_2_1_html_desc">Directly run and render HTML websites with a dedicated Play button inside the text editor, featuring live reload, relative resource support, and mobile/desktop viewport toggle.</string>
     <string name="changelog_item_2_0_root_title">Shizuku &amp; Root Privileged Access</string>
     <string name="changelog_item_2_0_root_desc">Read, write, and edit protected system files using Shizuku API v13+ or superuser (su) via libsu 6.0.</string>
     <string name="changelog_item_2_0_storage_title">Multi-Storage Horizontal Pager</string>

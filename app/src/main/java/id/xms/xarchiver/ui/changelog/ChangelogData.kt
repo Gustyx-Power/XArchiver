@@ -84,6 +84,12 @@ object ChangelogRepository {
                     descRes = R.string.changelog_item_2_1_perf_desc,
                     category = ChangelogCategory.ENGINE,
                     tags = listOf("Performance", "LazyColumn", "LruCache", "Smooth Scroll")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_html_title,
+                    descRes = R.string.changelog_item_2_1_html_desc,
+                    category = ChangelogCategory.FEATURES,
+                    tags = listOf("HTML Runner", "WebView", "Desktop Mode", "Live Preview")
                 )
             )
         ),

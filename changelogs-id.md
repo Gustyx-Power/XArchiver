@@ -26,6 +26,11 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 - **Deteksi Multi-Tahap**: Memeriksa identitas merek/manufaktur perangkat keras, properti sistem MIUI/HyperOS, dan introspeksi framework.
 - **Prioritas Preferensi Pengguna**: Sakelar manual di Pengaturan tetap dihormati dan disimpan secara persisten di DataStore.
 
+### Ditambahkan - Runner & Pratinjau Web HTML Dalam Aplikasi
+- **Runner HTML Interaktif**: Menambahkan tombol Play pada Text Editor saat membuka atau mengedit berkas `.html`/`.htm` untuk merender dan menjalankan situs web langsung di dalam aplikasi tanpa membuka browser eksternal.
+- **Dukungan Aset Relatif Penuh**: Mendukung pemuatan skrip JavaScript, stylesheet CSS eksternal, dan gambar lokal yang berada di direktori yang sama.
+- **Peralihan Tampilan Ponsel / Desktop**: Pengaturan mode desktop dengan override tag viewport (lebar 1280px), zoom ikhtisar, dan user-agent desktop untuk menguji layout responsif.
+
 ### Diubah & Dimodernisasi
 - **Peningkatan Minimum SDK**: Menaikkan `minSdk` dari Android 8.0 (API 26) ke Android 10 (API 29) di seluruh modul aplikasi dan modul core (`core-storage`, `core-archive`, `core-extract`, `core-root`).
 - **Kompatibilitas Manifest Merger**: Menambahkan konfigurasi `tools:overrideLibrary` untuk pustaka MIUIX KMP guna memastikan eksekusi runtime lancar di Android 10+.
