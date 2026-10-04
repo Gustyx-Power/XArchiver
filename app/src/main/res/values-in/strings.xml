@@ -45,14 +45,25 @@
     <string name="action_cancel">Batal</string>
     <string name="action_create">Buat</string>
     <string name="action_extract">Ekstrak</string>
+    <string name="action_open">Buka</string>
 
     <!-- Create Archive Dialog -->
     <string name="archive_create_title">Buat Arsip</string>
     <string name="archive_name_label">Nama arsip</string>
     <string name="archive_format_label">Format</string>
     <string name="archive_compression_label">Kompresi</string>
+    <string name="archive_password_label">Kata Sandi (Opsional)</string>
+    <string name="archive_password_hint">Masukkan kata sandi</string>
+    <string name="archive_encryption_method_label">Enkripsi</string>
+    <string name="archive_encryption_aes256">AES-256 (Keamanan Tinggi)</string>
+    <string name="archive_encryption_zipcrypto">ZipCrypto (Kompatibel Jadul)</string>
     <string name="archive_items_selected_format">%d item dipilih</string>
     <string name="archive_error_empty_name">Silakan masukkan nama arsip</string>
+    <string name="archive_password_dialog_title">Kata Sandi Diperlukan</string>
+    <string name="archive_password_dialog_desc">Arsip ini dilindungi kata sandi. Masukkan kata sandi untuk melanjutkan:</string>
+    <string name="archive_password_dialog_hint">Masukkan kata sandi arsip</string>
+    <string name="archive_password_field_label">Kata Sandi</string>
+    <string name="archive_password_incorrect">Kata sandi salah atau arsip rusak</string>
 
     <!-- Archive Explorer Screen -->
     <string name="archive_selected_format">%d dipilih</string>
@@ -239,14 +250,22 @@
     <string name="changelog_cat_storage_root">Penyimpanan &amp; Akses Khusus</string>
     <string name="changelog_cat_engine">Mesin Inti &amp; Kinerja</string>
     <string name="changelog_cat_fixes">Perbaikan &amp; Stabilitas</string>
+    <string name="changelog_date_2_1_3">4 Oktober 2026</string>
     <string name="changelog_date_2_1_0">3 Oktober 2026</string>
     <string name="changelog_date_2_0_0">19 Agustus 2026</string>
     <string name="changelog_date_1_1_0">26 Februari 2026</string>
     <string name="changelog_date_1_0_0">Rilis Perdana</string>
+    <string name="changelog_summary_2_1_3">Penambahan enkripsi kata sandi untuk ZIP (AES-256 &amp; ZipCrypto), desain ulang seluruh popup dialog agar rapi dan proporsional, serta perbaikan crash pada arsip berpassword.</string>
     <string name="changelog_summary_2_1_0">Pembaruan mandiri OTA via GitHub Releases, antarmuka MIUIX HyperOS, pengelola Berkas Terkini, runner HTML dalam aplikasi, peningkatan SDK Minimum ke Android 10, dan lokalisasi lengkap.</string>
     <string name="changelog_summary_2_0_0">Akses istimewa Shizuku &amp; Root, pager horizontal multi-penyimpanan, parser payload native Rust, dan perombakan Material 3.</string>
     <string name="changelog_summary_1_1_0">Dukungan awal ekstraksi Android OTA Payload.bin dengan Protocol Buffers, dan dekompresi streaming XZ/BZIP2.</string>
     <string name="changelog_summary_1_0_0">Rilis perdana XArchiver dengan penanganan arsip inti dan pengelola berkas Material Design 3.</string>
+    <string name="changelog_item_2_1_3_encryption_title">Enkripsi Kata Sandi ZIP (AES-256 &amp; ZipCrypto)</string>
+    <string name="changelog_item_2_1_3_encryption_desc">Dukungan penuh enkripsi kata sandi saat membuat arsip ZIP menggunakan AES-256 atau ZipCrypto, dengan dialog permintaan kata sandi otomatis saat dibuka atau diekstrak.</string>
+    <string name="changelog_item_2_1_3_dialogs_title">Desain Ulang Dialog Proporsional</string>
+    <string name="changelog_item_2_1_3_dialogs_desc">Merapikan seluruh popup dialog di aplikasi dengan tombol aksi simetris 50/50, wadah ikon header ber-radius, card terstruktur, dan estetika Material 3.</string>
+    <string name="changelog_item_2_1_3_crashfix_title">Perbaikan Crash Arsip Berpassword</string>
+    <string name="changelog_item_2_1_3_crashfix_desc">Memperbaiki crash saat mengklik berkas ZIP berpassword di Explorer, kini langsung memunculkan dialog kata sandi dengan aman dan lancar.</string>
     <string name="changelog_item_2_1_miuix_title">Sistem Desain MIUIX HyperOS</string>
     <string name="changelog_item_2_1_miuix_desc">Perombakan visual total dengan kartu squircle, efek blur tekstur real-time, dan estetika HyperOS.</string>
     <string name="changelog_item_2_1_recent_title">Pengelola Berkas Terkini</string>

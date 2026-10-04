@@ -72,9 +72,9 @@ fun MaterialUpdateScreen(navController: NavController) {
     val currentVersionName = remember {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            pInfo.versionName ?: "2.1.0"
+            pInfo.versionName ?: "2.1.3"
         } catch (_: Exception) {
-            "2.1.0"
+            "2.1.3"
         }
     }
 

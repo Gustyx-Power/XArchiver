@@ -78,7 +78,7 @@ fun FolderPickerDialog(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.85f),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -167,17 +167,26 @@ fun FolderPickerDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        TextButton(onClick = onDismissRequest) {
+                        OutlinedButton(
+                            onClick = onDismissRequest,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
                             Text("Cancel")
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = { currentPath?.let { onFolderSelected(it) } },
-                            enabled = currentPath != null
+                            enabled = currentPath != null,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
                         ) {
-                            Text("Select This Folder")
+                            Text("Select Folder")
                         }
                     }
                 }

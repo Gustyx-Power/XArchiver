@@ -10,14 +10,26 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.zip.Deflater
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry
 import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
+
+import net.lingala.zip4j.io.outputstream.ZipOutputStream
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.AesKeyStrength
+import net.lingala.zip4j.model.enums.CompressionMethod
+import net.lingala.zip4j.model.enums.EncryptionMethod
+
+/**
+ * Encryption types for ZIP archives
+ */
+enum class EncryptionType(val displayName: String) {
+    AES_256("AES-256 (High Security)"),
+    ZIP_CRYPTO("ZipCrypto (Legacy Compatibility)")
+}
 
 /**
  * Compression levels for archive creation
@@ -69,14 +81,15 @@ sealed class ArchiveResult {
 object ArchiveCreator {
     
     /**
-     * Create a ZIP archive from files
+     * Create a ZIP archive from files with optional AES-256 / ZipCrypto encryption
      */
     fun createZipArchive(
         outputPath: String,
         files: List<String>,
         basePath: String = "",  // Common parent path to strip from entry names
         compressionLevel: CompressionLevel = CompressionLevel.NORMAL,
-        password: String? = null  // Note: Standard ZIP doesn't support encryption, this is a placeholder
+        password: String? = null,
+        encryptionType: EncryptionType = EncryptionType.AES_256
     ): Flow<ArchiveCreationProgress> = flow {
         val totalFiles = countFiles(files)
         val totalBytes = calculateTotalSize(files)
@@ -85,14 +98,20 @@ object ArchiveCreator {
         
         val outputFile = File(outputPath)
         outputFile.parentFile?.mkdirs()
+
+        val effectivePassword = if (password.isNullOrBlank()) null else password
+        val fos = FileOutputStream(outputFile)
+        val zos = if (effectivePassword != null) {
+            ZipOutputStream(fos, effectivePassword.toCharArray())
+        } else {
+            ZipOutputStream(fos)
+        }
         
-        ZipOutputStream(BufferedOutputStream(FileOutputStream(outputFile))).use { zos ->
-            zos.setLevel(compressionLevel.value)
-            
+        zos.use { zipOut ->
             for (filePath in files) {
                 val file = File(filePath)
                 if (file.exists()) {
-                    addToZip(zos, file, basePath) { name, sizeChunk, isFinished ->
+                    addToZip(zipOut, file, basePath, compressionLevel, effectivePassword, encryptionType) { name, sizeChunk, isFinished ->
                         bytesProcessed += sizeChunk
                         if (isFinished) {
                             filesProcessed++
@@ -168,7 +187,8 @@ object ArchiveCreator {
         files: List<String>,
         basePath: String = "",
         compressionLevel: CompressionLevel = CompressionLevel.NORMAL,
-        password: String? = null
+        password: String? = null,
+        encryptionType: EncryptionType = EncryptionType.AES_256
     ): Flow<ArchiveCreationProgress> {
         val extension = outputPath.substringAfterLast('.', "").lowercase()
         
@@ -192,16 +212,19 @@ object ArchiveCreator {
             }
             else -> {
                 // Default to ZIP
-                createZipArchive(outputPath, files, basePath, compressionLevel, password)
+                createZipArchive(outputPath, files, basePath, compressionLevel, password, encryptionType)
             }
         }
     }
     
-    // Helper: Add file/directory to ZIP
+    // Helper: Add file/directory to ZIP with Zip4j
     private suspend fun addToZip(
         zos: ZipOutputStream,
         file: File,
         basePath: String,
+        compressionLevel: CompressionLevel,
+        password: String?,
+        encryptionType: EncryptionType,
         onProgress: suspend (String, Long, Boolean) -> Unit
     ) {
         val entryName = if (basePath.isNotEmpty()) {
@@ -212,14 +235,46 @@ object ArchiveCreator {
         
         if (file.isDirectory) {
             val dirEntry = if (entryName.endsWith("/")) entryName else "$entryName/"
-            zos.putNextEntry(ZipEntry(dirEntry))
+            val params = ZipParameters().apply {
+                fileNameInZip = dirEntry
+                lastModifiedFileTime = file.lastModified()
+                isEncryptFiles = false
+            }
+            zos.putNextEntry(params)
             zos.closeEntry()
             
             file.listFiles()?.forEach { child ->
-                addToZip(zos, child, basePath, onProgress)
+                addToZip(zos, child, basePath, compressionLevel, password, encryptionType, onProgress)
             }
         } else {
-            zos.putNextEntry(ZipEntry(entryName))
+            val params = ZipParameters().apply {
+                fileNameInZip = entryName
+                lastModifiedFileTime = file.lastModified()
+                compressionMethod = if (compressionLevel == CompressionLevel.STORE) {
+                    CompressionMethod.STORE
+                } else {
+                    CompressionMethod.DEFLATE
+                }
+                this.compressionLevel = when (compressionLevel) {
+                    CompressionLevel.STORE -> net.lingala.zip4j.model.enums.CompressionLevel.NORMAL
+                    CompressionLevel.FASTEST -> net.lingala.zip4j.model.enums.CompressionLevel.FASTEST
+                    CompressionLevel.FAST -> net.lingala.zip4j.model.enums.CompressionLevel.FAST
+                    CompressionLevel.NORMAL -> net.lingala.zip4j.model.enums.CompressionLevel.NORMAL
+                    CompressionLevel.GOOD -> net.lingala.zip4j.model.enums.CompressionLevel.NORMAL
+                    CompressionLevel.BEST -> net.lingala.zip4j.model.enums.CompressionLevel.MAXIMUM
+                }
+                if (!password.isNullOrEmpty()) {
+                    isEncryptFiles = true
+                    if (encryptionType == EncryptionType.ZIP_CRYPTO) {
+                        this.encryptionMethod = EncryptionMethod.ZIP_STANDARD
+                    } else {
+                        this.encryptionMethod = EncryptionMethod.AES
+                        this.aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
+                    }
+                }
+            }
+            
+            zos.putNextEntry(params)
             FileInputStream(file).use { fis ->
                 val buffer = ByteArray(8192)
                 var len: Int

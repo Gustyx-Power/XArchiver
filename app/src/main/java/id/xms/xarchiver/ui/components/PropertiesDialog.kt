@@ -1,6 +1,9 @@
 package id.xms.xarchiver.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import id.xms.xarchiver.R
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -58,121 +61,155 @@ fun PropertiesDialog(
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Icon(
-                    if (file.isDirectory) Icons.Default.Folder else Icons.Default.Description,
-                    contentDescription = null,
-                    tint = if (file.isDirectory) MaterialTheme.colorScheme.primary 
-                           else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    stringResource(R.string.dialog_properties_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (file.isDirectory) Icons.Default.Folder else Icons.Default.Description,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = stringResource(R.string.dialog_properties_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = file.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         },
         text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
             ) {
-                // Name
-                PropertyRow(
-                    icon = Icons.Default.Label,
-                    label = stringResource(R.string.property_name),
-                    value = file.name
-                )
-                
-                HorizontalDivider()
-                
-                // Path
-                PropertyRow(
-                    icon = Icons.Default.FolderOpen,
-                    label = stringResource(R.string.property_location),
-                    value = file.parent ?: "/"
-                )
-                
-                HorizontalDivider()
-                
-                // Size
-                val displaySize = if (file.isDirectory) {
-                    directorySize?.humanReadable() ?: stringResource(R.string.property_calculating)
-                } else {
-                    file.length().humanReadable()
-                }
-                PropertyRow(
-                    icon = Icons.Default.Storage,
-                    label = stringResource(R.string.property_size),
-                    value = displaySize
-                )
-                
-                // For directories, show file/folder count
-                if (file.isDirectory) {
-                    HorizontalDivider()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    // Name
                     PropertyRow(
-                        icon = Icons.Default.Folder,
-                        label = stringResource(R.string.property_contents),
-                        value = stringResource(R.string.property_contents_format, fileCount, folderCount)
+                        icon = Icons.Default.Label,
+                        label = stringResource(R.string.property_name),
+                        value = file.name
                     )
-                }
-                
-                HorizontalDivider()
-                
-                // Last Modified
-                PropertyRow(
-                    icon = Icons.Default.Schedule,
-                    label = stringResource(R.string.property_modified),
-                    value = dateFormatter.format(Date(file.lastModified()))
-                )
-                
-                HorizontalDivider()
-                
-                // Permissions
-                val readStr = stringResource(R.string.property_read)
-                val writeStr = stringResource(R.string.property_write)
-                val execStr = stringResource(R.string.property_execute)
-                val noneStr = stringResource(R.string.property_none)
-                val permissions = buildString {
-                    if (file.canRead()) append(readStr)
-                    if (file.canWrite()) append(writeStr)
-                    if (file.canExecute()) append(execStr)
-                }.trim().ifEmpty { noneStr }
-                
-                PropertyRow(
-                    icon = Icons.Default.Security,
-                    label = stringResource(R.string.property_permissions),
-                    value = permissions
-                )
-                
-                // File extension (for files only)
-                if (file.isFile && file.extension.isNotEmpty()) {
-                    HorizontalDivider()
+                    
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    
+                    // Path
                     PropertyRow(
-                        icon = Icons.Default.Extension,
-                        label = stringResource(R.string.property_type),
-                        value = ".${file.extension.uppercase()}"
+                        icon = Icons.Default.FolderOpen,
+                        label = stringResource(R.string.property_location),
+                        value = file.parent ?: "/"
                     )
-                }
-                
-                // Hidden file indicator
-                if (file.name.startsWith(".")) {
-                    HorizontalDivider()
+                    
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    
+                    // Size
+                    val displaySize = if (file.isDirectory) {
+                        directorySize?.humanReadable() ?: stringResource(R.string.property_calculating)
+                    } else {
+                        file.length().humanReadable()
+                    }
                     PropertyRow(
-                        icon = Icons.Default.VisibilityOff,
-                        label = stringResource(R.string.property_hidden),
-                        value = stringResource(R.string.property_yes)
+                        icon = Icons.Default.Storage,
+                        label = stringResource(R.string.property_size),
+                        value = displaySize
                     )
+                    
+                    // For directories, show file/folder count
+                    if (file.isDirectory) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        PropertyRow(
+                            icon = Icons.Default.Folder,
+                            label = stringResource(R.string.property_contents),
+                            value = stringResource(R.string.property_contents_format, fileCount, folderCount)
+                        )
+                    }
+                    
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    
+                    // Last Modified
+                    PropertyRow(
+                        icon = Icons.Default.Schedule,
+                        label = stringResource(R.string.property_modified),
+                        value = dateFormatter.format(Date(file.lastModified()))
+                    )
+                    
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                    
+                    // Permissions
+                    val readStr = stringResource(R.string.property_read)
+                    val writeStr = stringResource(R.string.property_write)
+                    val execStr = stringResource(R.string.property_execute)
+                    val noneStr = stringResource(R.string.property_none)
+                    val permissions = buildString {
+                        if (file.canRead()) append(readStr)
+                        if (file.canWrite()) append(writeStr)
+                        if (file.canExecute()) append(execStr)
+                    }.trim().ifEmpty { noneStr }
+                    
+                    PropertyRow(
+                        icon = Icons.Default.Security,
+                        label = stringResource(R.string.property_permissions),
+                        value = permissions
+                    )
+                    
+                    // File extension (for files only)
+                    if (file.isFile && file.extension.isNotEmpty()) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        PropertyRow(
+                            icon = Icons.Default.Extension,
+                            label = stringResource(R.string.property_type),
+                            value = ".${file.extension.uppercase()}"
+                        )
+                    }
+                    
+                    // Hidden file indicator
+                    if (file.name.startsWith(".")) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        PropertyRow(
+                            icon = Icons.Default.VisibilityOff,
+                            label = stringResource(R.string.property_hidden),
+                            value = stringResource(R.string.property_yes)
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
                 Text(stringResource(R.string.action_close))
             }
         },
-        shape = MaterialTheme.shapes.extraLarge
+        dismissButton = null,
+        shape = RoundedCornerShape(28.dp)
     )
 }
 

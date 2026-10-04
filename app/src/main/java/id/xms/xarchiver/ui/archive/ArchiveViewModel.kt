@@ -21,15 +21,20 @@ class ArchiveViewModel(context: Context) : ViewModel() {
     /**
      * Loads the contents of an archive file
      */
-    fun loadArchiveContents(archiveFilePath: String) {
+    fun loadArchiveContents(archiveFilePath: String, password: String? = null) {
         isLoading.value = true
         viewModelScope.launch {
-            val entries = mutableListOf<ArchiveEntry>()
-            archiveManager.listArchiveContents(archiveFilePath).collect { entry ->
-                entries.add(entry)
+            try {
+                val entries = mutableListOf<ArchiveEntry>()
+                archiveManager.listArchiveContents(archiveFilePath, password).collect { entry ->
+                    entries.add(entry)
+                }
+                archiveEntries.value = entries
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isLoading.value = false
             }
-            archiveEntries.value = entries
-            isLoading.value = false
         }
     }
 
@@ -39,38 +44,59 @@ class ArchiveViewModel(context: Context) : ViewModel() {
     fun loadNestedArchiveContents(archiveFilePath: String, nestedArchivePath: String) {
         isLoading.value = true
         viewModelScope.launch {
-            val entries = mutableListOf<ArchiveEntry>()
-            archiveManager.listNestedArchiveContents(archiveFilePath, nestedArchivePath).collect { entry ->
-                entries.add(entry)
+            try {
+                val entries = mutableListOf<ArchiveEntry>()
+                archiveManager.listNestedArchiveContents(archiveFilePath, nestedArchivePath).collect { entry ->
+                    entries.add(entry)
+                }
+                archiveEntries.value = entries
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                isLoading.value = false
             }
-            archiveEntries.value = entries
-            isLoading.value = false
         }
     }
 
     /**
-     * Extracts an archive file to the specified directory
+     * Extracts an archive file to the specified directory with optional password
      */
     fun extractArchive(
         archiveFilePath: String,
         outputDir: String,
         targetEntries: List<String>? = null,
+        password: String? = null,
         onProgress: (ExtractionProgress) -> Unit = {}
     ): Flow<ExtractionProgress> {
-        return archiveManager.extractArchive(archiveFilePath, outputDir, targetEntries) { progress, file ->
+        return archiveManager.extractArchive(archiveFilePath, outputDir, targetEntries, password) { progress, file ->
             // This callback is for the internal progress tracking
             // Don't call onProgress here as it conflicts with the Flow
         }
     }
 
     /**
-     * Views a single entry in an archive file
+     * Checks if an archive is encrypted
+     */
+    fun isArchiveEncrypted(archiveFilePath: String): Boolean {
+        return archiveManager.isArchiveEncrypted(archiveFilePath)
+    }
+
+    /**
+     * Checks if an entry inside an archive is encrypted
+     */
+    fun isEntryEncrypted(archiveFilePath: String, entryPath: String): Boolean {
+        return archiveManager.isEntryEncrypted(archiveFilePath, entryPath)
+    }
+
+    /**
+     * Views a single entry in an archive file with optional password
      */
     suspend fun viewArchiveEntry(
         archiveFilePath: String,
-        entryPath: String
+        entryPath: String,
+        password: String? = null
     ): String? {
-        return archiveManager.viewArchiveEntry(archiveFilePath, entryPath)
+        return archiveManager.viewArchiveEntry(archiveFilePath, entryPath, password)
     }
 
     /**

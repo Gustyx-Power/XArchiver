@@ -60,7 +60,7 @@ object UpdateManager {
      * Check GitHub Releases for updates compared to [currentVersion].
      */
     suspend fun checkForUpdate(
-        currentVersion: String = "2.1.0"
+        currentVersion: String = "2.1.3"
     ): UpdateCheckResult = withContext(Dispatchers.IO) {
         android.util.Log.d("OTA", "checkForUpdate started with currentVersion=$currentVersion")
         try {
@@ -147,7 +147,7 @@ object UpdateManager {
      */
     suspend fun checkSilently(
         context: Context,
-        currentVersion: String = "2.1.0"
+        currentVersion: String = "2.1.3"
     ) {
         android.util.Log.d("OTA", "checkSilently started")
         when (val result = checkForUpdate(currentVersion)) {

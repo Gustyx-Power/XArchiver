@@ -2,6 +2,24 @@
 
 All notable changes to XArchiver will be documented in this file.
 
+## [2.1.3] - 2026-10-04
+
+### Added - ZIP Password Encryption (AES-256 & ZipCrypto)
+- **Password Encryption on Compression**: Full support for creating password-protected ZIP archives with selectable encryption algorithms: industry-standard **AES-256** (maximum security) and **ZipCrypto** (legacy compatibility).
+- **Automatic Locked Archive Detection**: Smart detection of encrypted ZIP archives upon previewing or extracting, seamlessly triggering the password entry dialog.
+- **Zip4j Engine Integration**: Leveraged Zip4j library for robust and reliable ZIP password encryption and decryption handling.
+
+### Redesigned & UI Enhancements
+- **App-Wide Proportional Dialog Redesign**: Completely overhauled all popup dialogs across the application (compression, extraction, create folder/file, rename, overwrite confirmation, etc.) for a clean, proportional, and balanced Material 3 look.
+- **Symmetric 50/50 Action Buttons**: Replaced uneven buttons with balanced 50/50 horizontal action rows designed for natural thumb reach.
+- **Structured Header Icon Containers**: Added rounded squircle icon containers at the top of each dialog with thematic accent background tones.
+- **Accurate Password Prompt Labels**: Cleaned up the unlock dialog label to "Password" (mandatory) instead of displaying an optional hint.
+
+### Fixed & Stability
+- **Encrypted Archive Preview Crash Fix**: Fixed a fatal crash when tapping once to view password-protected ZIP archives in the Explorer; the app now gracefully requests the archive password and opens contents safely.
+
+---
+
 ## [2.1.0] - 2026-10-03
 
 ### Added - Recent Files & Activity Tracking

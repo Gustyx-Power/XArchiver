@@ -1,8 +1,10 @@
 package id.xms.xarchiver.ui.payload
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -10,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -137,87 +140,199 @@ fun PayloadViewerScreen(
                     showExtractDialog = false
                 }
             },
-            title = { Text("Extract Partition") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeveloperBoard,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Extract Partition",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${selectedPartition!!.name}.img",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
             text = {
-                Column {
-                    Text("Extract ${selectedPartition!!.name}.img?")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Size: ${selectedPartition!!.uncompressedSize.humanReadable()}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "Output: XArchiver-payload/extracted-payload/$parentFolderName/",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Size: ${selectedPartition!!.uncompressedSize.humanReadable()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Output: XArchiver-payload/extracted-payload/$parentFolderName/",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.extractPartition(selectedPartition!!)
-                        showExtractDialog = false
-                    },
-                    enabled = !viewModel.isExtracting
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Extract")
+                    OutlinedButton(
+                        onClick = { showExtractDialog = false },
+                        enabled = !viewModel.isExtracting,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.extractPartition(selectedPartition!!)
+                            showExtractDialog = false
+                        },
+                        enabled = !viewModel.isExtracting,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Extract")
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(
-                    onClick = { showExtractDialog = false },
-                    enabled = !viewModel.isExtracting
-                ) {
-                    Text("Cancel")
-                }
-            }
+            dismissButton = null,
+            shape = RoundedCornerShape(28.dp)
         )
     }
     
     // Extract all partitions dialog
     if (showExtractAllDialog) {
         val parentFolderName = viewModel.payloadInfo?.filePath?.let { java.io.File(it).parentFile?.name } ?: "UnknownROM"
+        val totalSize = viewModel.payloadInfo?.partitions?.sumOf { it.uncompressedSize } ?: 0
         AlertDialog(
             onDismissRequest = { 
                 if (!viewModel.isExtracting) {
                     showExtractAllDialog = false
                 }
             },
-            title = { Text("Extract All Partitions") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Unarchive,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Extract All Partitions",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${viewModel.payloadInfo?.partitions?.size ?: 0} partitions",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
             text = {
-                Column {
-                    Text("Extract all ${viewModel.payloadInfo?.partitions?.size ?: 0} partitions?")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    val totalSize = viewModel.payloadInfo?.partitions?.sumOf { it.uncompressedSize } ?: 0
-                    Text(
-                        text = "Total size: ${totalSize.humanReadable()}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "Output: XArchiver-payload/extracted-payload/$parentFolderName/",
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Total size: ${totalSize.humanReadable()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Output: XArchiver-payload/extracted-payload/$parentFolderName/",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.extractAllPartitions()
-                        showExtractAllDialog = false
-                    },
-                    enabled = !viewModel.isExtracting
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Extract All")
+                    OutlinedButton(
+                        onClick = { showExtractAllDialog = false },
+                        enabled = !viewModel.isExtracting,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                    Button(
+                        onClick = {
+                            viewModel.extractAllPartitions()
+                            showExtractAllDialog = false
+                        },
+                        enabled = !viewModel.isExtracting,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                    ) {
+                        Text("Extract All")
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(
-                    onClick = { showExtractAllDialog = false },
-                    enabled = !viewModel.isExtracting
-                ) {
-                    Text("Cancel")
-                }
-            }
+            dismissButton = null,
+            shape = RoundedCornerShape(28.dp)
         )
     }
 }

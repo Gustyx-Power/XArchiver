@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -487,7 +486,11 @@ fun MiuixAboutScreen(navController: NavController) {
         AlertDialog(
             onDismissRequest = { showLicenseDialog = false },
             title = {
-                Text("MIT License", fontWeight = FontWeight.Bold)
+                Text(
+                    text = "MIT License",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
             },
             text = {
                 Column(
@@ -495,33 +498,44 @@ fun MiuixAboutScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        "Copyright © 2026 GustyxPower\n\n" +
-                        "Permission is hereby granted, free of charge, to any person obtaining a copy " +
-                        "of this software and associated documentation files (the \"Software\"), to deal " +
-                        "in the Software without restriction, including without limitation the rights " +
-                        "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell " +
-                        "copies of the Software, and to permit persons to whom the Software is " +
-                        "furnished to do so, subject to the following conditions:\n\n" +
-                        "The above copyright notice and this permission notice shall be included in all " +
-                        "copies or substantial portions of the Software.",
+                        text = "Copyright © 2026 GustyxPower\n\n" +
+                                "Permission is hereby granted, free of charge, to any person obtaining a copy " +
+                                "of this software and associated documentation files (the \"Software\"), to deal " +
+                                "in the Software without restriction, including without limitation the rights " +
+                                "to use, copy, modify, merge, publish, distribute, sublicense, and/or sell " +
+                                "copies of the Software, and to permit persons to whom the Software is " +
+                                "furnished to do so, subject to the following conditions:\n\n" +
+                                "The above copyright notice and this permission notice shall be included in all " +
+                                "copies or substantial portions of the Software.",
                         fontSize = 13.sp,
                         color = secondaryTextColor
                     )
                 }
             },
             confirmButton = {
-                Button(onClick = { showLicenseDialog = false }) {
-                    Text(stringResource(R.string.action_close))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    TextButton(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://opensource.org/licenses/MIT"))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("View Online")
+                    }
+                    Button(
+                        onClick = { showLicenseDialog = false },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(stringResource(R.string.action_close))
+                    }
                 }
             },
-            dismissButton = {
-                TextButton(onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://opensource.org/licenses/MIT"))
-                    context.startActivity(intent)
-                }) {
-                    Text("View Online")
-                }
-            }
+            dismissButton = null,
+            shape = RoundedCornerShape(28.dp)
         )
     }
 }

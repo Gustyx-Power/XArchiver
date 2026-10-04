@@ -3,6 +3,7 @@ package id.xms.xarchiver.ui.archive
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,6 +32,7 @@ import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
@@ -45,8 +47,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -59,6 +64,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -90,6 +96,11 @@ fun ArchiveExplorerScreen(
     var showCustomPathDialog by remember { mutableStateOf(false) }
     var customPath by remember { mutableStateOf("") }
     var extractionProgress by remember { mutableStateOf<ExtractionProgress?>(null) }
+    var pendingPasswordExtract by remember { mutableStateOf<Pair<String, List<String>?>?>(null) }
+    var passwordExtractError by remember { mutableStateOf<String?>(null) }
+    var sessionPassword by remember { mutableStateOf<String?>(null) }
+    var pendingPasswordViewEntry by remember { mutableStateOf<ArchiveEntry?>(null) }
+    var passwordViewError by remember { mutableStateOf<String?>(null) }
 
     val archiveEntries = viewModel.archiveEntries.value
     val currentPath = remember(archivePath, nestedPath) {
@@ -99,6 +110,26 @@ fun ArchiveExplorerScreen(
     // Default paths
     val downloadsPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath
     val archiveFileName = File(archivePath).nameWithoutExtension
+
+    val requestArchiveExtract: (String, List<String>?) -> Unit = { outputDir, targetEntries ->
+        scope.launch {
+            val isEncrypted = viewModel.isArchiveEncrypted(archivePath)
+            if (isEncrypted && sessionPassword == null) {
+                passwordExtractError = null
+                pendingPasswordExtract = Pair(outputDir, targetEntries)
+            } else {
+                extractArchive(
+                    viewModel = viewModel,
+                    archivePath = archivePath,
+                    outputDir = outputDir,
+                    targetEntries = targetEntries,
+                    password = sessionPassword,
+                    notificationHostState = notificationHostState,
+                    onProgress = { extractionProgress = it }
+                )
+            }
+        }
+    }
 
     LaunchedEffect(archivePath, nestedPath) {
         if (nestedPath != null) {
@@ -173,6 +204,73 @@ fun ArchiveExplorerScreen(
         
         // Sort: folders first, then files, alphabetically
         immediateItems.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+    }
+
+    val openEntryFile: (ArchiveEntry, String?) -> Unit = { targetEntry, pass ->
+        scope.launch {
+            try {
+                Toast.makeText(context, context.getString(R.string.archive_toast_extracting_format, targetEntry.name), Toast.LENGTH_SHORT).show()
+
+                // Extract to Downloads folder instead of app cache
+                val fileName = targetEntry.name.substringAfterLast('/')
+                val outputDir = "$downloadsPath/.XArchiver_temp"
+                val outputFile = File(outputDir, fileName)
+
+                // Create output directory
+                File(outputDir).mkdirs()
+
+                val effectivePass = pass ?: sessionPassword
+                val extractedPath = viewModel.viewArchiveEntry(archivePath, targetEntry.name, effectivePass)
+
+                if (extractedPath != null) {
+                    val cacheFile = File(extractedPath)
+                    if (cacheFile.exists()) {
+                        cacheFile.copyTo(outputFile, overwrite = true)
+
+                        Toast.makeText(context, context.getString(R.string.archive_toast_extracted_format, outputFile.absolutePath), Toast.LENGTH_SHORT).show()
+
+                        // Open with appropriate viewer
+                        val ext = targetEntry.name.substringAfterLast('.', "").lowercase()
+                        when {
+                            ext in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp") -> {
+                                navController.navigate("image_viewer/${Uri.encode(outputFile.absolutePath)}")
+                            }
+                            ext in listOf("mp3", "wav", "flac", "aac", "ogg", "m4a") -> {
+                                navController.navigate("audio_player/${Uri.encode(outputFile.absolutePath)}")
+                            }
+                            ext in listOf("mp4", "avi", "mkv", "mov", "wmv", "webm") -> {
+                                navController.navigate("video_player/${Uri.encode(outputFile.absolutePath)}")
+                            }
+                            ext in listOf("txt", "md", "log", "json", "xml", "html", "css", "js") -> {
+                                navController.navigate("text_editor/${Uri.encode(outputFile.absolutePath)}")
+                            }
+                            ext in listOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx") -> {
+                                // Open with external app
+                                id.xms.xarchiver.core.ShareUtils.openFile(context, outputFile.absolutePath)
+                            }
+                            else -> {
+                                // Try to open as text or with external app
+                                navController.navigate("text_editor/${Uri.encode(outputFile.absolutePath)}")
+                            }
+                        }
+                    } else {
+                        notificationHostState.showNotification(context.getString(R.string.archive_notification_extract_failed_format, targetEntry.name), NotificationType.ERROR)
+                    }
+                } else {
+                    val isEncrypted = (targetEntry as? id.xms.xarchiver.core.archive.XArchiveEntry)?.isEncrypted == true ||
+                            viewModel.isEntryEncrypted(archivePath, targetEntry.name) ||
+                            viewModel.isArchiveEncrypted(archivePath)
+                    if (isEncrypted) {
+                        passwordViewError = if (effectivePass != null) context.getString(R.string.archive_password_incorrect) else null
+                        pendingPasswordViewEntry = targetEntry
+                    } else {
+                        notificationHostState.showNotification(context.getString(R.string.archive_notification_extract_failed_format, targetEntry.name), NotificationType.ERROR)
+                    }
+                }
+            } catch (e: Exception) {
+                notificationHostState.showNotification(context.getString(R.string.archive_notification_error_format, e.message), NotificationType.ERROR)
+            }
+        }
     }
 
     Scaffold(
@@ -296,63 +394,14 @@ fun ArchiveExplorerScreen(
                                         val encodedEntryPath = Uri.encode(entry.name)
                                         navController.navigate("archive_explorer/$encodedArchivePath/$encodedEntryPath")
                                     } else {
-                                        // Extract and open the file
-                                        scope.launch {
-                                            try {
-                                                Toast.makeText(context, context.getString(R.string.archive_toast_extracting_format, entry.name), Toast.LENGTH_SHORT).show()
-                                                
-                                                // Extract to Downloads folder instead of app cache
-                                                val fileName = entry.name.substringAfterLast('/')
-                                                val outputDir = "$downloadsPath/.XArchiver_temp"
-                                                val outputFile = File(outputDir, fileName)
-                                                
-                                                // Create output directory
-                                                File(outputDir).mkdirs()
-                                                
-                                                // Use viewArchiveEntry to get the cached file, then copy to accessible location
-                                                val extractedPath = viewModel.viewArchiveEntry(archivePath, entry.name)
-                                                
-                                                if (extractedPath != null) {
-                                                    // Copy from cache to Downloads
-                                                    val cacheFile = File(extractedPath)
-                                                    if (cacheFile.exists()) {
-                                                        cacheFile.copyTo(outputFile, overwrite = true)
-                                                        
-                                                        Toast.makeText(context, context.getString(R.string.archive_toast_extracted_format, outputFile.absolutePath), Toast.LENGTH_SHORT).show()
-                                                        
-                                                        // Open with appropriate viewer
-                                                        val ext = extension
-                                                        when {
-                                                            ext in listOf("jpg", "jpeg", "png", "gif", "bmp", "webp") -> {
-                                                                navController.navigate("image_viewer/${Uri.encode(outputFile.absolutePath)}")
-                                                            }
-                                                            ext in listOf("mp3", "wav", "flac", "aac", "ogg", "m4a") -> {
-                                                                navController.navigate("audio_player/${Uri.encode(outputFile.absolutePath)}")
-                                                            }
-                                                            ext in listOf("mp4", "avi", "mkv", "mov", "wmv", "webm") -> {
-                                                                navController.navigate("video_player/${Uri.encode(outputFile.absolutePath)}")
-                                                            }
-                                                            ext in listOf("txt", "md", "log", "json", "xml", "html", "css", "js") -> {
-                                                                navController.navigate("text_editor/${Uri.encode(outputFile.absolutePath)}")
-                                                            }
-                                                            ext in listOf("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx") -> {
-                                                                // Open with external app
-                                                                id.xms.xarchiver.core.ShareUtils.openFile(context, outputFile.absolutePath)
-                                                            }
-                                                            else -> {
-                                                                // Try to open as text or with external app
-                                                                navController.navigate("text_editor/${Uri.encode(outputFile.absolutePath)}")
-                                                            }
-                                                        }
-                                                    } else {
-                                                    notificationHostState.showNotification(context.getString(R.string.archive_notification_extract_failed_format, entry.name), NotificationType.ERROR)
-                                                    }
-                                                } else {
-                                                    notificationHostState.showNotification(context.getString(R.string.archive_notification_extract_failed_format, entry.name), NotificationType.ERROR)
-                                                }
-                                            } catch (e: Exception) {
-                                                notificationHostState.showNotification(context.getString(R.string.archive_notification_error_format, e.message), NotificationType.ERROR)
-                                            }
+                                        val isEncrypted = (entry as? id.xms.xarchiver.core.archive.XArchiveEntry)?.isEncrypted == true ||
+                                                viewModel.isEntryEncrypted(archivePath, entry.name) ||
+                                                viewModel.isArchiveEncrypted(archivePath)
+                                        if (isEncrypted && sessionPassword == null) {
+                                            passwordViewError = null
+                                            pendingPasswordViewEntry = entry
+                                        } else {
+                                            openEntryFile(entry, sessionPassword)
                                         }
                                     }
                                 }
@@ -368,45 +417,60 @@ fun ArchiveExplorerScreen(
             AlertDialog(
                 onDismissRequest = { showExtractionDialog = false },
                 title = {
-                    Text(
-                        text = stringResource(R.string.archive_extract_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Unarchive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = stringResource(R.string.archive_extract_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = stringResource(R.string.archive_extract_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 },
                 text = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.archive_extract_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         // Extract to Downloads option
-                        Card(
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
                                 .clickable {
                                     showExtractionDialog = false
                                     val outputDir = "$downloadsPath/$archiveFileName"
                                     val targetEntries = if (isSelecting) selectionManager.selectedPaths.toList() else null
-                                    scope.launch {
-                                        extractArchive(
-                                            viewModel = viewModel,
-                                            archivePath = archivePath,
-                                            outputDir = outputDir,
-                                            targetEntries = targetEntries,
-                                            notificationHostState = notificationHostState,
-                                            onProgress = { extractionProgress = it }
-                                        )
-                                    }
+                                    requestArchiveExtract(outputDir, targetEntries)
                                     selectionManager.clearSelection()
                                 },
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -414,17 +478,26 @@ fun ArchiveExplorerScreen(
                                     .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.FolderOpen,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FolderOpen,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
                                 Column {
                                     Text(
                                         text = stringResource(R.string.archive_extract_here),
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
                                         text = "Downloads/$archiveFileName/",
@@ -435,21 +508,19 @@ fun ArchiveExplorerScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
                         // Extract to custom path option
-                        Card(
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
                                 .clickable {
                                     showExtractionDialog = false
                                     customPath = downloadsPath
                                     showCustomPathDialog = true
                                 },
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -457,17 +528,26 @@ fun ArchiveExplorerScreen(
                                     .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    Icons.Default.CreateNewFolder,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CreateNewFolder,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(14.dp))
                                 Column {
                                     Text(
                                         text = stringResource(R.string.archive_extract_custom),
                                         style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Medium
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                     Text(
                                         text = stringResource(R.string.archive_extract_custom_desc),
@@ -479,12 +559,19 @@ fun ArchiveExplorerScreen(
                         }
                     }
                 },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showExtractionDialog = false }) {
+                confirmButton = {
+                    OutlinedButton(
+                        onClick = { showExtractionDialog = false },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
                         Text(stringResource(R.string.action_cancel))
                     }
-                }
+                },
+                dismissButton = null,
+                shape = RoundedCornerShape(28.dp)
             )
         }
 
@@ -492,46 +579,144 @@ fun ArchiveExplorerScreen(
         if (showCustomPathDialog) {
             AlertDialog(
                 onDismissRequest = { showCustomPathDialog = false },
-                title = { Text(stringResource(R.string.archive_extract_custom_title)) },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CreateNewFolder,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = stringResource(R.string.archive_extract_custom_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = stringResource(R.string.archive_extract_custom_prompt),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 text = {
-                    Column {
-                        Text(
-                            text = stringResource(R.string.archive_extract_custom_prompt),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
                         OutlinedTextField(
                             value = customPath,
                             onValueChange = { customPath = it },
                             label = { Text(stringResource(R.string.archive_extract_path_label)) },
                             placeholder = { Text("/storage/emulated/0/Download") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.FolderOpen,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            shape = RoundedCornerShape(14.dp),
+                            singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                 },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showCustomPathDialog = false
-                            val outputDir = "$customPath/$archiveFileName"
-                            scope.launch {
-                                extractArchive(
-                                    viewModel = viewModel,
-                                    archivePath = archivePath,
-                                    outputDir = outputDir,
-                                    notificationHostState = notificationHostState,
-                                    onProgress = { extractionProgress = it }
-                                )
-                            }
-                        }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(stringResource(R.string.action_extract))
+                        OutlinedButton(
+                            onClick = { showCustomPathDialog = false },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
+                        Button(
+                            onClick = {
+                                showCustomPathDialog = false
+                                val outputDir = "$customPath/$archiveFileName"
+                                val targetEntries = if (isSelecting) selectionManager.selectedPaths.toList() else null
+                                requestArchiveExtract(outputDir, targetEntries)
+                                selectionManager.clearSelection()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
+                            Text(stringResource(R.string.action_extract), fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showCustomPathDialog = false }) {
-                        Text(stringResource(R.string.action_cancel))
+                dismissButton = null,
+                shape = RoundedCornerShape(28.dp)
+            )
+        }
+
+        // Password Prompt Dialog for encrypted archives
+        pendingPasswordExtract?.let { (outputDir, targetEntries) ->
+            ArchivePasswordDialog(
+                archiveName = File(archivePath).name,
+                errorMessage = passwordExtractError,
+                onDismiss = {
+                    pendingPasswordExtract = null
+                    passwordExtractError = null
+                },
+                onConfirm = { enteredPassword ->
+                    pendingPasswordExtract = null
+                    passwordExtractError = null
+                    sessionPassword = enteredPassword
+                    scope.launch {
+                        extractArchive(
+                            viewModel = viewModel,
+                            archivePath = archivePath,
+                            outputDir = outputDir,
+                            targetEntries = targetEntries,
+                            password = enteredPassword,
+                            notificationHostState = notificationHostState,
+                            onProgress = { extractionProgress = it }
+                        )
                     }
+                }
+            )
+        }
+
+        // Password Prompt Dialog for opening encrypted files
+        pendingPasswordViewEntry?.let { entryToView ->
+            ArchivePasswordDialog(
+                archiveName = entryToView.name.substringAfterLast('/'),
+                errorMessage = passwordViewError,
+                confirmText = stringResource(R.string.action_open),
+                onDismiss = {
+                    pendingPasswordViewEntry = null
+                    passwordViewError = null
+                },
+                onConfirm = { enteredPass ->
+                    pendingPasswordViewEntry = null
+                    passwordViewError = null
+                    sessionPassword = enteredPass
+                    openEntryFile(entryToView, enteredPass)
                 }
             )
         }
@@ -595,6 +780,7 @@ private suspend fun extractArchive(
     archivePath: String,
     outputDir: String,
     targetEntries: List<String>? = null,
+    password: String? = null,
     notificationHostState: id.xms.xarchiver.ui.components.NotificationHostState,
     onProgress: (ExtractionProgress?) -> Unit
 ) {
@@ -606,7 +792,7 @@ private suspend fun extractArchive(
         }
 
         // Start extraction
-        viewModel.extractArchive(archivePath, outputDir, targetEntries).collect { progress ->
+        viewModel.extractArchive(archivePath, outputDir, targetEntries, password).collect { progress ->
             onProgress(progress)
             when (progress.state) {
                 ExtractionState.COMPLETED -> {
@@ -615,7 +801,8 @@ private suspend fun extractArchive(
                 }
                 ExtractionState.ERROR -> {
                     onProgress(null) // Clear progress
-                    notificationHostState.showNotification("Extraction failed: ${progress.currentFile}", NotificationType.ERROR)
+                    val err = progress.error ?: progress.currentFile
+                    notificationHostState.showNotification("Extraction failed: $err", NotificationType.ERROR)
                 }
                 else -> {
                     // Still extracting, progress continues
@@ -670,13 +857,22 @@ fun ArchiveEntryItem(
             if (!entry.isDirectory) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = formatFileSize(entry.size),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if ((entry as? id.xms.xarchiver.core.archive.XArchiveEntry)?.isEncrypted == true) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Encrypted",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
                 }
             }
         }

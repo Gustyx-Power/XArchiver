@@ -28,6 +28,10 @@
 -keep class org.apache.commons.compress.** { *; }
 -dontwarn org.apache.commons.compress.**
 
+# Keep Zip4j classes
+-keep class net.lingala.zip4j.** { *; }
+-dontwarn net.lingala.zip4j.**
+
 # Keep XArchiver core archive classes
 -keep class id.xms.xarchiver.core.archive.** { *; }
 -keepclassmembers class id.xms.xarchiver.core.archive.** { *; }

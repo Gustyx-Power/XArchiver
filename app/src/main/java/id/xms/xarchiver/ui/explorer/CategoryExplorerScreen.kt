@@ -185,18 +185,78 @@ fun CategoryExplorerScreen(
         pendingApk?.let { apkFile ->
             AlertDialog(
                 onDismissRequest = { pendingApk = null },
-                icon = { Icon(Icons.Default.Android, null, tint = Color(0xFF4CAF50)) },
-                title = { Text("Install APK") },
-                text = { Text("Do you want to install ${apkFile.name}?") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        id.xms.xarchiver.core.install.ApkInstaller.installApk(context, apkFile)
-                        pendingApk = null
-                    }) { Text("Install") }
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0xFFE8F5E9)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Android,
+                                contentDescription = null,
+                                tint = Color(0xFF2E7D32),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Install APK",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = apkFile.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 },
-                dismissButton = {
-                    TextButton(onClick = { pendingApk = null }) { Text("Cancel") }
-                }
+                text = {
+                    Text(
+                        text = "Do you want to install ${apkFile.name}?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { pendingApk = null },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
+                            Text("Cancel")
+                        }
+                        Button(
+                            onClick = {
+                                id.xms.xarchiver.core.install.ApkInstaller.installApk(context, apkFile)
+                                pendingApk = null
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                        ) {
+                            Text("Install")
+                        }
+                    }
+                },
+                dismissButton = null,
+                shape = RoundedCornerShape(28.dp)
             )
         }
     }

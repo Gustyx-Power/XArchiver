@@ -2,6 +2,24 @@
 
 Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 
+## [2.1.3] - 2026-10-04
+
+### Ditambahkan - Enkripsi Kata Sandi ZIP (AES-256 & ZipCrypto)
+- **Enkripsi Kata Sandi Saat Kompresi**: Dukungan penuh pembuatan arsip ZIP yang dilindungi kata sandi, dengan opsi enkripsi standar **AES-256** (sangat aman) dan **ZipCrypto** (kompatibilitas warisan).
+- **Deteksi Otomatis Arsip Terkunci**: XArchiver secara cerdas mendeteksi arsip ZIP terenkripsi saat dibuka untuk melihat isi maupun diekstrak, dan menampilkan dialog kata sandi secara otomatis.
+- **Dukungan Zip4j Engine**: Mengintegrasikan engine Zip4j untuk penanganan enkripsi dan dekripsi berkas ZIP yang kuat dan andal.
+
+### Desain Ulang & Peningkatan Antarmuka (UI)
+- **Desain Ulang Dialog Seluruh Aplikasi**: Merapikan seluruh dialog popup di aplikasi (kompresi, ekstraksi, buat folder/berkas, ubah nama, ganti nama, konfirmasi timpa, dll.) agar berpenampilan proporsional, seimbang, dan modern.
+- **Tombol Aksi Simetris 50/50**: Menghilangkan tombol bertumpuk atau tidak simetris; seluruh dialog kini menggunakan baris tombol aksi horizontal dengan rasio pembagian ruang 50/50 yang nyaman disentuh.
+- **Wadah Ikon Header Terstruktur**: Menambahkan wadah ikon berbentuk squircle/lingkaran ber-radius di bagian header setiap dialog dengan warna aksen harmonis.
+- **Label Kata Sandi yang Akurat**: Memperbaiki label dialog pembuka arsip terkunci menjadi "Kata Sandi" (wajib) menggantikan label opsional.
+
+### Perbaikan Bug & Stabilitas
+- **Perbaikan Crash Buka Arsip Berpassword**: Memperbaiki masalah crash aplikasi saat menekan sekali (buka) berkas arsip ZIP yang dikunci kata sandi di Explorer; kini langsung membuka dialog masukkan kata sandi dengan aman dan lancar.
+
+---
+
 ## [2.1.0] - 2026-10-03
 
 ### Ditambahkan - Berkas Terkini & Pelacakan Aktivitas

@@ -37,11 +37,38 @@ data class VersionRelease(
 object ChangelogRepository {
     val releases: List<VersionRelease> = listOf(
         VersionRelease(
+            version = "2.1.3",
+            dateRes = R.string.changelog_date_2_1_3,
+            summaryRes = R.string.changelog_summary_2_1_3,
+            isLatest = true,
+            badgeRes = R.string.changelog_badge_latest,
+            items = listOf(
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_3_encryption_title,
+                    descRes = R.string.changelog_item_2_1_3_encryption_desc,
+                    category = ChangelogCategory.FEATURES,
+                    tags = listOf("ZIP Encryption", "AES-256", "ZipCrypto", "Password Prompt")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_3_dialogs_title,
+                    descRes = R.string.changelog_item_2_1_3_dialogs_desc,
+                    category = ChangelogCategory.UI,
+                    tags = listOf("Proportional Dialogs", "Material 3", "50/50 Buttons", "Rounded Icons")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_3_crashfix_title,
+                    descRes = R.string.changelog_item_2_1_3_crashfix_desc,
+                    category = ChangelogCategory.FIXES,
+                    tags = listOf("Encrypted Archive", "Crash Fix", "Explorer", "Security")
+                )
+            )
+        ),
+        VersionRelease(
             version = "2.1.0",
             dateRes = R.string.changelog_date_2_1_0,
             summaryRes = R.string.changelog_summary_2_1_0,
-            isLatest = true,
-            badgeRes = R.string.changelog_badge_latest,
+            isLatest = false,
+            badgeRes = R.string.changelog_badge_stable,
             items = listOf(
                 ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_ota_title,

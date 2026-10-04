@@ -26,8 +26,8 @@ android {
         applicationId = "id.xms.xarchiver"
         minSdk = 29
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.1.0-$buildDate"
+        versionCode = 5
+        versionName = "2.1.3-$buildDate"
     }
 
     signingConfigs {
@@ -110,6 +110,9 @@ dependencies {
     // Apache Commons Compress for archive handling (needed for UI classes too)
     implementation("org.apache.commons:commons-compress:1.26.1")
     implementation("commons-io:commons-io:2.15.1")
+    
+    // Zip4j for encrypted ZIP archives (AES-256 & ZipCrypto)
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
     
     // XZ compression for payload.bin
     implementation("org.tukaani:xz:1.9")

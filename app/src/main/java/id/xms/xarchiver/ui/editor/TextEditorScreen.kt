@@ -23,12 +23,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -384,27 +386,89 @@ fun TextEditorScreen(
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            icon = { Icon(Icons.Default.Warning, null) },
-            title = { Text("Unsaved Changes") },
-            text = { Text("Do you want to save changes before leaving?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    saveFile()
-                    showExitDialog = false
-                    navController.navigateUp()
-                }) { Text("Save & Exit") }
-            },
-            dismissButton = {
-                Row {
-                    TextButton(onClick = {
-                        showExitDialog = false
-                        navController.navigateUp()
-                    }) { Text("Discard") }
-                    TextButton(onClick = { showExitDialog = false }) { 
-                        Text("Cancel") 
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.errorContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Unsaved Changes",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Save changes before leaving?",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
-            }
+            },
+            text = {
+                Text(
+                    text = "If you discard, any unsaved edits will be permanently lost.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            saveFile()
+                            showExitDialog = false
+                            navController.navigateUp()
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                    ) {
+                        Text("Save & Exit")
+                    }
+                    FilledTonalButton(
+                        onClick = {
+                            showExitDialog = false
+                            navController.navigateUp()
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                    ) {
+                        Text("Discard")
+                    }
+                    OutlinedButton(
+                        onClick = { showExitDialog = false },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            },
+            dismissButton = null,
+            shape = RoundedCornerShape(28.dp)
         )
     }
     
@@ -438,7 +502,39 @@ fun TextEditorScreen(
         
         AlertDialog(
             onDismissRequest = { showFindDialog = false },
-            title = { Text("Find & Replace") },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FindReplace,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Find & Replace",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if (searchQuery.isNotEmpty()) "$matchCount matches found" else "Search in document",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
             text = {
                 Column {
                     OutlinedTextField(
@@ -446,6 +542,7 @@ fun TextEditorScreen(
                         onValueChange = { searchQuery = it },
                         label = { Text("Find") },
                         singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth(),
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
@@ -453,7 +550,8 @@ fun TextEditorScreen(
                                     "$matchCount found",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = if (matchCount > 0) MaterialTheme.colorScheme.primary 
-                                           else MaterialTheme.colorScheme.error
+                                           else MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(end = 12.dp)
                                 )
                             }
                         }
@@ -479,6 +577,7 @@ fun TextEditorScreen(
                                     }
                                 },
                                 enabled = matchCount > 0,
+                                shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Find Next", style = MaterialTheme.typography.labelSmall)
@@ -486,6 +585,7 @@ fun TextEditorScreen(
                             
                             OutlinedButton(
                                 onClick = { highlightMatches = !highlightMatches },
+                                shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text(
@@ -508,6 +608,7 @@ fun TextEditorScreen(
                             onValueChange = { replaceQuery = it },
                             label = { Text("Replace with") },
                             singleLine = true,
+                            shape = RoundedCornerShape(14.dp),
                             modifier = Modifier.fillMaxWidth()
                         )
                         
@@ -528,6 +629,7 @@ fun TextEditorScreen(
                                     }
                                 },
                                 enabled = searchQuery.isNotEmpty() && matchCount > 0,
+                                shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Replace", style = MaterialTheme.typography.labelSmall)
@@ -545,6 +647,7 @@ fun TextEditorScreen(
                                     }
                                 },
                                 enabled = searchQuery.isNotEmpty() && matchCount > 0,
+                                shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Replace All", style = MaterialTheme.typography.labelSmall)
@@ -553,10 +656,19 @@ fun TextEditorScreen(
                     }
                 }
             },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showFindDialog = false }) { Text("Close") }
-            }
+            confirmButton = {
+                OutlinedButton(
+                    onClick = { showFindDialog = false },
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    Text("Close")
+                }
+            },
+            dismissButton = null,
+            shape = RoundedCornerShape(28.dp)
         )
     }
 }

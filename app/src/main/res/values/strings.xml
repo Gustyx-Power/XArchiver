@@ -45,14 +45,25 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_create">Create</string>
     <string name="action_extract">Extract</string>
+    <string name="action_open">Open</string>
 
     <!-- Create Archive Dialog -->
     <string name="archive_create_title">Create Archive</string>
     <string name="archive_name_label">Archive name</string>
     <string name="archive_format_label">Format</string>
     <string name="archive_compression_label">Compression</string>
+    <string name="archive_password_label">Password (Optional)</string>
+    <string name="archive_password_hint">Enter password</string>
+    <string name="archive_encryption_method_label">Encryption</string>
+    <string name="archive_encryption_aes256">AES-256 (High Security)</string>
+    <string name="archive_encryption_zipcrypto">ZipCrypto (Legacy Compatibility)</string>
     <string name="archive_items_selected_format">%d item(s) selected</string>
     <string name="archive_error_empty_name">Please enter an archive name</string>
+    <string name="archive_password_dialog_title">Password Required</string>
+    <string name="archive_password_dialog_desc">This archive is protected with a password. Please enter the password to continue:</string>
+    <string name="archive_password_dialog_hint">Enter archive password</string>
+    <string name="archive_password_field_label">Password</string>
+    <string name="archive_password_incorrect">Incorrect password or corrupted archive</string>
 
     <!-- Archive Explorer Screen -->
     <string name="archive_selected_format">%d selected</string>
@@ -239,14 +250,22 @@
     <string name="changelog_cat_storage_root">Storage &amp; Privileged Access</string>
     <string name="changelog_cat_engine">Core Engine &amp; Performance</string>
     <string name="changelog_cat_fixes">Fixes &amp; Stability</string>
+    <string name="changelog_date_2_1_3">October 4, 2026</string>
     <string name="changelog_date_2_1_0">October 3, 2026</string>
     <string name="changelog_date_2_0_0">August 19, 2026</string>
     <string name="changelog_date_1_1_0">February 26, 2026</string>
     <string name="changelog_date_1_0_0">Initial Release</string>
+    <string name="changelog_summary_2_1_3">Added password encryption support for ZIP (AES-256 &amp; ZipCrypto), redesigned all popup dialogs to be clean and proportional, and fixed crash when viewing encrypted archives.</string>
     <string name="changelog_summary_2_1_0">Standalone OTA updates via GitHub Releases, MIUIX HyperOS UI mode, Recent Files manager, in-app HTML runner, raised Min SDK to Android 10, and comprehensive localization.</string>
     <string name="changelog_summary_2_0_0">Shizuku &amp; Root privileged access, multi-storage horizontal pager, native Rust payload parser, and Material 3 overhaul.</string>
     <string name="changelog_summary_1_1_0">Initial Android OTA Payload.bin extraction with Protocol Buffers, and streaming XZ/BZIP2 decompression.</string>
     <string name="changelog_summary_1_0_0">Initial release of XArchiver with essential archive handling and Material Design 3 file explorer.</string>
+    <string name="changelog_item_2_1_3_encryption_title">ZIP Password Encryption (AES-256 &amp; ZipCrypto)</string>
+    <string name="changelog_item_2_1_3_encryption_desc">Full password encryption support when creating ZIP archives using either robust AES-256 or legacy ZipCrypto, with automatic password prompts upon opening or extracting.</string>
+    <string name="changelog_item_2_1_3_dialogs_title">Proportional Dialog Redesign</string>
+    <string name="changelog_item_2_1_3_dialogs_desc">Completely redesigned all popup dialogs across the application with balanced 50/50 action buttons, rounded icon headers, structured surface cards, and Material 3 styling.</string>
+    <string name="changelog_item_2_1_3_crashfix_title">Encrypted Archive Crash Fix</string>
+    <string name="changelog_item_2_1_3_crashfix_desc">Fixed a crash when tapping password-protected ZIP files in Explorer, now gracefully prompting for password and opening contents safely.</string>
     <string name="changelog_item_2_1_miuix_title">MIUIX HyperOS Design System</string>
     <string name="changelog_item_2_1_miuix_desc">Complete visual overhaul with squircle cards, real-time texture blur, and HyperOS aesthetics.</string>
     <string name="changelog_item_2_1_recent_title">Recent Files Manager</string>

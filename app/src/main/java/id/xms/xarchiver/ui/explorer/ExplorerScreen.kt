@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
@@ -47,13 +48,17 @@ import id.xms.xarchiver.core.archive.ArchiveCreator
 import id.xms.xarchiver.core.archive.ArchiveCreationProgress
 import id.xms.xarchiver.core.archive.ArchiveFormat
 import id.xms.xarchiver.core.archive.CompressionLevel
+import id.xms.xarchiver.core.archive.EncryptionType
 import id.xms.xarchiver.core.install.ApkInstaller
 import id.xms.xarchiver.ui.archive.CreateArchiveDialog
+import id.xms.xarchiver.ui.archive.ArchivePasswordDialog
 import id.xms.xarchiver.ui.components.PathNavigationBar
 import id.xms.xarchiver.ui.components.PropertiesDialog
 import androidx.compose.ui.res.stringResource
 import id.xms.xarchiver.R
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -94,6 +99,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var fileOperationProgress by remember { mutableStateOf<FileOperationProgress?>(null) }
     var multiArchiveExtractList by remember { mutableStateOf<List<String>>(emptyList()) }
     var currentExtractingIndex by remember { mutableStateOf(0) }
+    var pendingPasswordExtraction by remember { mutableStateOf<Triple<String, String, String>?>(null) } // archivePath, archiveName, outputDir
+    var passwordExtractionError by remember { mutableStateOf<String?>(null) }
     
     // Clipboard info
     val hasClipboard = FileOperationsManager.hasClipboardContent()
@@ -126,6 +133,49 @@ fun ExplorerScreen(path: String, navController: NavController) {
             isLoading = true
             files = FileService.listDirectory(path)
             isLoading = false
+        }
+    }
+
+    val executeExtraction: (String, String, String, String?) -> Unit = { archivePath, archiveName, outputDir, pwd ->
+        scope.launch {
+            extractionProgress = ExtractionProgress(
+                0, "Starting...", ExtractionState.STARTED
+            )
+            archiveManager.extractArchive(
+                archiveFilePath = archivePath,
+                outputDir = outputDir,
+                password = pwd
+            ).collect { progress ->
+                extractionProgress = progress
+                if (progress.state == ExtractionState.COMPLETED) {
+                    extractionProgress = null
+                    refreshFiles()
+                    snackbarHostState.showSnackbar("Extracted to ${File(outputDir).name}")
+                } else if (progress.state == ExtractionState.ERROR) {
+                    extractionProgress = null
+                    val err = progress.error ?: progress.currentFile
+                    if (err.contains("password", ignoreCase = true) || err.contains("kata sandi", ignoreCase = true)) {
+                        passwordExtractionError = if (pwd != null) "Incorrect password. Please try again." else null
+                        pendingPasswordExtraction = Triple(archivePath, archiveName, outputDir)
+                    } else {
+                        snackbarHostState.showSnackbar("Extraction failed: $err")
+                    }
+                }
+            }
+        }
+    }
+
+    val requestExtraction: (String, String, String) -> Unit = { archivePath, archiveName, outputDir ->
+        scope.launch {
+            val isEncrypted = withContext(Dispatchers.IO) {
+                archiveManager.isArchiveEncrypted(archivePath)
+            }
+            if (isEncrypted) {
+                passwordExtractionError = null
+                pendingPasswordExtraction = Triple(archivePath, archiveName, outputDir)
+            } else {
+                executeExtraction(archivePath, archiveName, outputDir, null)
+            }
         }
     }
     
@@ -718,55 +768,117 @@ fun ExplorerScreen(path: String, navController: NavController) {
         showFileExistsDialog?.let { name ->
             AlertDialog(
                 onDismissRequest = { showFileExistsDialog = null },
-                title = { Text(stringResource(R.string.dialog_file_exists_title)) },
-                text = { Text(stringResource(R.string.dialog_file_exists_desc, name)) },
-                confirmButton = {
-                    TextButton(onClick = {
-                        scope.launch {
-                            // Overwrite: delete existing and create new
-                            FileOperationsManager.deleteFiles(listOf("$path/$name"))
-                            val result = FileOperationsManager.createFile(path, name)
-                            refreshFiles()
-                            when (result) {
-                                is FileOperationResult.Success -> snackbarHostState.showSnackbar("File overwritten")
-                                is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
-                            }
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.errorContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
-                        showFileExistsDialog = null
-                    }) {
-                        Text(stringResource(R.string.action_overwrite))
+                        Column {
+                            Text(
+                                text = stringResource(R.string.dialog_file_exists_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 },
-                dismissButton = {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        TextButton(onClick = {
-                            // Duplicate
-                            val nameWithoutExtension = name.substringBeforeLast(".", name)
-                            val extension = if (name.contains(".")) ".${name.substringAfterLast(".")}" else ""
-                            var index = 1
-                            var newName = "${nameWithoutExtension}($index)$extension"
-                            while (files.any { it.name == newName }) {
-                                index++
-                                newName = "${nameWithoutExtension}($index)$extension"
-                            }
-                            
-                            scope.launch {
-                                val result = FileOperationsManager.createFile(path, newName)
-                                refreshFiles()
-                                when (result) {
-                                    is FileOperationResult.Success -> snackbarHostState.showSnackbar("File created as $newName")
-                                    is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                text = {
+                    Text(
+                        text = stringResource(R.string.dialog_file_exists_desc, name),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                },
+                confirmButton = {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    // Overwrite: delete existing and create new
+                                    FileOperationsManager.deleteFiles(listOf("$path/$name"))
+                                    val result = FileOperationsManager.createFile(path, name)
+                                    refreshFiles()
+                                    when (result) {
+                                        is FileOperationResult.Success -> snackbarHostState.showSnackbar("File overwritten")
+                                        is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                                    }
                                 }
-                            }
-                            showFileExistsDialog = null
-                        }) {
+                                showFileExistsDialog = null
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                        ) {
+                            Text(stringResource(R.string.action_overwrite))
+                        }
+                        FilledTonalButton(
+                            onClick = {
+                                // Duplicate
+                                val nameWithoutExtension = name.substringBeforeLast(".", name)
+                                val extension = if (name.contains(".")) ".${name.substringAfterLast(".")}" else ""
+                                var index = 1
+                                var newName = "${nameWithoutExtension}($index)$extension"
+                                while (files.any { it.name == newName }) {
+                                    index++
+                                    newName = "${nameWithoutExtension}($index)$extension"
+                                }
+                                
+                                scope.launch {
+                                    val result = FileOperationsManager.createFile(path, newName)
+                                    refreshFiles()
+                                    when (result) {
+                                        is FileOperationResult.Success -> snackbarHostState.showSnackbar("File created as $newName")
+                                        is FileOperationResult.Error -> snackbarHostState.showSnackbar(result.message)
+                                    }
+                                }
+                                showFileExistsDialog = null
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                        ) {
                             Text(stringResource(R.string.action_duplicate))
                         }
-                        TextButton(onClick = { showFileExistsDialog = null }) {
+                        OutlinedButton(
+                            onClick = { showFileExistsDialog = null },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(46.dp)
+                        ) {
                             Text(stringResource(R.string.action_cancel))
                         }
                     }
-                }
+                },
+                dismissButton = null,
+                shape = RoundedCornerShape(28.dp)
             )
         }
         
@@ -788,7 +900,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 onDismiss = { 
                     showCreateArchiveDialog = false
                 },
-                onCreate = { archiveName, format, compressionLevel ->
+                onCreate = { archiveName, format, compressionLevel, password, encryptionType ->
                     showCreateArchiveDialog = false
                     
                     val selectedFiles = selectionManager.selectedPaths.toList()
@@ -806,7 +918,9 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 } else {
                                     findCommonParent(selectedFiles)
                                 },
-                                compressionLevel = compressionLevel
+                                compressionLevel = compressionLevel,
+                                password = password,
+                                encryptionType = encryptionType
                             ).collect { prog ->
                                 archiveCreationProgress = prog
                             }
@@ -827,120 +941,190 @@ fun ExplorerScreen(path: String, navController: NavController) {
         showQuickExtractDialog?.let { file ->
             AlertDialog(
                 onDismissRequest = { showQuickExtractDialog = null },
-                title = { 
-                    Text("Extract Archive", fontWeight = FontWeight.Bold) 
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Unarchive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = stringResource(R.string.archive_extract_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = file.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 },
                 text = {
-                    Column {
-                        Text(file.name, style = MaterialTheme.typography.bodyMedium)
-                        Spacer(Modifier.height(16.dp))
-                        
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         // Extract Here
-                        Card(
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .combinedClickable(onClick = {
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
                                     showQuickExtractDialog = null
-                                    scope.launch {
-                                        extractionProgress = ExtractionProgress(
-                                            0, "Starting...", ExtractionState.STARTED
-                                        )
-                                        archiveManager.extractArchive(
-                                            file.path, 
-                                            path + "/" + java.io.File(file.path).nameWithoutExtension
-                                        ).collect { progress ->
-                                            extractionProgress = progress
-                                            if (progress.state == ExtractionState.COMPLETED) {
-                                                extractionProgress = null
-                                                refreshFiles()
-                                                snackbarHostState.showSnackbar("Extracted to ${java.io.File(file.path).nameWithoutExtension}")
-                                            } else if (progress.state == ExtractionState.ERROR) {
-                                                extractionProgress = null
-                                                snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
-                                            }
-                                        }
-                                    }
-                                }, onLongClick = {}),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
+                                    val outputDir = path + "/" + java.io.File(file.path).nameWithoutExtension
+                                    requestExtraction(file.path, file.name, outputDir)
+                                },
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                         ) {
                             Row(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Unarchive, null, tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Unarchive,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(14.dp))
                                 Column {
-                                    Text("Extract Here", fontWeight = FontWeight.Medium)
                                     Text(
-                                        "Extract to current folder",
+                                        text = stringResource(R.string.archive_extract_here),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = java.io.File(file.path).nameWithoutExtension + "/",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                         }
-                        
-                        Spacer(Modifier.height(8.dp))
-                        
+
                         // Open Archive
-                        Card(
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .combinedClickable(onClick = {
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
                                     showQuickExtractDialog = null
                                     navController.navigate("archive_explorer/${Uri.encode(file.path)}")
-                                }, onLongClick = {}),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                                },
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                         ) {
                             Row(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.FolderOpen, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FolderOpen,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(14.dp))
                                 Column {
-                                    Text("Open Archive", fontWeight = FontWeight.Medium)
                                     Text(
-                                        "Browse contents first",
+                                        text = "Open Archive",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = "Browse contents first",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
                         }
-                        
-                        Spacer(Modifier.height(8.dp))
-                        
+
                         // Extract to Custom Path
-                        Card(
+                        Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .combinedClickable(onClick = {
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
                                     showQuickExtractDialog = null
                                     customPath = downloadsPath
                                     showCustomPathDialogFor = file
-                                }, onLongClick = {}),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
+                                },
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                         ) {
                             Row(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.CreateNewFolder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Spacer(Modifier.width(12.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CreateNewFolder,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(Modifier.width(14.dp))
                                 Column {
-                                    Text("Extract to Custom Path", fontWeight = FontWeight.Medium)
                                     Text(
-                                        "Choose a different location",
+                                        text = stringResource(R.string.archive_extract_custom),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.archive_extract_custom_desc),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -949,10 +1133,19 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         }
                     }
                 },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showQuickExtractDialog = null }) { Text(stringResource(R.string.action_cancel)) }
-                }
+                confirmButton = {
+                    OutlinedButton(
+                        onClick = { showQuickExtractDialog = null },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                    ) {
+                        Text(stringResource(R.string.action_cancel))
+                    }
+                },
+                dismissButton = null,
+                shape = RoundedCornerShape(28.dp)
             )
         }
         
@@ -963,26 +1156,25 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 onDismissRequest = { showCustomPathDialogFor = null },
                 onFolderSelected = { selectedPath ->
                     showCustomPathDialogFor = null
-                    scope.launch {
-                        extractionProgress = ExtractionProgress(
-                            0, "Starting...", ExtractionState.STARTED
-                        )
-                        val targetFolder = selectedPath + "/" + java.io.File(file.path).nameWithoutExtension
-                        archiveManager.extractArchive(
-                            file.path, 
-                            targetFolder
-                        ).collect { progress ->
-                            extractionProgress = progress
-                            if (progress.state == ExtractionState.COMPLETED) {
-                                extractionProgress = null
-                                refreshFiles()
-                                snackbarHostState.showSnackbar("Extracted to $targetFolder")
-                            } else if (progress.state == ExtractionState.ERROR) {
-                                extractionProgress = null
-                                snackbarHostState.showSnackbar("Extraction failed: ${progress.currentFile}")
-                            }
-                        }
-                    }
+                    val targetFolder = selectedPath + "/" + java.io.File(file.path).nameWithoutExtension
+                    requestExtraction(file.path, file.name, targetFolder)
+                }
+            )
+        }
+
+        // Password Prompt Dialog for encrypted archives
+        pendingPasswordExtraction?.let { (archivePath, archiveName, outputDir) ->
+            ArchivePasswordDialog(
+                archiveName = archiveName,
+                errorMessage = passwordExtractionError,
+                onDismiss = {
+                    pendingPasswordExtraction = null
+                    passwordExtractionError = null
+                },
+                onConfirm = { enteredPassword ->
+                    pendingPasswordExtraction = null
+                    passwordExtractionError = null
+                    executeExtraction(archivePath, archiveName, outputDir, enteredPassword)
                 }
             )
         }
@@ -1023,34 +1215,89 @@ fun ExplorerScreen(path: String, navController: NavController) {
         extractionProgress?.let { progress ->
             AlertDialog(
                 onDismissRequest = { /* Can't dismiss during extraction */ },
-                title = { Text("Extracting...") },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        CircularProgressIndicator(
-                            progress = { progress.percentage / 100f }
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("${progress.percentage}%", style = MaterialTheme.typography.headlineMedium)
-                        Text(
-                            progress.currentFile,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Text(
-                            "${progress.percentage}% complete",
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Unarchive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Extracting...",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${progress.percentage}% completed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
-                confirmButton = {}
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        LinearProgressIndicator(
+                            progress = { progress.percentage / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    progress.currentFile,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "${progress.percentage}%",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                shape = RoundedCornerShape(28.dp)
             )
         }
 
@@ -1058,34 +1305,88 @@ fun ExplorerScreen(path: String, navController: NavController) {
         fileOperationProgress?.let { progress ->
             AlertDialog(
                 onDismissRequest = { /* Can't dismiss during operation */ },
-                title = { Text(if (fileOperationProgress?.totalFiles == 1) "Processing..." else "Moving/Copying...") },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        CircularProgressIndicator(
-                            progress = { progress.percentage / 100f }
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("${progress.percentage}%", style = MaterialTheme.typography.headlineMedium)
-                        Text(
-                            progress.currentFile,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Text(
-                            "${progress.filesProcessed} / ${progress.totalFiles} files",
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = if (fileOperationProgress?.totalFiles == 1) "Processing..." else "Moving/Copying...",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${progress.percentage}% completed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
-                confirmButton = {}
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        LinearProgressIndicator(
+                            progress = { progress.percentage / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    progress.currentFile,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        "${progress.filesProcessed} / ${progress.totalFiles} files",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                shape = RoundedCornerShape(28.dp)
             )
         }
 
@@ -1093,34 +1394,88 @@ fun ExplorerScreen(path: String, navController: NavController) {
         archiveCreationProgress?.let { progress ->
             AlertDialog(
                 onDismissRequest = { /* Can't dismiss during compression */ },
-                title = { Text("Compressing...") },
-                text = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        CircularProgressIndicator(
-                            progress = { progress.percentage / 100f }
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text("${progress.percentage}%", style = MaterialTheme.typography.headlineMedium)
-                        Text(
-                            progress.currentFile,
-                            style = MaterialTheme.typography.bodySmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                        Text(
-                            "${progress.filesProcessed} / ${progress.totalFiles} files",
-                            style = MaterialTheme.typography.labelMedium
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Archive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Compressing...",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "${progress.percentage}% completed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
-                confirmButton = {}
+                text = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        LinearProgressIndicator(
+                            progress = { progress.percentage / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                        )
+                        Spacer(Modifier.height(14.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    progress.currentFile,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        "${progress.filesProcessed} / ${progress.totalFiles} files",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        "${formatFileSize(progress.bytesProcessed)} / ${formatFileSize(progress.totalBytes)}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                shape = RoundedCornerShape(28.dp)
             )
         }
     }
@@ -1523,25 +1878,85 @@ private fun RenameDialog(
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.dialog_rename)) },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = stringResource(R.string.dialog_rename),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = currentName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.dialog_name)) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.dialog_name)) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onConfirm(name) },
-                enabled = name.isNotBlank() && name != currentName
-            ) { Text(stringResource(R.string.dialog_rename)) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+                Button(
+                    onClick = { onConfirm(name) },
+                    enabled = name.isNotBlank() && name != currentName,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.dialog_rename))
+                }
+            }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        }
+        dismissButton = null,
+        shape = RoundedCornerShape(28.dp)
     )
 }
 
@@ -1553,17 +1968,74 @@ private fun DeleteConfirmDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.DeleteForever, null, tint = MaterialTheme.colorScheme.error) },
-        title = { Text(stringResource(R.string.dialog_delete_title, count, if (count > 1) "s" else "")) },
-        text = { Text(stringResource(R.string.dialog_delete_desc)) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Delete", color = MaterialTheme.colorScheme.error)
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = stringResource(R.string.dialog_delete_title, count, if (count > 1) "s" else ""),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "$count item${if (count > 1) "s" else ""}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        }
+        text = {
+            Text(
+                text = stringResource(R.string.dialog_delete_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+                Button(
+                    onClick = onConfirm,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text("Delete")
+                }
+            }
+        },
+        dismissButton = null,
+        shape = RoundedCornerShape(28.dp)
     )
 }
 
@@ -1575,29 +2047,88 @@ private fun NewItemDialog(
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
+    val isFolder = title.contains("Folder", ignoreCase = true)
     
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isFolder) Icons.Default.CreateNewFolder else Icons.Default.NoteAdd,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = if (isFolder) "Create new directory" else "Create new file",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text(stringResource(R.string.dialog_name)) },
-                placeholder = { Text(placeholder) },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.dialog_name)) },
+                    placeholder = { Text(placeholder) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onConfirm(name) },
-                enabled = name.isNotBlank()
-            ) { Text(stringResource(R.string.action_create)) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+                Button(
+                    onClick = { onConfirm(name) },
+                    enabled = name.isNotBlank(),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.action_create))
+                }
+            }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        }
+        dismissButton = null,
+        shape = RoundedCornerShape(28.dp)
     )
 }
 
@@ -1609,17 +2140,75 @@ private fun ApkInstallDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.Android, null, tint = Color(0xFF4CAF50)) },
-        title = { Text(stringResource(R.string.dialog_install_apk_title)) },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color(0xFFE8F5E9)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Android,
+                        contentDescription = null,
+                        tint = Color(0xFF2E7D32),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = stringResource(R.string.dialog_install_apk_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = apkFile.name,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        },
         text = {
-            Text(stringResource(R.string.dialog_install_apk_desc, apkFile.name))
+            Text(
+                text = stringResource(R.string.dialog_install_apk_desc, apkFile.name),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         },
         confirmButton = {
-            TextButton(onClick = onInstall) { Text(stringResource(R.string.action_install)) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+                Button(
+                    onClick = onInstall,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                ) {
+                    Text(stringResource(R.string.action_install))
+                }
+            }
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        }
+        dismissButton = null,
+        shape = RoundedCornerShape(28.dp)
     )
 }
 
