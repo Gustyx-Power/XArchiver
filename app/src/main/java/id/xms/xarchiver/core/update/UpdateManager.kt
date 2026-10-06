@@ -57,10 +57,22 @@ object UpdateManager {
     var isChecking by mutableStateOf(false)
 
     /**
+     * Get the currently installed app version name from context.
+     */
+    fun getAppVersionName(context: Context): String {
+        return try {
+            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            pInfo.versionName ?: "1.0.0"
+        } catch (_: Exception) {
+            "1.0.0"
+        }
+    }
+
+    /**
      * Check GitHub Releases for updates compared to [currentVersion].
      */
     suspend fun checkForUpdate(
-        currentVersion: String = "2.1.3"
+        currentVersion: String = ""
     ): UpdateCheckResult = withContext(Dispatchers.IO) {
         android.util.Log.d("OTA", "checkForUpdate started with currentVersion=$currentVersion")
         try {
@@ -117,6 +129,7 @@ object UpdateManager {
             }
 
             if (apkAsset == null) {
+                availableUpdate = null
                 return@withContext UpdateCheckResult.UpToDate(currentVersion)
             }
 
@@ -132,6 +145,7 @@ object UpdateManager {
                 availableUpdate = updateInfo
                 UpdateCheckResult.UpdateAvailable(updateInfo)
             } else {
+                availableUpdate = null
                 UpdateCheckResult.UpToDate(currentVersion)
             }
         } catch (e: Exception) {
@@ -147,10 +161,15 @@ object UpdateManager {
      */
     suspend fun checkSilently(
         context: Context,
-        currentVersion: String = "2.1.3"
+        currentVersion: String? = null
     ) {
-        android.util.Log.d("OTA", "checkSilently started")
-        when (val result = checkForUpdate(currentVersion)) {
+        val resolvedVersion = if (!currentVersion.isNullOrBlank()) {
+            currentVersion
+        } else {
+            getAppVersionName(context)
+        }
+        android.util.Log.d("OTA", "checkSilently started with version=$resolvedVersion")
+        when (val result = checkForUpdate(resolvedVersion)) {
             is UpdateCheckResult.UpdateAvailable -> {
                 android.util.Log.d("OTA", "checkSilently update available: ${result.updateInfo.tagName}")
                 availableUpdate = result.updateInfo
@@ -166,6 +185,10 @@ object UpdateManager {
             }
             is UpdateCheckResult.UpToDate -> {
                 android.util.Log.d("OTA", "checkSilently UpToDate")
+                availableUpdate = null
+                UpdateNotificationHelper.cancelUpdateNotification(context)
+                val prefs = context.getSharedPreferences("xarchiver_ota_prefs", Context.MODE_PRIVATE)
+                prefs.edit().remove("last_notified_tag").apply()
             }
             is UpdateCheckResult.Error -> {
                 android.util.Log.e("OTA", "checkSilently Error: ${result.message}")
@@ -260,29 +283,75 @@ object UpdateManager {
         return conn.inputStream.bufferedReader().use { it.readText() }
     }
 
+    data class ParsedVersion(
+        val baseDigits: List<Int>,
+        val buildSuffix: Long? = null
+    )
+
     /**
-     * Extracts numeric version like "2.1.0" from strings like "release-2.1.0", "v2.1.0", "2.1.0".
+     * Extracts numeric version like "2.1.0" or "2.1.3" from strings like "release-2.1.0", "v2.1.0", "2.1.3-20261004".
      */
     fun extractVersionString(input: String): String {
-        val regex = Regex("""(\d+\.\d+(?:\.\d+)?)""")
+        val regex = Regex("""(\d+(?:\.\d+)+)""")
         val match = regex.find(input)
         return match?.value ?: ""
+    }
+
+    /**
+     * Parses a version string into base semantic digits and an optional build number / date suffix.
+     * Examples:
+     * - "release-2.1.3" -> baseDigits: [2, 1, 3], buildSuffix: null
+     * - "2.1.3-20261004" -> baseDigits: [2, 1, 3], buildSuffix: 20261004
+     * - "v2.1.4" -> baseDigits: [2, 1, 4], buildSuffix: null
+     */
+    fun parseVersion(input: String): ParsedVersion {
+        if (input.isBlank()) return ParsedVersion(emptyList())
+
+        val baseRegex = Regex("""(\d+(?:\.\d+)+)""")
+        val baseMatch = baseRegex.find(input) ?: return ParsedVersion(emptyList())
+
+        val baseDigits = baseMatch.value.split('.').mapNotNull { it.toIntOrNull() }
+
+        val remainder = input.substring(baseMatch.range.last + 1)
+        val suffixRegex = Regex("""^[._-]?(?:b|build|rev|patch|v)?(\d+)""", RegexOption.IGNORE_CASE)
+        val suffixMatch = suffixRegex.find(remainder)
+        val buildSuffix = suffixMatch?.groupValues?.get(1)?.toLongOrNull()
+
+        return ParsedVersion(baseDigits, buildSuffix)
     }
 
     /**
      * Compare semantic versions. Returns true if [remoteVersion] is higher than [currentVersion].
      */
     fun isNewerVersion(remoteVersion: String, currentVersion: String): Boolean {
-        val remoteDigits = remoteVersion.split('.').mapNotNull { it.toIntOrNull() }
-        val currentDigits = currentVersion.split('.').mapNotNull { it.toIntOrNull() }
+        val remoteParsed = parseVersion(remoteVersion)
+        val currentParsed = parseVersion(currentVersion)
 
-        val length = maxOf(remoteDigits.size, currentDigits.size)
+        if (remoteParsed.baseDigits.isEmpty() || currentParsed.baseDigits.isEmpty()) {
+            return false
+        }
+
+        val length = maxOf(remoteParsed.baseDigits.size, currentParsed.baseDigits.size)
         for (i in 0 until length) {
-            val r = remoteDigits.getOrElse(i) { 0 }
-            val c = currentDigits.getOrElse(i) { 0 }
+            val r = remoteParsed.baseDigits.getOrElse(i) { 0 }
+            val c = currentParsed.baseDigits.getOrElse(i) { 0 }
             if (r > c) return true
             if (r < c) return false
         }
+
+        // Base versions are equal (e.g. 2.1.3 == 2.1.3)
+        // If both have numeric build/date suffixes, compare them
+        if (remoteParsed.buildSuffix != null && currentParsed.buildSuffix != null) {
+            return remoteParsed.buildSuffix > currentParsed.buildSuffix
+        }
+
+        // If remote has a build suffix but current doesn't (e.g. remote is 2.1.3-20261008 and current is 2.1.3)
+        if (remoteParsed.buildSuffix != null && currentParsed.buildSuffix == null) {
+            return true
+        }
+
+        // If current has a build suffix (e.g. 2.1.3-20261004 from Gradle buildDate) and remote is release-2.1.3:
+        // Remote is NOT newer, because current is the build of that same 2.1.3 release.
         return false
     }
 }

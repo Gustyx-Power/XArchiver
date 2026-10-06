@@ -2,6 +2,18 @@
 
 All notable changes to XArchiver will be documented in this file.
 
+## [2.1.5] - 2026-10-06
+
+### Fixed & Stability - Standalone OTA Update Engine
+- **Semantic Version Comparison Fix**: Fixed version string splitting in `UpdateManager`. Previously, local builds with date suffixes (e.g. `2.1.3-20261004`) caused the patch digit to fail integer parsing, truncating the version to `2.1.0` and causing false-positive update loops for already installed releases.
+- **Build Date & Suffix Awareness**: Implemented dedicated semantic version parsing separating base components (`major.minor.patch`) from build/date suffixes (`buildSuffix`), preventing false update triggers when base versions match.
+- **Dynamic App Version Resolution**: Replaced hardcoded version fallback strings in `UpdateManager` with dynamic runtime resolution via `PackageManager` (`getAppVersionName`).
+- **Automatic Notification & Cache Dismissal**: Reset `availableUpdate` to null, auto-cancelled system update notifications, and cleared update preferences whenever the app confirms it is running the latest version (`UpToDate`).
+- **Auto-Invalidation on Update Screen**: Automatically clears outdated update prompts upon opening the update screen if the cached update is no longer newer than the installed version.
+- **Comprehensive Unit Tests**: Added automated unit test suite (`UpdateManagerTest`) covering diverse tag naming conventions and comparison scenarios.
+
+---
+
 ## [2.1.3] - 2026-10-04
 
 ### Added - ZIP Password Encryption (AES-256 & ZipCrypto)

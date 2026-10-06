@@ -26,8 +26,8 @@ android {
         applicationId = "id.xms.xarchiver"
         minSdk = 29
         targetSdk = 36
-        versionCode = 5
-        versionName = "2.1.3-$buildDate"
+        versionCode = 6
+        versionName = "2.1.5-$buildDate"
     }
 
     signingConfigs {
@@ -143,6 +143,9 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    
+    // Testing
+    testImplementation(libs.junit)
 
     // Okio
     implementation("com.squareup.okio:okio:3.9.0")

@@ -42,6 +42,7 @@ import id.xms.xarchiver.R
 import id.xms.xarchiver.core.update.UpdateCheckResult
 import id.xms.xarchiver.core.update.UpdateInfo
 import id.xms.xarchiver.core.update.UpdateManager
+import id.xms.xarchiver.core.update.UpdateNotificationHelper
 import id.xms.xarchiver.ui.components.MarkdownContent
 import id.xms.xarchiver.ui.theme.GradientEnd
 import id.xms.xarchiver.ui.theme.GradientStart
@@ -74,12 +75,7 @@ fun MiuixUpdateScreen(navController: NavController) {
     val miuixBlueLight = Color(0xFF0D84FF)
 
     val currentVersionName = remember {
-        try {
-            val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            pInfo.versionName ?: "2.1.3"
-        } catch (_: Exception) {
-            "2.1.3"
-        }
+        UpdateManager.getAppVersionName(context)
     }
 
     var isChecking by remember { mutableStateOf(false) }
@@ -114,6 +110,7 @@ fun MiuixUpdateScreen(navController: NavController) {
                     updateInfo = null
                     UpdateManager.availableUpdate = null
                     isUpToDate = true
+                    UpdateNotificationHelper.cancelUpdateNotification(context)
                 }
                 is UpdateCheckResult.Error -> {
                     isChecking = false
@@ -124,7 +121,12 @@ fun MiuixUpdateScreen(navController: NavController) {
     }
 
     LaunchedEffect(Unit) {
-        if (updateInfo == null) {
+        val currentInfo = updateInfo
+        if (currentInfo != null && !UpdateManager.isNewerVersion(currentInfo.versionName, currentVersionName)) {
+            updateInfo = null
+            UpdateManager.availableUpdate = null
+            checkUpdates(force = true)
+        } else if (currentInfo == null) {
             checkUpdates()
         }
     }

@@ -2,6 +2,18 @@
 
 Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 
+## [2.1.5] - 2026-10-06
+
+### Perbaikan Bug & Stabilitas - Modul Pembaruan Mandiri (OTA Update)
+- **Perbaikan Algoritma Komparasi Versi Semantik**: Memperbaiki pemisahan token versi pada `UpdateManager`. Sebelumnya, versi aplikasi yang memiliki suffix tanggal build (seperti `2.1.3-20261004`) menyebabkan digit patch terbuang dan dianggap sebagai versi lebih rendah (`2.1.0`), sehingga memicu permintaan pembaruan berulang (update loop) padahal versi yang sama sudah terpasang.
+- **Dukungan Parsing Tanggal Build & Suffix**: Algoritma baru secara cerdas memisahkan komponen semver utama (`major.minor.patch`) dengan suffix nomor/tanggal build (`buildSuffix`), serta membandingkan suffix jika basis versi identik.
+- **Resolusi Versi Aplikasi Dinamis**: Menghapus fallback versi statis hardcoded pada `UpdateManager` dan beralih ke deteksi versi runtime dinamis dari `PackageManager` (`getAppVersionName`).
+- **Pembersihan Otomatis Status & Notifikasi**: Ketika aplikasi mendeteksi bahwa sistem sudah berada pada versi terbaru (`UpToDate`), cache `availableUpdate` direset, bilah notifikasi pembaruan ditutup otomatis, dan penanda notifikasi dibersihkan.
+- **Auto-Invalidation di Layar Pembaruan**: Menambahkan validasi otomatis saat layar pembaruan dibuka agar info update lama yang sudah usang atau setara dengan versi terpasang langsung dibersihkan.
+- **Unit Test Komprehensif**: Menambahkan rangkaian unit test otomatis (`UpdateManagerTest`) untuk memvalidasi seluruh variasi format tag dan perbandingan versi.
+
+---
+
 ## [2.1.3] - 2026-10-04
 
 ### Ditambahkan - Enkripsi Kata Sandi ZIP (AES-256 & ZipCrypto)

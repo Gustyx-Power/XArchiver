@@ -37,11 +37,32 @@ data class VersionRelease(
 object ChangelogRepository {
     val releases: List<VersionRelease> = listOf(
         VersionRelease(
+            version = "2.1.5",
+            dateRes = R.string.changelog_date_2_1_5,
+            summaryRes = R.string.changelog_summary_2_1_5,
+            isLatest = true,
+            badgeRes = R.string.changelog_badge_latest,
+            items = listOf(
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_5_otafix_title,
+                    descRes = R.string.changelog_item_2_1_5_otafix_desc,
+                    category = ChangelogCategory.FIXES,
+                    tags = listOf("OTA Update", "Version Parsing", "Bug Fix", "Stability")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_5_notif_title,
+                    descRes = R.string.changelog_item_2_1_5_notif_desc,
+                    category = ChangelogCategory.ENGINE,
+                    tags = listOf("Notification Sync", "Auto Dismiss", "PackageManager")
+                )
+            )
+        ),
+        VersionRelease(
             version = "2.1.3",
             dateRes = R.string.changelog_date_2_1_3,
             summaryRes = R.string.changelog_summary_2_1_3,
-            isLatest = true,
-            badgeRes = R.string.changelog_badge_latest,
+            isLatest = false,
+            badgeRes = R.string.changelog_badge_stable,
             items = listOf(
                 ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_3_encryption_title,
