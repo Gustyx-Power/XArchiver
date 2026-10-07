@@ -9,7 +9,7 @@ All notable changes to XArchiver will be documented in this file.
 - **Dynamic Breadcrumbs Navigation (MIUIX Chips)**: Added a scrollable horizontal breadcrumbs bar with pill chips for fluid path navigation across folder hierarchies.
 - **Quick Action Docks & Speed-Dial FAB**: Introduced floating selection action dock (`MiuixSelectionDock`), floating clipboard paste dock (`MiuixClipboardDock`), and expandable speed-dial FAB for file and folder creation.
 - **Native HyperOS Dialogs & Modals**: Redesigned all explorer operation dialogs (new folder/file, rename, delete confirm, quick extract, APK installer, progress overlays) with native MIUIX aesthetic.
-- **Modularized Explorer Architecture**: Decomposed the monolithic explorer code (~2.2k lines) into dedicated, highly maintainable modules (`MiuixBreadcrumbBar`, `MiuixFileItemCard`, `MiuixExplorerTopBars`, `MiuixExplorerDocks`, `MiuixExplorerDialogs`, and `MiuixExplorerDialogHost`).
+- **Full Explorer Architecture Modularization (Material & MIUIX)**: Decomposed both monolithic Material (`ExplorerScreen`) and MIUIX (`MiuixExplorerScreen`) explorer screens from >2.2k lines down to clean, modular architectures with dedicated subpackages (`material/` and `miuix/`: TopBars, Docks, FileItemCard, Dialogs, and DialogHost) for superior maintainability and developer ergonomics.
 
 ---
 

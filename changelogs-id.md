@@ -9,7 +9,7 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 - **Navigasi Breadcrumb Interaktif (MIUIX Chips)**: Menambahkan bilah breadcrumb horizontal dengan chips pill untuk penelusuran hierarki path yang mulus dan intuitif.
 - **Dock Aksi Cepat & Menu Melayang**: Menghadirkan bilah aksi seleksi bawah melayang (`MiuixSelectionDock`), bar tempel papan klip (`MiuixClipboardDock`), dan tombol FAB speed-dial interaktif untuk pembuatan berkas/folder baru.
 - **Dialog & Modal Terintegrasi HyperOS**: Seluruh dialog operasi berkas (buat folder/file, ganti nama, konfirmasi hapus, ekstrak cepat, pasang APK, progress operasi berkas) dirancang ulang dengan estetika native MIUIX.
-- **Modularisasi Arsitektur Explorer**: Memecah kode monolitik explorer (~2.2k baris) menjadi modul-modul terpisah (`MiuixBreadcrumbBar`, `MiuixFileItemCard`, `MiuixExplorerTopBars`, `MiuixExplorerDocks`, `MiuixExplorerDialogs`, dan `MiuixExplorerDialogHost`) sehingga sangat bersih, terorganisir, dan mudah dikembangkan.
+- **Modularisasi Penuh Arsitektur Explorer (Material & MIUIX)**: Memecah kode monolitik penjelajah berkas Material (`ExplorerScreen`) dan MIUIX (`MiuixExplorerScreen`) dari sebelumnya >2.2k baris menjadi arsitektur modular terpisah (`material/` dan `miuix/` subpackages: TopBars, Docks, FileItemCard, Dialogs, dan DialogHost) sehingga kode menjadi bersih, efisien, dan mudah dipelihara.
 
 ---
 
