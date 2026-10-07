@@ -2,7 +2,7 @@
 
 Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 
-## [2.1.6] - 2026-10-07
+## [2.1.5] - 2026-10-07
 
 ### Fitur Baru & Peningkatan Antarmuka - MIUIX HyperOS Explorer & Modularisasi Arsitektur
 - **Antarmuka Penuh MIUIX/HyperOS File Explorer**: Mengimplementasikan antarmuka khusus MIUIX File Explorer saat mode MIUIX aktif (`isMiuixUiEnabled`), lengkap dengan kartu item file/folder bergaya HyperOS, indikator format badge warna, animasi skeleton shimmer, dan empty state.
@@ -10,10 +10,6 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 - **Dock Aksi Cepat & Menu Melayang**: Menghadirkan bilah aksi seleksi bawah melayang (`MiuixSelectionDock`), bar tempel papan klip (`MiuixClipboardDock`), dan tombol FAB speed-dial interaktif untuk pembuatan berkas/folder baru.
 - **Dialog & Modal Terintegrasi HyperOS**: Seluruh dialog operasi berkas (buat folder/file, ganti nama, konfirmasi hapus, ekstrak cepat, pasang APK, progress operasi berkas) dirancang ulang dengan estetika native MIUIX.
 - **Modularisasi Penuh Arsitektur Explorer (Material & MIUIX)**: Memecah kode monolitik penjelajah berkas Material (`ExplorerScreen`) dan MIUIX (`MiuixExplorerScreen`) dari sebelumnya >2.2k baris menjadi arsitektur modular terpisah (`material/` dan `miuix/` subpackages: TopBars, Docks, FileItemCard, Dialogs, dan DialogHost) sehingga kode menjadi bersih, efisien, dan mudah dipelihara.
-
----
-
-## [2.1.5] - 2026-10-06
 
 ### Perbaikan Bug & Stabilitas - Modul Pembaruan Mandiri (OTA Update)
 - **Perbaikan Algoritma Komparasi Versi Semantik**: Memperbaiki pemisahan token versi pada `UpdateManager`. Sebelumnya, versi aplikasi yang memiliki suffix tanggal build (seperti `2.1.3-20261004`) menyebabkan digit patch terbuang dan dianggap sebagai versi lebih rendah (`2.1.0`), sehingga memicu permintaan pembaruan berulang (update loop) padahal versi yang sama sudah terpasang.

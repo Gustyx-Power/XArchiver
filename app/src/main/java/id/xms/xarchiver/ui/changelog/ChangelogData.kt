@@ -37,33 +37,24 @@ data class VersionRelease(
 object ChangelogRepository {
     val releases: List<VersionRelease> = listOf(
         VersionRelease(
-            version = "2.1.6",
-            dateRes = R.string.changelog_date_2_1_6,
-            summaryRes = R.string.changelog_summary_2_1_6,
+            version = "2.1.5",
+            dateRes = R.string.changelog_date_2_1_5,
+            summaryRes = R.string.changelog_summary_2_1_5,
             isLatest = true,
             badgeRes = R.string.changelog_badge_latest,
             items = listOf(
                 ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_6_miuix_title,
-                    descRes = R.string.changelog_item_2_1_6_miuix_desc,
+                    titleRes = R.string.changelog_item_2_1_5_miuix_title,
+                    descRes = R.string.changelog_item_2_1_5_miuix_desc,
                     category = ChangelogCategory.UI,
                     tags = listOf("MIUIX", "HyperOS", "File Explorer", "Design System")
                 ),
                 ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_6_modular_title,
-                    descRes = R.string.changelog_item_2_1_6_modular_desc,
+                    titleRes = R.string.changelog_item_2_1_5_modular_title,
+                    descRes = R.string.changelog_item_2_1_5_modular_desc,
                     category = ChangelogCategory.ENGINE,
                     tags = listOf("Modularization", "Architecture", "Clean Code", "Maintainability")
-                )
-            )
-        ),
-        VersionRelease(
-            version = "2.1.5",
-            dateRes = R.string.changelog_date_2_1_5,
-            summaryRes = R.string.changelog_summary_2_1_5,
-            isLatest = false,
-            badgeRes = R.string.changelog_badge_stable,
-            items = listOf(
+                ),
                 ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_5_otafix_title,
                     descRes = R.string.changelog_item_2_1_5_otafix_desc,

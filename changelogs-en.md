@@ -2,7 +2,7 @@
 
 All notable changes to XArchiver will be documented in this file.
 
-## [2.1.6] - 2026-10-07
+## [2.1.5] - 2026-10-07
 
 ### Added & UI Polish - Dedicated MIUIX/HyperOS Explorer & Architecture Modularization
 - **Full MIUIX/HyperOS Explorer Experience**: Implemented a dedicated File Explorer interface when MIUIX theme mode is active (`isMiuixUiEnabled`), featuring HyperOS cards, format color badges, shimmer loading skeleton, and empty states.
@@ -10,10 +10,6 @@ All notable changes to XArchiver will be documented in this file.
 - **Quick Action Docks & Speed-Dial FAB**: Introduced floating selection action dock (`MiuixSelectionDock`), floating clipboard paste dock (`MiuixClipboardDock`), and expandable speed-dial FAB for file and folder creation.
 - **Native HyperOS Dialogs & Modals**: Redesigned all explorer operation dialogs (new folder/file, rename, delete confirm, quick extract, APK installer, progress overlays) with native MIUIX aesthetic.
 - **Full Explorer Architecture Modularization (Material & MIUIX)**: Decomposed both monolithic Material (`ExplorerScreen`) and MIUIX (`MiuixExplorerScreen`) explorer screens from >2.2k lines down to clean, modular architectures with dedicated subpackages (`material/` and `miuix/`: TopBars, Docks, FileItemCard, Dialogs, and DialogHost) for superior maintainability and developer ergonomics.
-
----
-
-## [2.1.5] - 2026-10-06
 
 ### Fixed & Stability - Standalone OTA Update Engine
 - **Semantic Version Comparison Fix**: Fixed version string splitting in `UpdateManager`. Previously, local builds with date suffixes (e.g. `2.1.3-20261004`) caused the patch digit to fail integer parsing, truncating the version to `2.1.0` and causing false-positive update loops for already installed releases.
