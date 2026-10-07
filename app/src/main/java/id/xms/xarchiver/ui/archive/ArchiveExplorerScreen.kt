@@ -55,8 +55,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -273,16 +275,26 @@ fun ArchiveExplorerScreen(
         }
     }
 
+    val themePreferences = remember { id.xms.xarchiver.ui.theme.ThemePreferences(context) }
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = id.xms.xarchiver.ui.theme.ThemePreferences.isMiuiOrHyperOsDevice)
+    val currentThemeMode by themePreferences.themeMode.collectAsState(initial = id.xms.xarchiver.ui.theme.ThemeMode.SYSTEM)
+    val isDark = id.xms.xarchiver.ui.theme.isAppInDarkTheme(context, currentThemeMode)
+
+    val pageBgColor = if (isMiuixUiEnabled) (if (isDark) androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color(0xFFF2F4F7)) else MaterialTheme.colorScheme.background
+    val primaryTextColor = if (isMiuixUiEnabled) (if (isDark) androidx.compose.ui.graphics.Color.White else androidx.compose.ui.graphics.Color(0xFF1F2937)) else MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isMiuixUiEnabled) (if (isDark) androidx.compose.ui.graphics.Color(0xFF8E8E93) else androidx.compose.ui.graphics.Color(0xFF6B7280)) else MaterialTheme.colorScheme.onSurfaceVariant
+
     Scaffold(
         topBar = {
             if (isSelecting) {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.archive_selected_format, selectionManager.selectedPaths.size)) },
+                    title = { Text(stringResource(R.string.archive_selected_format, selectionManager.selectedPaths.size), color = primaryTextColor) },
                     navigationIcon = {
                         IconButton(onClick = { selectionManager.clearSelection() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
+                            Icon(Icons.Default.Close, contentDescription = "Clear selection", tint = primaryTextColor)
                         }
                     },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = pageBgColor),
                     actions = {
                         IconButton(onClick = {
                             if (selectionManager.selectedPaths.size == filteredEntries.size) {
@@ -291,20 +303,22 @@ fun ArchiveExplorerScreen(
                                 selectionManager.selectAll(filteredEntries.map { it.name })
                             }
                         }) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Select All")
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select All", tint = primaryTextColor)
                         }
                         IconButton(onClick = { showExtractionDialog = true }) {
-                            Icon(Icons.Default.Unarchive, contentDescription = "Extract Selected")
+                            Icon(Icons.Default.Unarchive, contentDescription = "Extract Selected", tint = primaryTextColor)
                         }
                     }
                 )
             } else {
                 TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = pageBgColor),
                     title = {
                         Column {
                             Text(
                                 text = File(archivePath).name,
                                 style = MaterialTheme.typography.titleLarge,
+                                color = primaryTextColor,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -312,6 +326,7 @@ fun ArchiveExplorerScreen(
                                 Text(
                                     text = "/" + currentPrefix.trimEnd('/'),
                                     style = MaterialTheme.typography.bodySmall,
+                                    color = secondaryTextColor,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
@@ -332,17 +347,18 @@ fun ArchiveExplorerScreen(
                                 navController.popBackStack() 
                             }
                         }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = primaryTextColor)
                         }
                     },
                     actions = {
                         IconButton(onClick = { showExtractionDialog = true }) {
-                            Icon(Icons.Default.Unarchive, contentDescription = "Extract All")
+                            Icon(Icons.Default.Unarchive, contentDescription = "Extract All", tint = primaryTextColor)
                         }
                     }
                 )
             }
         },
+        containerColor = pageBgColor
     ) { paddingValues ->
         Box(
             modifier = Modifier

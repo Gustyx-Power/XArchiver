@@ -5,6 +5,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -71,6 +72,17 @@ fun CategoryExplorerScreen(
         isLoading = false
     }
     
+    val themePreferences = remember { ThemePreferences(context) }
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = ThemePreferences.isMiuiOrHyperOsDevice)
+    val currentThemeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+    val isDark = isAppInDarkTheme(context, currentThemeMode)
+
+    val pageBgColor = if (isMiuixUiEnabled) (if (isDark) Color.Black else Color(0xFFF2F4F7)) else MaterialTheme.colorScheme.background
+    val cardBgColor = if (isMiuixUiEnabled) (if (isDark) Color(0xFF141416) else Color.White) else MaterialTheme.colorScheme.surface
+    val cardBorderColor = if (isDark) Color(0xFF222225) else Color(0xFFE5E7EB)
+    val primaryTextColor = if (isMiuixUiEnabled) (if (isDark) Color.White else Color(0xFF1F2937)) else MaterialTheme.colorScheme.onSurface
+    val secondaryTextColor = if (isMiuixUiEnabled) (if (isDark) Color(0xFF8E8E93) else Color(0xFF6B7280)) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -79,12 +91,13 @@ fun CategoryExplorerScreen(
                         Text(
                             categoryName,
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = primaryTextColor
                         )
                         Text(
                             "${files.size} files",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                            color = secondaryTextColor
                         )
                     }
                 },
@@ -92,16 +105,17 @@ fun CategoryExplorerScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = primaryTextColor
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = pageBgColor
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = pageBgColor
     ) { padding ->
         Box(
             modifier = Modifier
@@ -158,6 +172,11 @@ fun CategoryExplorerScreen(
                             file = file,
                             categoryName = categoryName,
                             dateFormatter = dateFormatter,
+                            isMiuixUiEnabled = isMiuixUiEnabled,
+                            cardBgColor = cardBgColor,
+                            cardBorderColor = cardBorderColor,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
                             onClick = {
                                 val fileItem = id.xms.xarchiver.core.FileItem(
                                     name = file.name,
@@ -269,6 +288,11 @@ private fun MediaFileCard(
     file: MediaFileItem,
     categoryName: String,
     dateFormatter: SimpleDateFormat,
+    isMiuixUiEnabled: Boolean = false,
+    cardBgColor: Color = MaterialTheme.colorScheme.surface,
+    cardBorderColor: Color = Color.Transparent,
+    primaryTextColor: Color = MaterialTheme.colorScheme.onSurface,
+    secondaryTextColor: Color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
     onClick: () -> Unit
 ) {
     val iconColor = remember(categoryName) { getCategoryColor(categoryName) }
@@ -305,11 +329,12 @@ private fun MediaFileCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (isMiuixUiEnabled) Modifier.border(0.5.dp, cardBorderColor, RoundedCornerShape(16.dp)) else Modifier)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = cardBgColor
         ),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(if (isMiuixUiEnabled) 16.dp else 12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(

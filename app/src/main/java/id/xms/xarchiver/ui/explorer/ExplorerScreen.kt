@@ -69,6 +69,14 @@ internal val dateFormatter = SimpleDateFormat("MMM dd, yyyy • HH:mm", Locale.g
 @Composable
 fun ExplorerScreen(path: String, navController: NavController) {
     val context = LocalContext.current
+    val themePreferences = remember { id.xms.xarchiver.ui.theme.ThemePreferences(context) }
+    val isMiuixUiEnabled by themePreferences.isMiuixUiEnabled.collectAsState(initial = id.xms.xarchiver.ui.theme.ThemePreferences.isMiuiOrHyperOsDevice)
+
+    if (isMiuixUiEnabled) {
+        MiuixExplorerScreen(path = path, navController = navController)
+        return
+    }
+
     val scope = rememberCoroutineScope()
     val archiveManager = remember { ArchiveManager(context) }
     val selectionManager = remember { SelectionManager() }
