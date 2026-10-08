@@ -2,7 +2,18 @@
 
 Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 
-## [2.1.5] - 2026-10-07
+## [2.1.9] - 2026-10-08
+
+### Desain Ulang & Fitur Baru - Material Explorer UI Modern & Mode Tampilan Dinamis
+- **Tiga Mode Tampilan Berkas Dinamis**: Menghadirkan opsi tampilan fleksibel yang dapat diubah secara instan melalui menu titik tiga (`⋮`) dan disimpan otomatis di DataStore:
+  - **Tampilan Daftar (Default)**: Tata letak vertikal lengkap dengan detail jumlah item folder atau ukuran berkas serta tanggal modifikasi.
+  - **Tampilan Kisi (Grid)**: Tata letak kartu kotak 3 kolom berujung membulat dengan kontainer permukaan Monet Material 3 (`surfaceContainer`).
+  - **Air Terjun (Waterfall)**: Tata letak kisi bersih 3 kolom tanpa kartu pembungkus di mana ikon berkas dan folder tampil mengambang bebas di atas kanvas latar belakang.
+- **Bilah Atas Modern Berbasis Tombol Lingkaran**: Merombak total TopBar Material Explorer dengan tombol aksi lingkaran yang elegan (kembali, tambah berkas/folder baru `+`, pencarian, dan opsi lainnya `⋮`).
+- **Navigasi Breadcrumb Interaktif**: Menghadirkan bilah jalur navigasi horizontal minimalis ("Semua file > ...") yang memudahkan penelusuran hierarki direktori secara cepat.
+- **Penerapan Penuh Palet Warna Monet Material You**: Seluruh komponen Material Explorer terintegrasi penuh dengan token tema dinamis `MaterialTheme.colorScheme` (warna latar belakang, kartu kontainer, tombol lingkaran, teks judul, serta aksen folder dan badge berkas) tanpa warna hardcoded hitam/biru.
+- **Pengurutan Berkas Canggih**: Modal sheet pengurutan interaktif berdasarkan Nama, Tanggal, Ukuran, atau Tipe (Naik / Turun) dengan preferensi yang tersimpan persisten.
+- **Metadata Jumlah Item Langsung**: Penambahan field `itemCount` pada model berkas dan layanan direktori (`FileService` & `RootFileService`) untuk pembacaan instan jumlah item di dalam folder.
 
 ### Fitur Baru & Peningkatan Antarmuka - MIUIX HyperOS Explorer & Modularisasi Arsitektur
 - **Antarmuka Penuh MIUIX/HyperOS File Explorer**: Mengimplementasikan antarmuka khusus MIUIX File Explorer saat mode MIUIX aktif (`isMiuixUiEnabled`), lengkap dengan kartu item file/folder bergaya HyperOS, indikator format badge warna, animasi skeleton shimmer, dan empty state.

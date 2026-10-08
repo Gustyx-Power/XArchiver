@@ -26,8 +26,8 @@ android {
         applicationId = "id.xms.xarchiver"
         minSdk = 29
         targetSdk = 36
-        versionCode = 6
-        versionName = "2.1.5-$buildDate"
+        versionCode = 7
+        versionName = "2.1.9-$buildDate"
     }
 
     signingConfigs {

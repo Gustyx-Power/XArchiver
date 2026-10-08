@@ -37,35 +37,35 @@ data class VersionRelease(
 object ChangelogRepository {
     val releases: List<VersionRelease> = listOf(
         VersionRelease(
-            version = "2.1.5",
-            dateRes = R.string.changelog_date_2_1_5,
-            summaryRes = R.string.changelog_summary_2_1_5,
+            version = "2.1.9",
+            dateRes = R.string.changelog_date_2_1_9,
+            summaryRes = R.string.changelog_summary_2_1_9,
             isLatest = true,
             badgeRes = R.string.changelog_badge_latest,
             items = listOf(
                 ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_5_miuix_title,
-                    descRes = R.string.changelog_item_2_1_5_miuix_desc,
+                    titleRes = R.string.changelog_item_2_1_9_viewmodes_title,
+                    descRes = R.string.changelog_item_2_1_9_viewmodes_desc,
                     category = ChangelogCategory.UI,
-                    tags = listOf("MIUIX", "HyperOS", "File Explorer", "Design System")
+                    tags = listOf("Material 3", "View Modes", "List", "Grid", "Waterfall")
                 ),
                 ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_5_modular_title,
-                    descRes = R.string.changelog_item_2_1_5_modular_desc,
+                    titleRes = R.string.changelog_item_2_1_9_topbar_title,
+                    descRes = R.string.changelog_item_2_1_9_topbar_desc,
+                    category = ChangelogCategory.UI,
+                    tags = listOf("TopBar", "Breadcrumbs", "Navigation")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_9_monet_title,
+                    descRes = R.string.changelog_item_2_1_9_monet_desc,
+                    category = ChangelogCategory.UI,
+                    tags = listOf("Monet", "Material You", "Dynamic Color", "Theme")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_9_sort_title,
+                    descRes = R.string.changelog_item_2_1_9_sort_desc,
                     category = ChangelogCategory.ENGINE,
-                    tags = listOf("Modularization", "Architecture", "Clean Code", "Maintainability")
-                ),
-                ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_5_otafix_title,
-                    descRes = R.string.changelog_item_2_1_5_otafix_desc,
-                    category = ChangelogCategory.FIXES,
-                    tags = listOf("OTA Update", "Version Parsing", "Bug Fix", "Stability")
-                ),
-                ChangelogItem(
-                    titleRes = R.string.changelog_item_2_1_5_notif_title,
-                    descRes = R.string.changelog_item_2_1_5_notif_desc,
-                    category = ChangelogCategory.ENGINE,
-                    tags = listOf("Notification Sync", "Auto Dismiss", "PackageManager")
+                    tags = listOf("Sorting", "DataStore", "Persistence")
                 )
             )
         ),

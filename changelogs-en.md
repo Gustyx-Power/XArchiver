@@ -2,7 +2,18 @@
 
 All notable changes to XArchiver will be documented in this file.
 
-## [2.1.5] - 2026-10-07
+## [2.1.9] - 2026-10-08
+
+### Redesign & New Features - Modern Material Explorer UI & Dynamic View Modes
+- **Three Dynamic Explorer View Modes**: Introduced flexible layout switching accessible directly from the overflow menu (`⋮`) with persistent DataStore state:
+  - **List View (Default)**: Full-width vertical list showing direct directory item counts or file sizes alongside localized modification dates.
+  - **Grid View**: Modern 3-column card grid with rounded corners and Material 3 Monet surface containers (`surfaceContainer`).
+  - **Waterfall View**: Clean 3-column layout without bounding card boxes where file and folder icons float directly on the canvas background.
+- **Modern Circular Action TopBar**: Overhauled the Material Explorer TopBar with tactile circular action buttons (back, new folder/file `+`, search, and overflow options `⋮`).
+- **Interactive Breadcrumb Navigation**: Minimalist horizontal breadcrumb bar ("Semua file > ...") for seamless directory hierarchy navigation.
+- **Comprehensive Material You Monet Theming**: Replaced hardcoded color styles with dynamic `MaterialTheme.colorScheme` tokens across backgrounds, card containers, circular buttons, and contextual file/folder accents.
+- **Advanced Persistent Sorting**: Interactive bottom sheet modal for sorting by Name, Date, Size, or Type (Ascending / Descending) saved across sessions.
+- **Direct Directory Item Counts**: Added direct `itemCount` metadata field to `FileItem` and directory scanning services (`FileService` & `RootFileService`) for responsive folder item count display.
 
 ### Added & UI Polish - Dedicated MIUIX/HyperOS Explorer & Architecture Modularization
 - **Full MIUIX/HyperOS Explorer Experience**: Implemented a dedicated File Explorer interface when MIUIX theme mode is active (`isMiuixUiEnabled`), featuring HyperOS cards, format color badges, shimmer loading skeleton, and empty states.
