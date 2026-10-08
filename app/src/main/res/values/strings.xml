@@ -348,4 +348,48 @@
     <string name="update_checking_pill">Checking for updates</string>
     <string name="update_uptodate_pill">Your software is up to date</string>
     <string name="update_check_again">Check for updates</string>
+
+    <!-- Scoped Search & Category Filter Strings -->
+    <string name="search_cancel">Cancel</string>
+    <string name="search_category_all">All</string>
+    <string name="search_category_image">Images</string>
+    <string name="search_category_video">Videos</string>
+    <string name="search_category_audio">Audio</string>
+    <string name="search_category_document">Documents</string>
+    <string name="search_category_archive">Archives</string>
+    <string name="search_category_apk">APK</string>
+    <string name="search_scope_this_device">This device</string>
+    <string name="search_total_items_format">%1$d items total</string>
+    <string name="search_filter">Filter</string>
+    <string name="search_in_folder_title">Search in %1$s</string>
+    <string name="search_in_folder_hint">Type file name or choose a category above</string>
+    <string name="search_no_results_title">File not found</string>
+    <string name="search_no_results_desc">No results for \"%1$s\" in %2$s</string>
+    <string name="search_cant_find_prompt">Can\'t find the file? Try </string>
+    <string name="search_action_entire_device">search entire device.</string>
+    <string name="search_action_deep">search all folders.</string>
+
+    <!-- Explorer Views, Top Bars, and Actions -->
+    <string name="explorer_all_files">All files</string>
+    <string name="explorer_view_list">List view</string>
+    <string name="explorer_view_grid">Grid view</string>
+    <string name="explorer_view_waterfall">Waterfall view</string>
+    <string name="explorer_action_add">Add</string>
+    <string name="explorer_action_more">More</string>
+    <string name="explorer_action_edit">Edit</string>
+    <string name="explorer_action_sort">Sort</string>
+    <string name="explorer_sort_ascending">Ascending</string>
+    <string name="explorer_sort_descending">Descending</string>
+    <string name="explorer_sort_by_title">Sort by</string>
+    <string name="explorer_sort_name">Name</string>
+    <string name="explorer_sort_date">Date modified</string>
+    <string name="explorer_sort_size">Size</string>
+    <string name="explorer_sort_type">Type</string>
+    <string name="explorer_sort_criteria_header">By</string>
+    <string name="explorer_sort_order_header">Direction</string>
+    <string name="explorer_sort_descending_label">Descending (Z-A / Newest first)</string>
+    <string name="explorer_sort_ascending_label">Ascending (A-Z / Oldest first)</string>
+    <string name="dialog_new_file_action">Add file</string>
+    <string name="explorer_item_count_format">%1$d items</string>
+    <string name="explorer_items_total_format">%1$d items total</string>
 </resources>

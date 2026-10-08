@@ -61,8 +61,9 @@ fun MaterialNormalTopBar(
         path == "/" || path == "/sdcard" || path == "/storage/emulated/0" || path.trimEnd('/') == "/storage/emulated/0"
     }
 
-    val titleText = remember(path, isRoot) {
-        if (isRoot) "Semua file" else File(path).name.ifEmpty { "Semua file" }
+    val defaultAllFiles = stringResource(R.string.explorer_all_files)
+    val titleText = remember(path, isRoot, defaultAllFiles) {
+        if (isRoot) defaultAllFiles else File(path).name.ifEmpty { defaultAllFiles }
     }
 
     Surface(
@@ -107,7 +108,7 @@ fun MaterialNormalTopBar(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "$totalItemCount item seluruhnya",
+                    text = stringResource(R.string.explorer_items_total_format, totalItemCount),
                     color = secondaryTextColor,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Normal
@@ -131,7 +132,7 @@ fun MaterialNormalTopBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Tambah",
+                            contentDescription = stringResource(R.string.explorer_action_add),
                             tint = primaryTextColor,
                             modifier = Modifier.size(22.dp)
                         )
@@ -148,7 +149,7 @@ fun MaterialNormalTopBar(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    "Folder baru",
+                                    stringResource(R.string.dialog_new_folder),
                                     color = primaryTextColor,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Normal
@@ -162,7 +163,7 @@ fun MaterialNormalTopBar(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    "Tambahkan file",
+                                    stringResource(R.string.dialog_new_file_action),
                                     color = primaryTextColor,
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Normal
@@ -205,7 +206,7 @@ fun MaterialNormalTopBar(
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Lainnya",
+                            contentDescription = stringResource(R.string.explorer_action_more),
                             tint = primaryTextColor,
                             modifier = Modifier.size(20.dp)
                         )
@@ -220,7 +221,7 @@ fun MaterialNormalTopBar(
                             .clip(RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     ) {
-                        // Tampilan kisi
+                        // Grid view
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -228,7 +229,7 @@ fun MaterialNormalTopBar(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Tampilan kisi", color = primaryTextColor, fontSize = 15.sp)
+                                    Text(stringResource(R.string.explorer_view_grid), color = primaryTextColor, fontSize = 15.sp)
                                     if (currentViewMode == ExplorerViewMode.GRID) {
                                         Icon(
                                             Icons.Default.Check,
@@ -245,7 +246,7 @@ fun MaterialNormalTopBar(
                             }
                         )
 
-                        // Air terjun
+                        // Waterfall view
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -253,7 +254,7 @@ fun MaterialNormalTopBar(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Air terjun", color = primaryTextColor, fontSize = 15.sp)
+                                    Text(stringResource(R.string.explorer_view_waterfall), color = primaryTextColor, fontSize = 15.sp)
                                     if (currentViewMode == ExplorerViewMode.WATERFALL) {
                                         Icon(
                                             Icons.Default.Check,
@@ -270,7 +271,7 @@ fun MaterialNormalTopBar(
                             }
                         )
 
-                        // Tampilan daftar
+                        // List view
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -278,7 +279,7 @@ fun MaterialNormalTopBar(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Tampilan daftar", color = primaryTextColor, fontSize = 15.sp)
+                                    Text(stringResource(R.string.explorer_view_list), color = primaryTextColor, fontSize = 15.sp)
                                     if (currentViewMode == ExplorerViewMode.LIST) {
                                         Icon(
                                             Icons.Default.Check,
@@ -304,7 +305,7 @@ fun MaterialNormalTopBar(
                         // Edit
                         DropdownMenuItem(
                             text = {
-                                Text("Edit", color = primaryTextColor, fontSize = 15.sp)
+                                Text(stringResource(R.string.explorer_action_edit), color = primaryTextColor, fontSize = 15.sp)
                             },
                             onClick = {
                                 showMoreMenu = false
@@ -318,7 +319,7 @@ fun MaterialNormalTopBar(
                             modifier = Modifier.padding(vertical = 4.dp)
                         )
 
-                        // Urutkan
+                        // Sort
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -327,9 +328,13 @@ fun MaterialNormalTopBar(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text("Urutkan", color = primaryTextColor, fontSize = 15.sp)
+                                        Text(stringResource(R.string.explorer_action_sort), color = primaryTextColor, fontSize = 15.sp)
                                         Text(
-                                            if (currentSortOrder == ExplorerSortOrder.DESCENDING) "Turun" else "Naik",
+                                            if (currentSortOrder == ExplorerSortOrder.DESCENDING) {
+                                                stringResource(R.string.explorer_sort_descending)
+                                            } else {
+                                                stringResource(R.string.explorer_sort_ascending)
+                                            },
                                             color = secondaryTextColor,
                                             fontSize = 12.sp
                                         )
@@ -367,8 +372,9 @@ fun MaterialBreadcrumbBar(
     val accentColor = MaterialTheme.colorScheme.primary
     val separatorColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
 
-    val segments = remember(currentPath) {
-        parseMaterialSegments(currentPath)
+    val allFilesLabel = stringResource(R.string.explorer_all_files)
+    val segments = remember(currentPath, allFilesLabel) {
+        parseMaterialSegments(currentPath, allFilesLabel)
     }
 
     LaunchedEffect(currentPath) {
@@ -410,16 +416,16 @@ fun MaterialBreadcrumbBar(
 
 data class MaterialSegment(val name: String, val path: String)
 
-private fun parseMaterialSegments(path: String): List<MaterialSegment> {
+private fun parseMaterialSegments(path: String, allFilesLabel: String = "All files"): List<MaterialSegment> {
     val clean = path.trimEnd('/')
     val baseStorage = "/storage/emulated/0"
 
     if (clean == "/" || clean == "/sdcard" || clean == baseStorage) {
-        return listOf(MaterialSegment("Semua file", baseStorage))
+        return listOf(MaterialSegment(allFilesLabel, baseStorage))
     }
 
     if (clean.startsWith(baseStorage)) {
-        val list = mutableListOf(MaterialSegment("Semua file", baseStorage))
+        val list = mutableListOf(MaterialSegment(allFilesLabel, baseStorage))
         val sub = clean.removePrefix(baseStorage).trimStart('/')
         if (sub.isNotEmpty()) {
             val parts = sub.split('/')
@@ -439,7 +445,7 @@ private fun parseMaterialSegments(path: String): List<MaterialSegment> {
         cur += "/$part"
         list.add(MaterialSegment(part, cur))
     }
-    return list.ifEmpty { listOf(MaterialSegment("Semua file", "/")) }
+    return list.ifEmpty { listOf(MaterialSegment(allFilesLabel, "/")) }
 }
 
 /**
@@ -590,7 +596,7 @@ fun MaterialSortBottomSheet(
                 .navigationBarsPadding()
         ) {
             Text(
-                text = "Urutkan",
+                text = stringResource(R.string.explorer_sort_by_title),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = primaryTextColor,
@@ -598,7 +604,7 @@ fun MaterialSortBottomSheet(
             )
 
             Text(
-                text = "Berdasarkan",
+                text = stringResource(R.string.explorer_sort_criteria_header),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = secondaryTextColor,
@@ -606,28 +612,28 @@ fun MaterialSortBottomSheet(
             )
 
             SortItemRow(
-                title = "Nama",
+                title = stringResource(R.string.explorer_sort_name),
                 isSelected = currentSortBy == ExplorerSortBy.NAME,
                 primaryTextColor = primaryTextColor,
                 accentColor = accentColor,
                 onClick = { onSortByChange(ExplorerSortBy.NAME) }
             )
             SortItemRow(
-                title = "Waktu / Tanggal",
+                title = stringResource(R.string.explorer_sort_date),
                 isSelected = currentSortBy == ExplorerSortBy.DATE,
                 primaryTextColor = primaryTextColor,
                 accentColor = accentColor,
                 onClick = { onSortByChange(ExplorerSortBy.DATE) }
             )
             SortItemRow(
-                title = "Ukuran",
+                title = stringResource(R.string.explorer_sort_size),
                 isSelected = currentSortBy == ExplorerSortBy.SIZE,
                 primaryTextColor = primaryTextColor,
                 accentColor = accentColor,
                 onClick = { onSortByChange(ExplorerSortBy.SIZE) }
             )
             SortItemRow(
-                title = "Jenis / Tipe",
+                title = stringResource(R.string.explorer_sort_type),
                 isSelected = currentSortBy == ExplorerSortBy.TYPE,
                 primaryTextColor = primaryTextColor,
                 accentColor = accentColor,
@@ -641,7 +647,7 @@ fun MaterialSortBottomSheet(
             )
 
             Text(
-                text = "Arah Urutan",
+                text = stringResource(R.string.explorer_sort_order_header),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = secondaryTextColor,
@@ -649,14 +655,14 @@ fun MaterialSortBottomSheet(
             )
 
             SortItemRow(
-                title = "Turun (Z-A / Baru ke Lama)",
+                title = stringResource(R.string.explorer_sort_descending_label),
                 isSelected = currentSortOrder == ExplorerSortOrder.DESCENDING,
                 primaryTextColor = primaryTextColor,
                 accentColor = accentColor,
                 onClick = { onSortOrderChange(ExplorerSortOrder.DESCENDING) }
             )
             SortItemRow(
-                title = "Naik (A-Z / Lama ke Baru)",
+                title = stringResource(R.string.explorer_sort_ascending_label),
                 isSelected = currentSortOrder == ExplorerSortOrder.ASCENDING,
                 primaryTextColor = primaryTextColor,
                 accentColor = accentColor,

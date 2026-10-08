@@ -348,4 +348,48 @@
     <string name="update_checking_pill">Memeriksa pembaruan</string>
     <string name="update_uptodate_pill">Versi perangkat lunak Anda adalah yang terbaru</string>
     <string name="update_check_again">Periksa lagi</string>
+
+    <!-- Scoped Search & Category Filter Strings -->
+    <string name="search_cancel">Batalkan</string>
+    <string name="search_category_all">Semua</string>
+    <string name="search_category_image">Gambar</string>
+    <string name="search_category_video">Video</string>
+    <string name="search_category_audio">Audio</string>
+    <string name="search_category_document">Dokumen</string>
+    <string name="search_category_archive">Arsip</string>
+    <string name="search_category_apk">APK</string>
+    <string name="search_scope_this_device">Perangkat ini</string>
+    <string name="search_total_items_format">%1$d item seluruhnya</string>
+    <string name="search_filter">Filter</string>
+    <string name="search_in_folder_title">Pencarian di %1$s</string>
+    <string name="search_in_folder_hint">Ketik nama file atau pilih kategori di atas</string>
+    <string name="search_no_results_title">File tidak ditemukan</string>
+    <string name="search_no_results_desc">Tidak ada hasil untuk \"%1$s\" di %2$s</string>
+    <string name="search_cant_find_prompt">File tidak ditemukan? Coba </string>
+    <string name="search_action_entire_device">cari di seluruh perangkat.</string>
+    <string name="search_action_deep">cari di seluruh folder.</string>
+
+    <!-- Explorer Views, Top Bars, and Actions -->
+    <string name="explorer_all_files">Semua file</string>
+    <string name="explorer_view_list">Tampilan daftar</string>
+    <string name="explorer_view_grid">Tampilan kisi</string>
+    <string name="explorer_view_waterfall">Air terjun</string>
+    <string name="explorer_action_add">Tambah</string>
+    <string name="explorer_action_more">Lainnya</string>
+    <string name="explorer_action_edit">Edit</string>
+    <string name="explorer_action_sort">Urutkan</string>
+    <string name="explorer_sort_ascending">Naik</string>
+    <string name="explorer_sort_descending">Turun</string>
+    <string name="explorer_sort_by_title">Urutkan berdasarkan</string>
+    <string name="explorer_sort_name">Nama</string>
+    <string name="explorer_sort_date">Waktu modifikasi</string>
+    <string name="explorer_sort_size">Ukuran</string>
+    <string name="explorer_sort_type">Jenis</string>
+    <string name="explorer_sort_criteria_header">Berdasarkan</string>
+    <string name="explorer_sort_order_header">Arah Urutan</string>
+    <string name="explorer_sort_descending_label">Turun (Z-A / Baru ke Lama)</string>
+    <string name="explorer_sort_ascending_label">Naik (A-Z / Lama ke Baru)</string>
+    <string name="dialog_new_file_action">Tambahkan file</string>
+    <string name="explorer_item_count_format">%1$d item</string>
+    <string name="explorer_items_total_format">%1$d item seluruhnya</string>
 </resources>

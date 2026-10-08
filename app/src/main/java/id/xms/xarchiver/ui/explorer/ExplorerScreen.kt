@@ -19,8 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import id.xms.xarchiver.R
 import id.xms.xarchiver.core.*
 import id.xms.xarchiver.core.archive.*
 import id.xms.xarchiver.core.install.ApkInstaller
@@ -150,20 +152,23 @@ fun ExplorerScreen(path: String, navController: NavController) {
         isSearchLoading = false
     }
 
-    val onTriggerDeepSearch: () -> Unit = {
+    val isRootScope = remember(path) {
+        val clean = path.trimEnd('/')
+        clean.isEmpty() || clean == "/" || clean == "/sdcard" || clean == "/storage/emulated/0"
+    }
+
+    val onTriggerExpandSearch: () -> Unit = {
         scope.launch {
             isSearchLoading = true
+            val targetScope = if (!isRootScope) "/storage/emulated/0" else path
             val results = ExplorerSearchEngine.searchScopedDirectory(
-                scopePath = path,
+                scopePath = targetScope,
                 query = searchQuery,
                 category = searchCategory,
                 isDeepSearch = true
             )
             searchResults = results
             isSearchLoading = false
-            if (results.isEmpty()) {
-                snackbarHostState.showSnackbar("Deep search tidak menemukan file tambahan.")
-            }
         }
     }
 
@@ -436,7 +441,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 .padding(padding)
         ) {
             if (isSearching) {
-                val scopeDisplayName = remember(path) { getSearchScopeDisplayName(path) }
+                val defaultScopeName = stringResource(R.string.search_scope_this_device)
+                val scopeDisplayName = remember(path, defaultScopeName) { getSearchScopeDisplayName(path, defaultScopeName) }
                 when {
                     isSearchLoading -> {
                         LazyColumn(
@@ -459,10 +465,11 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             isQueryEmpty = true,
                             searchQuery = searchQuery,
                             scopeDisplayName = scopeDisplayName,
+                            isRootScope = isRootScope,
                             primaryTextColor = primaryTextColor,
                             secondaryTextColor = secondaryTextColor,
                             accentColor = MaterialTheme.colorScheme.primary,
-                            onDeepSearchClick = onTriggerDeepSearch
+                            onExpandSearchClick = onTriggerExpandSearch
                         )
                     }
                     searchResults.isEmpty() -> {
@@ -470,10 +477,11 @@ fun ExplorerScreen(path: String, navController: NavController) {
                             isQueryEmpty = false,
                             searchQuery = searchQuery,
                             scopeDisplayName = scopeDisplayName,
+                            isRootScope = isRootScope,
                             primaryTextColor = primaryTextColor,
                             secondaryTextColor = secondaryTextColor,
                             accentColor = MaterialTheme.colorScheme.primary,
-                            onDeepSearchClick = onTriggerDeepSearch
+                            onExpandSearchClick = onTriggerExpandSearch
                         )
                     }
                     else -> {
@@ -526,10 +534,11 @@ fun ExplorerScreen(path: String, navController: NavController) {
                                 )
                             }
                             item {
-                                ExplorerSearchDeepSearchFooter(
+                                ExplorerSearchExpandFooter(
+                                    isRootScope = isRootScope,
                                     secondaryTextColor = secondaryTextColor,
                                     accentColor = MaterialTheme.colorScheme.primary,
-                                    onDeepSearchClick = onTriggerDeepSearch
+                                    onActionClick = onTriggerExpandSearch
                                 )
                             }
                         }

@@ -12,21 +12,23 @@ import id.xms.xarchiver.ui.explorer.utils.FileTypeDetector
 import java.io.File
 import java.util.Locale
 
+import id.xms.xarchiver.R
+
 /**
  * Filter categories for explorer search matching ColorOS File Manager.
  */
 enum class ExplorerSearchCategory(
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
     val iconColor: Color
 ) {
-    ALL("Semua", Icons.Default.Apps, Color(0xFF9E9E9E)),
-    IMAGE("Gambar", Icons.Default.Image, Color(0xFF388AF6)),
-    VIDEO("Video", Icons.Default.Videocam, Color(0xFF6366F1)),
-    AUDIO("Audio", Icons.Default.MusicNote, Color(0xFFF59E0B)),
-    DOCUMENT("Dokumen", Icons.Default.Description, Color(0xFFEF4444)),
-    ARCHIVE("Arsip", Icons.Default.FolderZip, Color(0xFFD97706)),
-    APK("APK", Icons.Default.Android, Color(0xFF10B981));
+    ALL(R.string.search_category_all, Icons.Default.Apps, Color(0xFF9E9E9E)),
+    IMAGE(R.string.search_category_image, Icons.Default.Image, Color(0xFF388AF6)),
+    VIDEO(R.string.search_category_video, Icons.Default.Videocam, Color(0xFF6366F1)),
+    AUDIO(R.string.search_category_audio, Icons.Default.MusicNote, Color(0xFFF59E0B)),
+    DOCUMENT(R.string.search_category_document, Icons.Default.Description, Color(0xFFEF4444)),
+    ARCHIVE(R.string.search_category_archive, Icons.Default.FolderZip, Color(0xFFD97706)),
+    APK(R.string.search_category_apk, Icons.Default.Android, Color(0xFF10B981));
 
     fun matches(file: FileItem): Boolean {
         if (this == ALL) return true
@@ -46,16 +48,16 @@ enum class ExplorerSearchCategory(
 
 /**
  * Get human-readable scope title matching ColorOS File Manager:
- * - "/storage/emulated/0" or "/" -> "Perangkat ini"
+ * - "/storage/emulated/0" or "/" -> [defaultName]
  * - Any subfolder (e.g. "/storage/emulated/0/Documents") -> "Documents"
  */
-fun getSearchScopeDisplayName(path: String): String {
+fun getSearchScopeDisplayName(path: String, defaultName: String): String {
     val clean = path.trimEnd('/')
     val baseStorage = "/storage/emulated/0"
     if (clean.isEmpty() || clean == "/" || clean == "/sdcard" || clean == baseStorage) {
-        return "Perangkat ini"
+        return defaultName
     }
-    return File(clean).name.ifEmpty { "Perangkat ini" }
+    return File(clean).name.ifEmpty { defaultName }
 }
 
 /**

@@ -122,7 +122,7 @@ fun ExplorerSearchTopBar(
 
             Spacer(Modifier.width(10.dp))
 
-            // "Batalkan" cancel button matching ColorOS Photo 1
+            // Cancel button matching ColorOS
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = cancelButtonBgColor,
@@ -136,7 +136,7 @@ fun ExplorerSearchTopBar(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Batalkan",
+                        text = stringResource(R.string.search_cancel),
                         color = primaryTextColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -192,7 +192,7 @@ fun ExplorerSearchCategoryChips(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = category.label,
+                    text = stringResource(category.labelRes),
                     color = chipTextColor,
                     fontSize = 13.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
@@ -227,7 +227,7 @@ fun ExplorerSearchHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$totalItems item seluruhnya",
+                text = stringResource(R.string.search_total_items_format, totalItems),
                 color = secondaryTextColor,
                 fontSize = 13.sp
             )
@@ -241,13 +241,13 @@ fun ExplorerSearchHeader(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = "Filter",
+                    text = stringResource(R.string.search_filter),
                     color = secondaryTextColor,
                     fontSize = 13.sp
                 )
                 Icon(
                     imageVector = Icons.Default.FilterList,
-                    contentDescription = "Filter",
+                    contentDescription = stringResource(R.string.search_filter),
                     tint = secondaryTextColor,
                     modifier = Modifier.size(16.dp)
                 )
@@ -266,13 +266,16 @@ fun ExplorerSearchHeader(
 }
 
 /**
- * ColorOS 17 style "File tidak ditemukan? Coba Deep Search." footer.
+ * Expand search footer:
+ * When in subfolder: offers to search entire device.
+ * When at root: offers to search all folders / hidden files.
  */
 @Composable
-fun ExplorerSearchDeepSearchFooter(
+fun ExplorerSearchExpandFooter(
+    isRootScope: Boolean = false,
     secondaryTextColor: Color,
     accentColor: Color,
-    onDeepSearchClick: () -> Unit,
+    onActionClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -286,18 +289,21 @@ fun ExplorerSearchDeepSearchFooter(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "File tidak ditemukan? Coba ",
+                text = stringResource(R.string.search_cant_find_prompt),
                 color = secondaryTextColor,
                 fontSize = 14.sp
             )
             Text(
-                text = "Deep Search.",
+                text = stringResource(
+                    if (isRootScope) R.string.search_action_deep
+                    else R.string.search_action_entire_device
+                ),
                 color = accentColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .clickable(onClick = onDeepSearchClick)
+                    .clickable(onClick = onActionClick)
             )
         }
     }
@@ -311,10 +317,11 @@ fun ExplorerSearchEmptyView(
     isQueryEmpty: Boolean,
     searchQuery: String,
     scopeDisplayName: String,
+    isRootScope: Boolean = false,
     primaryTextColor: Color,
     secondaryTextColor: Color,
     accentColor: Color,
-    onDeepSearchClick: () -> Unit,
+    onExpandSearchClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -343,7 +350,7 @@ fun ExplorerSearchEmptyView(
 
         if (isQueryEmpty) {
             Text(
-                text = "Pencarian di $scopeDisplayName",
+                text = stringResource(R.string.search_in_folder_title, scopeDisplayName),
                 color = primaryTextColor,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -351,14 +358,14 @@ fun ExplorerSearchEmptyView(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Ketik nama file atau pilih filter kategori di atas",
+                text = stringResource(R.string.search_in_folder_hint),
                 color = secondaryTextColor,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
         } else {
             Text(
-                text = "File tidak ditemukan",
+                text = stringResource(R.string.search_no_results_title),
                 color = primaryTextColor,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -366,16 +373,17 @@ fun ExplorerSearchEmptyView(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Tidak ada hasil untuk \"$searchQuery\" di $scopeDisplayName",
+                text = stringResource(R.string.search_no_results_desc, searchQuery, scopeDisplayName),
                 color = secondaryTextColor,
                 fontSize = 13.sp,
                 textAlign = TextAlign.Center
             )
             Spacer(Modifier.height(16.dp))
-            ExplorerSearchDeepSearchFooter(
+            ExplorerSearchExpandFooter(
+                isRootScope = isRootScope,
                 secondaryTextColor = secondaryTextColor,
                 accentColor = accentColor,
-                onDeepSearchClick = onDeepSearchClick
+                onActionClick = onExpandSearchClick
             )
         }
     }
