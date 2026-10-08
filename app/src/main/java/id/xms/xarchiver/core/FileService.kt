@@ -16,13 +16,15 @@ object FileService {
         
         // Use standard java.io.File if possible
         if (dir.exists() && dir.isDirectory && dir.canRead()) {
-            return@withContext dir.listFiles()?.map {
+            return@withContext dir.listFiles()?.map { file ->
+                val count = if (file.isDirectory) file.list()?.size ?: 0 else null
                 FileItem(
-                    name = it.name,
-                    path = it.absolutePath,
-                    isDirectory = it.isDirectory,
-                    size = it.length(),
-                    lastModified = it.lastModified()
+                    name = file.name,
+                    path = file.absolutePath,
+                    isDirectory = file.isDirectory,
+                    size = file.length(),
+                    lastModified = file.lastModified(),
+                    itemCount = count
                 )
             }?.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenBy { it.name }) ?: emptyList()
         }

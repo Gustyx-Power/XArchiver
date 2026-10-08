@@ -14,12 +14,14 @@ object RootFileService {
         val dir = SuFile.open(path)
         if (!dir.exists() || !dir.isDirectory) return@withContext emptyList()
         dir.listFiles()?.map { f ->
+            val count = if (f.isDirectory) f.list()?.size ?: 0 else null
             FileItem(
                 name = f.name ?: "",
                 path = f.absolutePath,
                 isDirectory = f.isDirectory,
                 size = f.length(),
-                lastModified = f.lastModified()
+                lastModified = f.lastModified(),
+                itemCount = count
             )
         }?.sortedWith(compareByDescending<FileItem> { it.isDirectory }.thenBy { it.name })
             ?: emptyList()
