@@ -5,14 +5,18 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -24,16 +28,24 @@ import id.xms.xarchiver.ui.components.LocalNotificationHost
 import id.xms.xarchiver.ui.explorer.material.*
 import id.xms.xarchiver.ui.explorer.utils.FileActionHandler
 import id.xms.xarchiver.ui.explorer.utils.FileTypeDetector
+import id.xms.xarchiver.ui.theme.ThemeMode
 import id.xms.xarchiver.ui.theme.ThemePreferences
+import id.xms.xarchiver.ui.theme.isAppInDarkTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Locale
 
 /**
- * Standard Material Design 3 File Explorer Screen.
- * Delegates to modular components in id.xms.xarchiver.ui.explorer.material.*
- * or routes to MiuixExplorerScreen when MIUIX / HyperOS mode is enabled.
+ * Redesigned Material File Explorer Screen.
+ * Features:
+ * - Dynamic view mode switching: Tampilan daftar (default), Air terjun, and Tampilan kisi
+ * - Modern TopBar with circular action buttons: [+], [Search], [:]
+ * - Minimalist breadcrumb navigation bar ("Semua file > ...")
+ * - Enhanced list item, grid card, and waterfall layout styling
+ * - Seamless sorting (Name, Date, Size, Type; Ascending/Descending)
+ * - Retains full archive, extraction, and file management capabilities
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,9 +68,28 @@ fun ExplorerScreen(path: String, navController: NavController) {
     val bookmarksManager = remember { BookmarksManager(context) }
     val snackbarHostState = LocalNotificationHost.current
 
+    val currentThemeMode by themePreferences.themeMode.collectAsState(initial = ThemeMode.SYSTEM)
+    val isDark = isAppInDarkTheme(context, currentThemeMode)
+
+    // Material 3 Monet Theme Palette
+    val pageBgColor = MaterialTheme.colorScheme.background
+    val cardBgColor = MaterialTheme.colorScheme.surfaceContainer
+    val buttonBgColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val primaryTextColor = MaterialTheme.colorScheme.onBackground
+    val secondaryTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val dividerColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+    val inputBgColor = MaterialTheme.colorScheme.surfaceContainerHigh
+
+    // View mode and sorting preferences
+    val explorerPreferences = remember { ExplorerPreferences(context) }
+    val viewMode by explorerPreferences.viewMode.collectAsState(initial = ExplorerViewMode.LIST)
+    val sortBy by explorerPreferences.sortBy.collectAsState(initial = ExplorerSortBy.NAME)
+    val sortOrder by explorerPreferences.sortOrder.collectAsState(initial = ExplorerSortOrder.DESCENDING)
+
+    var showSortBottomSheet by remember { mutableStateOf(false) }
+
     var files by remember { mutableStateOf<List<FileItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
-    var showFabMenu by remember { mutableStateOf(false) }
 
     // Dialog & overlay states
     var pendingApk by remember { mutableStateOf<File?>(null) }
@@ -82,22 +113,41 @@ fun ExplorerScreen(path: String, navController: NavController) {
     var passwordExtractionError by remember { mutableStateOf<String?>(null) }
 
     // Selection mode state
-    val isSelecting = selectionManager.isSelecting
+    var isManualSelectionMode by remember { mutableStateOf(false) }
+    val isSelecting = isManualSelectionMode || selectionManager.isSelecting
     val selectedCount = selectionManager.selectedCount
 
     // Search state
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredFiles = remember(files, searchQuery) {
-        if (searchQuery.isEmpty()) {
-            files
+    // Sort files based on user preference (keeping directories on top)
+    val sortedFiles = remember(files, sortBy, sortOrder) {
+        val comparator = when (sortBy) {
+            ExplorerSortBy.NAME -> compareBy<FileItem> { it.name.lowercase(Locale.ROOT) }
+            ExplorerSortBy.DATE -> compareBy<FileItem> { it.lastModified }
+            ExplorerSortBy.SIZE -> compareBy<FileItem> { it.size }
+            ExplorerSortBy.TYPE -> compareBy<FileItem> { it.name.substringAfterLast('.', "").lowercase(Locale.ROOT) }
+        }
+        val dirComparator = compareByDescending<FileItem> { it.isDirectory }
+        val fullComparator = if (sortOrder == ExplorerSortOrder.DESCENDING) {
+            dirComparator.then(comparator.reversed())
         } else {
-            files.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            dirComparator.then(comparator)
+        }
+        files.sortedWith(fullComparator)
+    }
+
+    val filteredFiles = remember(sortedFiles, searchQuery) {
+        if (searchQuery.isEmpty()) {
+            sortedFiles
+        } else {
+            sortedFiles.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
     }
 
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
 
     fun refreshFiles() {
         scope.launch {
@@ -150,6 +200,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
 
     LaunchedEffect(path) {
         refreshFiles()
+        isManualSelectionMode = false
         selectionManager.clearSelection()
         isSearching = false
         searchQuery = ""
@@ -202,30 +253,24 @@ fun ExplorerScreen(path: String, navController: NavController) {
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f),
-                        MaterialTheme.colorScheme.background
-                    ),
-                    radius = 1500f
-                )
-            )
-    ) {
-        Scaffold(
-            topBar = {
+    Scaffold(
+        topBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(pageBgColor)
+            ) {
                 if (isSelecting) {
                     MaterialSelectionTopBar(
                         selectedCount = selectedCount,
-                        onClearSelection = { selectionManager.clearSelection() },
+                        primaryTextColor = primaryTextColor,
+                        buttonBgColor = buttonBgColor,
+                        onClearSelection = {
+                            isManualSelectionMode = false
+                            selectionManager.clearSelection()
+                        },
                         onSelectAll = { selectionManager.selectAll(files.map { it.path }) },
-                        onReverseSelection = { selectionManager.reverseSelection(files.map { it.path }) },
-                        onSelectSameType = if (selectedCount == 1) {
-                            { selectionManager.selectSameType(files.map { it.path }, selectionManager.selectedPaths.first()) }
-                        } else null
+                        onReverseSelection = { selectionManager.reverseSelection(files.map { it.path }) }
                     )
                 } else if (isSearching) {
                     MaterialSearchTopBar(
@@ -234,135 +279,278 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         onCloseSearch = {
                             isSearching = false
                             searchQuery = ""
-                        }
+                        },
+                        primaryTextColor = primaryTextColor,
+                        secondaryTextColor = secondaryTextColor,
+                        inputBgColor = inputBgColor
                     )
                 } else {
                     MaterialNormalTopBar(
                         path = path,
-                        navController = navController,
-                        onStartSearch = { isSearching = true }
+                        totalItemCount = files.size,
+                        currentViewMode = viewMode,
+                        currentSortOrder = sortOrder,
+                        primaryTextColor = primaryTextColor,
+                        secondaryTextColor = secondaryTextColor,
+                        buttonBgColor = buttonBgColor,
+                        onBack = { navController.navigateUp() },
+                        onStartSearch = { isSearching = true },
+                        onSelectViewMode = { mode ->
+                            scope.launch { explorerPreferences.setViewMode(mode) }
+                        },
+                        onStartEdit = { isManualSelectionMode = true },
+                        onOpenSort = { showSortBottomSheet = true },
+                        onNewFolder = { showNewFolderDialog = true },
+                        onNewFile = { showNewFileDialog = true }
                     )
                 }
-            },
-            bottomBar = {
-                AnimatedVisibility(
-                    visible = isSelecting,
-                    enter = slideInVertically(initialOffsetY = { it }),
-                    exit = slideOutVertically(targetOffsetY = { it })
-                ) {
-                    val selectedArchives = selectionManager.selectedPaths.filter {
-                        FileTypeDetector.isArchiveExtension(File(it).name)
-                    }
-                    val hasArchives = selectedArchives.isNotEmpty()
 
-                    MaterialSelectionDock(
-                        hasArchives = hasArchives,
-                        onCopy = {
-                            pendingFileOperation = Pair("COPY", selectionManager.selectedPaths.toList())
-                            selectionManager.clearSelection()
-                        },
-                        onCut = {
-                            pendingFileOperation = Pair("CUT", selectionManager.selectedPaths.toList())
-                            selectionManager.clearSelection()
-                        },
-                        onDelete = {
-                            showDeleteDialog = selectionManager.selectedPaths.toList()
-                        },
-                        onExtractOrShare = {
-                            if (hasArchives) {
-                                if (selectedArchives.size == 1) {
-                                    val archiveFile = files.find { it.path == selectedArchives.first() }
-                                    if (archiveFile != null) {
-                                        selectionManager.clearSelection()
-                                        showQuickExtractDialog = archiveFile
-                                    }
-                                } else {
-                                    val archivesToExtract = selectedArchives.toList()
-                                    selectionManager.clearSelection()
-                                    multiArchiveExtractList = archivesToExtract
-                                    currentExtractingIndex = 0
-                                }
-                            } else {
-                                ShareUtils.shareMultipleFiles(context, selectionManager.selectedPaths)
-                                selectionManager.clearSelection()
+                // Breadcrumb navigation bar (shown in non-search mode)
+                if (!isSearching) {
+                    MaterialBreadcrumbBar(
+                        currentPath = path,
+                        onNavigate = { newPath ->
+                            navController.navigate("explorer/${Uri.encode(newPath)}") {
+                                launchSingleTop = true
                             }
-                        },
-                        onCompress = {
-                            showCreateArchiveDialog = true
-                        },
-                        onMore = {
-                            showSelectionBottomSheet = true
                         }
                     )
                 }
-            },
-            floatingActionButton = {
-                MaterialExplorerFab(
-                    visible = !isSelecting,
-                    showFabMenu = showFabMenu,
-                    onToggleFabMenu = { showFabMenu = !showFabMenu },
-                    onNewFolder = {
-                        showFabMenu = false
-                        showNewFolderDialog = true
+            }
+        },
+        bottomBar = {
+            AnimatedVisibility(
+                visible = isSelecting,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it })
+            ) {
+                val selectedArchives = selectionManager.selectedPaths.filter {
+                    FileTypeDetector.isArchiveExtension(File(it).name)
+                }
+                val hasArchives = selectedArchives.isNotEmpty()
+
+                MaterialSelectionDock(
+                    hasArchives = hasArchives,
+                    onCopy = {
+                        pendingFileOperation = Pair("COPY", selectionManager.selectedPaths.toList())
+                        isManualSelectionMode = false
+                        selectionManager.clearSelection()
                     },
-                    onNewFile = {
-                        showFabMenu = false
-                        showNewFileDialog = true
+                    onCut = {
+                        pendingFileOperation = Pair("CUT", selectionManager.selectedPaths.toList())
+                        isManualSelectionMode = false
+                        selectionManager.clearSelection()
+                    },
+                    onDelete = {
+                        showDeleteDialog = selectionManager.selectedPaths.toList()
+                    },
+                    onExtractOrShare = {
+                        if (hasArchives) {
+                            if (selectedArchives.size == 1) {
+                                val archiveFile = files.find { it.path == selectedArchives.first() }
+                                if (archiveFile != null) {
+                                    isManualSelectionMode = false
+                                    selectionManager.clearSelection()
+                                    showQuickExtractDialog = archiveFile
+                                }
+                            } else {
+                                val archivesToExtract = selectedArchives.toList()
+                                isManualSelectionMode = false
+                                selectionManager.clearSelection()
+                                multiArchiveExtractList = archivesToExtract
+                                currentExtractingIndex = 0
+                            }
+                        } else {
+                            ShareUtils.shareMultipleFiles(context, selectionManager.selectedPaths)
+                            isManualSelectionMode = false
+                            selectionManager.clearSelection()
+                        }
+                    },
+                    onCompress = {
+                        showCreateArchiveDialog = true
+                    },
+                    onMore = {
+                        showSelectionBottomSheet = true
                     }
                 )
-            },
-            containerColor = Color.Transparent
-        ) { padding ->
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (isLoading) {
-                    items(6) { MaterialFileItemSkeleton() }
-                } else if (filteredFiles.isEmpty()) {
-                    item { MaterialEmptyFolderView(searchQuery = searchQuery) }
-                } else {
-                    itemsIndexed(
-                        items = filteredFiles,
-                        key = { _, file -> file.path },
-                        contentType = { _, file -> if (file.isDirectory) "folder" else "file" }
-                    ) { _, file ->
-                        MaterialFileItemCard(
-                            file = file,
-                            isSelected = selectionManager.isSelected(file.path),
-                            isSelectionMode = isSelecting,
-                            onClick = {
-                                if (isSelecting) {
-                                    selectionManager.toggleSelection(file.path)
-                                } else {
-                                    FileActionHandler.handleFileClick(
-                                        context = context,
-                                        file = file,
-                                        navController = navController,
-                                        archiveManager = archiveManager,
-                                        scope = scope,
-                                        notificationHostState = snackbarHostState,
-                                        onApkClick = { pendingApk = it }
-                                    )
+            }
+        },
+        containerColor = pageBgColor,
+        contentColor = primaryTextColor
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            when {
+                isLoading -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(6) { MaterialFileItemSkeleton() }
+                    }
+                }
+                filteredFiles.isEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        MaterialEmptyFolderView(searchQuery = searchQuery)
+                    }
+                }
+                viewMode == ExplorerViewMode.LIST -> {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(vertical = 4.dp)
+                    ) {
+                        itemsIndexed(
+                            items = filteredFiles,
+                            key = { _, file -> file.path }
+                        ) { _, file ->
+                            MaterialFileListItem(
+                                file = file,
+                                isSelected = selectionManager.isSelected(file.path),
+                                isSelectionMode = isSelecting,
+                                primaryTextColor = primaryTextColor,
+                                secondaryTextColor = secondaryTextColor,
+                                dividerColor = dividerColor,
+                                onClick = {
+                                    if (isSelecting) {
+                                        selectionManager.toggleSelection(file.path)
+                                    } else {
+                                        FileActionHandler.handleFileClick(
+                                            context = context,
+                                            file = file,
+                                            navController = navController,
+                                            archiveManager = archiveManager,
+                                            scope = scope,
+                                            notificationHostState = snackbarHostState,
+                                            onApkClick = { pendingApk = it }
+                                        )
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!isSelecting) {
+                                        selectionManager.toggleSelection(file.path)
+                                    }
                                 }
-                            },
-                            onLongClick = {
-                                if (!isSelecting) {
-                                    selectionManager.toggleSelection(file.path)
+                            )
+                        }
+                    }
+                }
+                viewMode == ExplorerViewMode.GRID -> {
+                    LazyVerticalGrid(
+                        state = gridState,
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        itemsIndexed(
+                            items = filteredFiles,
+                            key = { _, file -> file.path }
+                        ) { _, file ->
+                            MaterialFileGridCard(
+                                file = file,
+                                isSelected = selectionManager.isSelected(file.path),
+                                isSelectionMode = isSelecting,
+                                cardBgColor = cardBgColor,
+                                primaryTextColor = primaryTextColor,
+                                secondaryTextColor = secondaryTextColor,
+                                onClick = {
+                                    if (isSelecting) {
+                                        selectionManager.toggleSelection(file.path)
+                                    } else {
+                                        FileActionHandler.handleFileClick(
+                                            context = context,
+                                            file = file,
+                                            navController = navController,
+                                            archiveManager = archiveManager,
+                                            scope = scope,
+                                            notificationHostState = snackbarHostState,
+                                            onApkClick = { pendingApk = it }
+                                        )
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!isSelecting) {
+                                        selectionManager.toggleSelection(file.path)
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
+                    }
+                }
+                viewMode == ExplorerViewMode.WATERFALL -> {
+                    LazyVerticalGrid(
+                        state = gridState,
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                    ) {
+                        itemsIndexed(
+                            items = filteredFiles,
+                            key = { _, file -> file.path }
+                        ) { _, file ->
+                            MaterialFileWaterfallItem(
+                                file = file,
+                                isSelected = selectionManager.isSelected(file.path),
+                                isSelectionMode = isSelecting,
+                                primaryTextColor = primaryTextColor,
+                                secondaryTextColor = secondaryTextColor,
+                                onClick = {
+                                    if (isSelecting) {
+                                        selectionManager.toggleSelection(file.path)
+                                    } else {
+                                        FileActionHandler.handleFileClick(
+                                            context = context,
+                                            file = file,
+                                            navController = navController,
+                                            archiveManager = archiveManager,
+                                            scope = scope,
+                                            notificationHostState = snackbarHostState,
+                                            onApkClick = { pendingApk = it }
+                                        )
+                                    }
+                                },
+                                onLongClick = {
+                                    if (!isSelecting) {
+                                        selectionManager.toggleSelection(file.path)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
     }
 
-    // Material 3 Dialogs & Progress Overlays Host
+    // Sort Bottom Sheet Modal
+    if (showSortBottomSheet) {
+        MaterialSortBottomSheet(
+            currentSortBy = sortBy,
+            currentSortOrder = sortOrder,
+            primaryTextColor = primaryTextColor,
+            secondaryTextColor = secondaryTextColor,
+            dividerColor = dividerColor,
+            onSortByChange = { newSortBy ->
+                scope.launch { explorerPreferences.setSortBy(newSortBy) }
+            },
+            onSortOrderChange = { newOrder ->
+                scope.launch { explorerPreferences.setSortOrder(newOrder) }
+            },
+            onDismiss = { showSortBottomSheet = false }
+        )
+    }
+
+    // File Operations Dialogs & Progress Overlays Host
     val selectedPathsList = selectionManager.selectedPaths.toList()
     val singleFile = if (selectedPathsList.size == 1) files.find { it.path == selectedPathsList.first() } else null
 
@@ -425,6 +613,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
         onConfirmDelete = { paths ->
             scope.launch {
                 val result = FileOperationsManager.deleteFiles(paths)
+                isManualSelectionMode = false
                 selectionManager.clearSelection()
                 refreshFiles()
                 when (result) {
@@ -524,6 +713,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         archiveCreationProgress = prog
                     }
                     archiveCreationProgress = null
+                    isManualSelectionMode = false
                     selectionManager.clearSelection()
                     refreshFiles()
                     snackbarHostState.showSnackbar("Archive created successfully")
