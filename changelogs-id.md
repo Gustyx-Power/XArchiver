@@ -4,6 +4,23 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 
 ## [2.1.9] - 2026-10-08
 
+### Fitur Baru - Sistem Pencarian Terlingkup Cerdas (Scoped Search) & Mesin XArcDeep
+- **Pencarian Terlingkup Direktori Aktif (Folder-Scoped Search)**:
+  - Mengadopsi alur pencarian modern ala pengelola berkas ColorOS 17 di mana penelusuran secara cerdas terisolasi pada direktori yang sedang dibuka (misal saat mencari di folder `Documents` atau `Download`, hanya berkas dan subfolder di dalam folder tersebut yang dipindai).
+  - Mengurangi beban I/O penyimpanan dan mempercepat pencarian secara drastis dibandingkan pemindaian global tanpa arah.
+- **Penyaring Kategori Instan Berbasis Chip (Category Filter Chips)**:
+  - Deretan chip filter horizontal yang dapat digeser di bagian atas hasil pencarian untuk penyaringan cepat berdasarkan jenis berkas: **Semua (All)**, **Gambar (Images)**, **Video**, **Audio**, **Dokumen (Documents)**, **Arsip (Archives)**, dan **APK**.
+  - Setiap kategori dilengkapi dengan ikon visual yang khas dan warna pembeda untuk identifikasi instan jenis berkas.
+- **Penyorotan Kata Kunci Kueri (Search Query Keyword Highlighting)**:
+  - Karakter atau kata yang cocok dengan kata kunci pencarian pada nama berkas secara otomatis disorot dengan warna aksen kontras (`primaryAccentColor`), memudahkan pengguna menemukan berkas di antara daftar panjang hasil temuan.
+- **Ringkasan Indikator Hasil & Nama Lingkup**:
+  - Bilah ringkasan di atas daftar hasil yang menampilkan total temuan ("X item seluruhnya") serta nama folder cakupan pencarian (misalnya "Perangkat ini" atau nama folder yang sedang dibuka).
+- **Mesin Penelusuran Cepat XArcDeep**:
+  - Tombol aksi cerdas pada footer hasil pencarian dan tampilan kosong ("File tidak ditemukan? Coba **XArcDeep.**").
+  - Menawarkan opsi penelusuran mendalam menyeluruh ke seluruh penyimpanan internal perangkat secara instan jika berkas yang dicari tidak berada di folder aktif.
+- **Lokalisasi Multibahasa Penuh (i18n)**:
+  - Seluruh teks pencarian dan penjelajah berkas telah dipindahkan secara bersih ke `res/values/strings.xml` (Bahasa Inggris) dan `res/values-in/strings.xml` (Bahasa Indonesia) tanpa teks hardcoded, sehingga teks berubah secara konsisten saat bahasa sistem diubah ke bahasa Inggris maupun Indonesia.
+
 ### Desain Ulang & Fitur Baru - Material Explorer UI Modern & Mode Tampilan Dinamis
 - **Tiga Mode Tampilan Berkas Dinamis**: Menghadirkan opsi tampilan fleksibel yang dapat diubah secara instan melalui menu titik tiga (`⋮`) dan disimpan otomatis di DataStore:
   - **Tampilan Daftar (Default)**: Tata letak vertikal lengkap dengan detail jumlah item folder atau ukuran berkas serta tanggal modifikasi.

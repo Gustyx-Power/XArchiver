@@ -256,12 +256,14 @@
     <string name="changelog_date_2_0_0">19 Agustus 2026</string>
     <string name="changelog_date_1_1_0">26 Februari 2026</string>
     <string name="changelog_date_1_0_0">Rilis Perdana</string>
-    <string name="changelog_summary_2_1_9">Desain ulang antarmuka Material 3 Explorer dengan 3 mode tampilan dinamis (Daftar, Kisi, Air Terjun), TopBar tombol lingkaran, navigasi breadcrumb, dan palet dinamis Monet.</string>
+    <string name="changelog_summary_2_1_9">Pembaruan besar Explorer menghadirkan sistem pencarian terlingkup gaya ColorOS 17 dengan XArcDeep, filter kategori instan berbasis chip, penyorotan kata kunci kueri, 3 mode tampilan dinamis (Daftar, Kisi, Air Terjun), TopBar tombol lingkaran, navigasi breadcrumb, dan palet dinamis Monet.</string>
     <string name="changelog_summary_2_1_3">Penambahan enkripsi kata sandi untuk ZIP (AES-256 &amp; ZipCrypto), desain ulang seluruh popup dialog agar rapi dan proporsional, serta perbaikan crash pada arsip berpassword.</string>
     <string name="changelog_summary_2_1_0">Pembaruan mandiri OTA via GitHub Releases, antarmuka MIUIX HyperOS, pengelola Berkas Terkini, runner HTML dalam aplikasi, peningkatan SDK Minimum ke Android 10, dan lokalisasi lengkap.</string>
     <string name="changelog_summary_2_0_0">Akses istimewa Shizuku &amp; Root, pager horizontal multi-penyimpanan, parser payload native Rust, dan perombakan Material 3.</string>
     <string name="changelog_summary_1_1_0">Dukungan awal ekstraksi Android OTA Payload.bin dengan Protocol Buffers, dan dekompresi streaming XZ/BZIP2.</string>
     <string name="changelog_summary_1_0_0">Rilis perdana XArchiver dengan penanganan arsip inti dan pengelola berkas Material Design 3.</string>
+    <string name="changelog_item_2_1_9_search_title">Pencarian Terlingkup &amp; Mesin XArcDeep</string>
+    <string name="changelog_item_2_1_9_search_desc">Pencarian cerdas terlingkup direktori aktif yang secara eksklusif hanya menelusuri folder saat ini, filter kategori geser instan (Gambar, Video, Audio, Dokumen, Arsip, APK), penyorotan kata kunci kueri, dan opsi XArcDeep untuk memperluas pencarian ke seluruh perangkat secara instan.</string>
     <string name="changelog_item_2_1_9_viewmodes_title">Mode Tampilan Dinamis (Daftar, Kisi, Air Terjun)</string>
     <string name="changelog_item_2_1_9_viewmodes_desc">Beralih cepat antara tampilan daftar default, tampilan kisi kartu Monet, dan tampilan air terjun bersih dengan preferensi tersimpan di DataStore.</string>
     <string name="changelog_item_2_1_9_topbar_title">TopBar Tombol Lingkaran &amp; Breadcrumb</string>
@@ -270,6 +272,10 @@
     <string name="changelog_item_2_1_9_monet_desc">Warna latar belakang, kontainer kartu, tombol, dan ikon folder/berkas terikat langsung pada tema dinamis sistem tanpa warna hardcoded hitam/biru.</string>
     <string name="changelog_item_2_1_9_sort_title">Modal Pengurutan Persisten</string>
     <string name="changelog_item_2_1_9_sort_desc">Modal sheet pengurutan interaktif berdasarkan nama, tanggal, ukuran, dan tipe berkas secara naik maupun turun.</string>
+    <string name="changelog_item_2_1_9_i18n_title">Dukungan Multibahasa Penuh (i18n)</string>
+    <string name="changelog_item_2_1_9_i18n_desc">Memindahkan seluruh teks penjelajah dan sistem pencarian ke berkas sumber daya strings dengan terjemahan lengkap Bahasa Indonesia dan Bahasa Inggris, tanpa teks yang ter-hardcode.</string>
+    <string name="changelog_item_2_1_9_miuix_title">Arsitektur Modular MIUIX &amp; HyperOS Explorer</string>
+    <string name="changelog_item_2_1_9_miuix_desc">Antarmuka khusus MIUIX Explorer dengan chip breadcrumb, dock aksi seleksi cepat, dialog operasi native HyperOS, dan arsitektur kode modular yang terstruktur.</string>
     <string name="changelog_item_2_1_3_encryption_title">Enkripsi Kata Sandi ZIP (AES-256 &amp; ZipCrypto)</string>
     <string name="changelog_item_2_1_3_encryption_desc">Dukungan penuh enkripsi kata sandi saat membuat arsip ZIP menggunakan AES-256 atau ZipCrypto, dengan dialog permintaan kata sandi otomatis saat dibuka atau diekstrak.</string>
     <string name="changelog_item_2_1_3_dialogs_title">Desain Ulang Dialog Proporsional</string>
@@ -367,7 +373,7 @@
     <string name="search_no_results_desc">Tidak ada hasil untuk \"%1$s\" di %2$s</string>
     <string name="search_cant_find_prompt">File tidak ditemukan? Coba </string>
     <string name="search_action_entire_device">cari di seluruh perangkat.</string>
-    <string name="search_action_deep">cari di seluruh folder.</string>
+    <string name="search_action_deep">XArcDeep.</string>
 
     <!-- Explorer Views, Top Bars, and Actions -->
     <string name="explorer_all_files">Semua file</string>

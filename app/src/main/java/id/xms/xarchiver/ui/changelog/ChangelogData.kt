@@ -44,6 +44,12 @@ object ChangelogRepository {
             badgeRes = R.string.changelog_badge_latest,
             items = listOf(
                 ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_9_search_title,
+                    descRes = R.string.changelog_item_2_1_9_search_desc,
+                    category = ChangelogCategory.FEATURES,
+                    tags = listOf("ColorOS 17", "Scoped Search", "XArcDeep", "Filter Chips", "Query Highlight")
+                ),
+                ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_9_viewmodes_title,
                     descRes = R.string.changelog_item_2_1_9_viewmodes_desc,
                     category = ChangelogCategory.UI,
@@ -66,6 +72,18 @@ object ChangelogRepository {
                     descRes = R.string.changelog_item_2_1_9_sort_desc,
                     category = ChangelogCategory.ENGINE,
                     tags = listOf("Sorting", "DataStore", "Persistence")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_9_i18n_title,
+                    descRes = R.string.changelog_item_2_1_9_i18n_desc,
+                    category = ChangelogCategory.FIXES,
+                    tags = listOf("Localization", "i18n", "English", "Indonesian", "String Resources")
+                ),
+                ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_9_miuix_title,
+                    descRes = R.string.changelog_item_2_1_9_miuix_desc,
+                    category = ChangelogCategory.UI,
+                    tags = listOf("MIUIX", "HyperOS", "Modular", "Refactor")
                 )
             )
         ),

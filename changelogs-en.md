@@ -4,6 +4,23 @@ All notable changes to XArchiver will be documented in this file.
 
 ## [2.1.9] - 2026-10-08
 
+### New Features - Intelligent Scoped Search & XArcDeep Engine
+- **Directory-Scoped Search Workflow**:
+  - Implemented modern folder-scoped search mechanics inspired by the ColorOS 17 file manager: searching inside specific directories (e.g. `Documents` or `Download`) strictly scans that active folder hierarchy.
+  - Substantially decreases storage I/O and query latency compared to unrestricted full-device scanning.
+- **Instant Category Filter Chips**:
+  - Horizontally scrollable category chips row situated atop search results for instant file type narrowing: **All**, **Images**, **Videos**, **Audio**, **Documents**, **Archives**, and **APK**.
+  - Distinctive visual icons and accent colors for instantaneous visual identification of categories.
+- **Query Keyword Highlighting**:
+  - Exact matches in file and directory names are dynamically highlighted with high-contrast accent color (`primaryAccentColor`), allowing users to easily spot search matches in long result listings.
+- **Scope Indicator & Result Statistics**:
+  - Informative header row displaying total item matches ("X items total") alongside the current search scope folder name (e.g. "This device" or active directory name).
+- **Fast XArcDeep Scan Engine**:
+  - Context-aware action footer on empty or localized results ("Can't find the file? Try **XArcDeep.**").
+  - Seamlessly expands search boundaries to perform an all-encompassing storage traversal across the entire device if the requested file is not within the current folder.
+- **Comprehensive Multilingual Localization (i18n)**:
+  - Extracted and centralized all search and explorer strings into `res/values/strings.xml` (English) and `res/values-in/strings.xml` (Indonesian), eliminating hardcoded strings and delivering an authentic native experience across both languages.
+
 ### Redesign & New Features - Modern Material Explorer UI & Dynamic View Modes
 - **Three Dynamic Explorer View Modes**: Introduced flexible layout switching accessible directly from the overflow menu (`⋮`) with persistent DataStore state:
   - **List View (Default)**: Full-width vertical list showing direct directory item counts or file sizes alongside localized modification dates.
