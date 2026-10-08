@@ -539,88 +539,20 @@ fun MaterialSearchTopBar(
     onCloseSearch: () -> Unit,
     primaryTextColor: Color = MaterialTheme.colorScheme.onSurface,
     secondaryTextColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    inputBgColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh
+    inputBgColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    cancelButtonBgColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
-    Surface(
-        color = Color.Transparent,
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(44.dp)
-                .clip(RoundedCornerShape(22.dp))
-                .background(inputBgColor)
-                .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                tint = secondaryTextColor,
-                modifier = Modifier.size(20.dp)
-            )
-
-            Spacer(Modifier.width(10.dp))
-
-            BasicTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier.weight(1f),
-                textStyle = TextStyle(
-                    color = primaryTextColor,
-                    fontSize = 15.sp
-                ),
-                singleLine = true,
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { /* done */ }),
-                decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        if (searchQuery.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.explorer_search_files),
-                                color = secondaryTextColor,
-                                fontSize = 15.sp
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
-            )
-
-            if (searchQuery.isNotEmpty()) {
-                IconButton(
-                    onClick = { onSearchQueryChange("") },
-                    modifier = Modifier.size(28.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear",
-                        tint = secondaryTextColor,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            Spacer(Modifier.width(4.dp))
-
-            IconButton(
-                onClick = onCloseSearch,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = stringResource(R.string.action_close),
-                    tint = primaryTextColor,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-    }
+    id.xms.xarchiver.ui.explorer.search.ExplorerSearchTopBar(
+        searchQuery = searchQuery,
+        onSearchQueryChange = onSearchQueryChange,
+        onCancelSearch = onCloseSearch,
+        primaryTextColor = primaryTextColor,
+        secondaryTextColor = secondaryTextColor,
+        inputBgColor = inputBgColor,
+        cancelButtonBgColor = cancelButtonBgColor,
+        accentColor = accentColor
+    )
 }
 
 /**

@@ -31,7 +31,9 @@ import id.xms.xarchiver.ui.explorer.utils.FileTypeDetector
 import id.xms.xarchiver.ui.theme.ThemeMode
 import id.xms.xarchiver.ui.theme.ThemePreferences
 import id.xms.xarchiver.ui.theme.isAppInDarkTheme
+import id.xms.xarchiver.ui.explorer.search.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -120,6 +122,50 @@ fun ExplorerScreen(path: String, navController: NavController) {
     // Search state
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var searchCategory by remember { mutableStateOf(ExplorerSearchCategory.ALL) }
+    var searchResults by remember { mutableStateOf<List<FileItem>>(emptyList()) }
+    var isSearchLoading by remember { mutableStateOf(false) }
+
+    // Scoped recursive search within active explorer directory
+    LaunchedEffect(isSearching, searchQuery, searchCategory, path) {
+        if (!isSearching) {
+            searchResults = emptyList()
+            isSearchLoading = false
+            return@LaunchedEffect
+        }
+        val clean = searchQuery.trim()
+        if (clean.isEmpty() && searchCategory == ExplorerSearchCategory.ALL) {
+            searchResults = emptyList()
+            isSearchLoading = false
+            return@LaunchedEffect
+        }
+        isSearchLoading = true
+        delay(200)
+        val results = ExplorerSearchEngine.searchScopedDirectory(
+            scopePath = path,
+            query = clean,
+            category = searchCategory
+        )
+        searchResults = results
+        isSearchLoading = false
+    }
+
+    val onTriggerDeepSearch: () -> Unit = {
+        scope.launch {
+            isSearchLoading = true
+            val results = ExplorerSearchEngine.searchScopedDirectory(
+                scopePath = path,
+                query = searchQuery,
+                category = searchCategory,
+                isDeepSearch = true
+            )
+            searchResults = results
+            isSearchLoading = false
+            if (results.isEmpty()) {
+                snackbarHostState.showSnackbar("Deep search tidak menemukan file tambahan.")
+            }
+        }
+    }
 
     // Sort files based on user preference (keeping directories on top)
     val sortedFiles = remember(files, sortBy, sortOrder) {
@@ -138,13 +184,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
         files.sortedWith(fullComparator)
     }
 
-    val filteredFiles = remember(sortedFiles, searchQuery) {
-        if (searchQuery.isEmpty()) {
-            sortedFiles
-        } else {
-            sortedFiles.filter { it.name.contains(searchQuery, ignoreCase = true) }
-        }
-    }
+    val filteredFiles = sortedFiles
 
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
@@ -204,6 +244,8 @@ fun ExplorerScreen(path: String, navController: NavController) {
         selectionManager.clearSelection()
         isSearching = false
         searchQuery = ""
+        searchCategory = ExplorerSearchCategory.ALL
+        searchResults = emptyList()
     }
 
     // Handle batch extraction of multiple selected archives
@@ -279,10 +321,20 @@ fun ExplorerScreen(path: String, navController: NavController) {
                         onCloseSearch = {
                             isSearching = false
                             searchQuery = ""
+                            searchCategory = ExplorerSearchCategory.ALL
+                            searchResults = emptyList()
                         },
                         primaryTextColor = primaryTextColor,
                         secondaryTextColor = secondaryTextColor,
                         inputBgColor = inputBgColor
+                    )
+                    ExplorerSearchCategoryChips(
+                        selectedCategory = searchCategory,
+                        onCategorySelected = { searchCategory = it },
+                        activeBgColor = MaterialTheme.colorScheme.primary,
+                        activeTextColor = MaterialTheme.colorScheme.onPrimary,
+                        inactiveBgColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        inactiveTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
                     MaterialNormalTopBar(
@@ -383,8 +435,109 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when {
-                isLoading -> {
+            if (isSearching) {
+                val scopeDisplayName = remember(path) { getSearchScopeDisplayName(path) }
+                when {
+                    isSearchLoading -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                ExplorerSearchHeader(
+                                    totalItems = 0,
+                                    scopeDisplayName = scopeDisplayName,
+                                    primaryTextColor = primaryTextColor,
+                                    secondaryTextColor = secondaryTextColor
+                                )
+                            }
+                            items(6) { MaterialFileItemSkeleton() }
+                        }
+                    }
+                    searchQuery.trim().isEmpty() && searchCategory == ExplorerSearchCategory.ALL -> {
+                        ExplorerSearchEmptyView(
+                            isQueryEmpty = true,
+                            searchQuery = searchQuery,
+                            scopeDisplayName = scopeDisplayName,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
+                            accentColor = MaterialTheme.colorScheme.primary,
+                            onDeepSearchClick = onTriggerDeepSearch
+                        )
+                    }
+                    searchResults.isEmpty() -> {
+                        ExplorerSearchEmptyView(
+                            isQueryEmpty = false,
+                            searchQuery = searchQuery,
+                            scopeDisplayName = scopeDisplayName,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
+                            accentColor = MaterialTheme.colorScheme.primary,
+                            onDeepSearchClick = onTriggerDeepSearch
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 4.dp)
+                        ) {
+                            item {
+                                ExplorerSearchHeader(
+                                    totalItems = searchResults.size,
+                                    scopeDisplayName = scopeDisplayName,
+                                    primaryTextColor = primaryTextColor,
+                                    secondaryTextColor = secondaryTextColor
+                                )
+                            }
+                            itemsIndexed(
+                                items = searchResults,
+                                key = { _, file -> file.path }
+                            ) { _, file ->
+                                MaterialFileListItem(
+                                    file = file,
+                                    isSelected = selectionManager.isSelected(file.path),
+                                    isSelectionMode = isSelecting,
+                                    primaryTextColor = primaryTextColor,
+                                    secondaryTextColor = secondaryTextColor,
+                                    dividerColor = dividerColor,
+                                    highlightQuery = searchQuery,
+                                    highlightColor = MaterialTheme.colorScheme.primary,
+                                    currentScopePath = path,
+                                    onClick = {
+                                        if (isSelecting) {
+                                            selectionManager.toggleSelection(file.path)
+                                        } else {
+                                            FileActionHandler.handleFileClick(
+                                                context = context,
+                                                file = file,
+                                                navController = navController,
+                                                archiveManager = archiveManager,
+                                                scope = scope,
+                                                notificationHostState = snackbarHostState,
+                                                onApkClick = { pendingApk = it }
+                                            )
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!isSelecting) {
+                                            selectionManager.toggleSelection(file.path)
+                                        }
+                                    }
+                                )
+                            }
+                            item {
+                                ExplorerSearchDeepSearchFooter(
+                                    secondaryTextColor = secondaryTextColor,
+                                    accentColor = MaterialTheme.colorScheme.primary,
+                                    onDeepSearchClick = onTriggerDeepSearch
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                when {
+                    isLoading -> {
                     LazyColumn(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -530,6 +683,7 @@ fun ExplorerScreen(path: String, navController: NavController) {
                 }
             }
         }
+    }
     }
 
     // Sort Bottom Sheet Modal

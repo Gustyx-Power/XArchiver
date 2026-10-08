@@ -2,6 +2,7 @@ package id.xms.xarchiver.ui.explorer
 
 import android.net.Uri
 import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,10 +25,12 @@ import id.xms.xarchiver.ui.explorer.utils.FileTypeDetector
 import id.xms.xarchiver.ui.theme.ThemeMode
 import id.xms.xarchiver.ui.theme.ThemePreferences
 import id.xms.xarchiver.ui.theme.isAppInDarkTheme
+import id.xms.xarchiver.ui.explorer.search.*
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -99,14 +102,53 @@ fun MiuixExplorerScreen(path: String, navController: NavController) {
     // Search state
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var searchCategory by remember { mutableStateOf(ExplorerSearchCategory.ALL) }
+    var searchResults by remember { mutableStateOf<List<FileItem>>(emptyList()) }
+    var isSearchLoading by remember { mutableStateOf(false) }
 
-    val filteredFiles = remember(files, searchQuery) {
-        val list = if (searchQuery.isEmpty()) {
-            files
-        } else {
-            files.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    // Scoped recursive search within active explorer directory
+    LaunchedEffect(isSearching, searchQuery, searchCategory, path) {
+        if (!isSearching) {
+            searchResults = emptyList()
+            isSearchLoading = false
+            return@LaunchedEffect
         }
-        list.sortedWith(compareBy<FileItem> { !it.isDirectory }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+        val clean = searchQuery.trim()
+        if (clean.isEmpty() && searchCategory == ExplorerSearchCategory.ALL) {
+            searchResults = emptyList()
+            isSearchLoading = false
+            return@LaunchedEffect
+        }
+        isSearchLoading = true
+        delay(200)
+        val results = ExplorerSearchEngine.searchScopedDirectory(
+            scopePath = path,
+            query = clean,
+            category = searchCategory
+        )
+        searchResults = results
+        isSearchLoading = false
+    }
+
+    val onTriggerDeepSearch: () -> Unit = {
+        scope.launch {
+            isSearchLoading = true
+            val results = ExplorerSearchEngine.searchScopedDirectory(
+                scopePath = path,
+                query = searchQuery,
+                category = searchCategory,
+                isDeepSearch = true
+            )
+            searchResults = results
+            isSearchLoading = false
+            if (results.isEmpty()) {
+                snackbarHostState.showSnackbar("Deep search tidak menemukan file tambahan.")
+            }
+        }
+    }
+
+    val filteredFiles = remember(files) {
+        files.sortedWith(compareBy<FileItem> { !it.isDirectory }.thenBy(String.CASE_INSENSITIVE_ORDER) { it.name })
     }
 
     val listState = rememberLazyListState()
@@ -165,6 +207,8 @@ fun MiuixExplorerScreen(path: String, navController: NavController) {
         selectionManager.clearSelection()
         isSearching = false
         searchQuery = ""
+        searchCategory = ExplorerSearchCategory.ALL
+        searchResults = emptyList()
     }
 
     // Handle batch extraction of multiple selected archives
@@ -239,20 +283,36 @@ fun MiuixExplorerScreen(path: String, navController: NavController) {
                     } else null
                 )
             } else if (isSearching) {
-                MiuixSearchTopBar(
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { searchQuery = it },
-                    pageBgColor = pageBgColor,
-                    inputBgColor = inputBgColor,
-                    cardBorderColor = cardBorderColor,
-                    primaryTextColor = primaryTextColor,
-                    secondaryTextColor = secondaryTextColor,
-                    miuixBlue = miuixBlue,
-                    onCloseSearch = {
-                        isSearching = false
-                        searchQuery = ""
-                    }
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(pageBgColor)
+                ) {
+                    MiuixSearchTopBar(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        pageBgColor = pageBgColor,
+                        inputBgColor = inputBgColor,
+                        cardBorderColor = cardBorderColor,
+                        primaryTextColor = primaryTextColor,
+                        secondaryTextColor = secondaryTextColor,
+                        miuixBlue = miuixBlue,
+                        onCloseSearch = {
+                            isSearching = false
+                            searchQuery = ""
+                            searchCategory = ExplorerSearchCategory.ALL
+                            searchResults = emptyList()
+                        }
+                    )
+                    ExplorerSearchCategoryChips(
+                        selectedCategory = searchCategory,
+                        onCategorySelected = { searchCategory = it },
+                        activeBgColor = miuixBlue,
+                        activeTextColor = Color.White,
+                        inactiveBgColor = cardBgColor,
+                        inactiveTextColor = secondaryTextColor
+                    )
+                }
             } else {
                 MiuixNormalTopBar(
                     currentFolderDisplayName = currentFolderDisplayName,
@@ -391,72 +451,181 @@ fun MiuixExplorerScreen(path: String, navController: NavController) {
             )
         }
     ) { padding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .layerBackdrop(backdrop),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            if (isLoading) {
-                items(7) {
-                    MiuixFileSkeleton(isDark = isDark, cardBgColor = cardBgColor, cardBorderColor = cardBorderColor)
+        if (isSearching) {
+            val scopeDisplayName = remember(path) { getSearchScopeDisplayName(path) }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .layerBackdrop(backdrop),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (isSearchLoading) {
+                    item {
+                        ExplorerSearchHeader(
+                            totalItems = 0,
+                            scopeDisplayName = scopeDisplayName,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor
+                        )
+                    }
+                    items(7) {
+                        MiuixFileSkeleton(isDark = isDark, cardBgColor = cardBgColor, cardBorderColor = cardBorderColor)
+                    }
+                } else if (searchQuery.trim().isEmpty() && searchCategory == ExplorerSearchCategory.ALL) {
+                    item {
+                        ExplorerSearchEmptyView(
+                            isQueryEmpty = true,
+                            searchQuery = searchQuery,
+                            scopeDisplayName = scopeDisplayName,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
+                            accentColor = miuixBlue,
+                            onDeepSearchClick = onTriggerDeepSearch
+                        )
+                    }
+                } else if (searchResults.isEmpty()) {
+                    item {
+                        ExplorerSearchEmptyView(
+                            isQueryEmpty = false,
+                            searchQuery = searchQuery,
+                            scopeDisplayName = scopeDisplayName,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
+                            accentColor = miuixBlue,
+                            onDeepSearchClick = onTriggerDeepSearch
+                        )
+                    }
+                } else {
+                    item {
+                        ExplorerSearchHeader(
+                            totalItems = searchResults.size,
+                            scopeDisplayName = scopeDisplayName,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor
+                        )
+                    }
+                    itemsIndexed(
+                        items = searchResults,
+                        key = { _, file -> file.path },
+                        contentType = { _, file -> if (file.isDirectory) "folder" else "file" }
+                    ) { _, file ->
+                        MiuixFileItemCard(
+                            file = file,
+                            isSelected = selectionManager.isSelected(file.path),
+                            isSelectionMode = isSelecting,
+                            isDark = isDark,
+                            cardBgColor = cardBgColor,
+                            cardBorderColor = cardBorderColor,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
+                            primaryAccentColor = miuixBlue,
+                            highlightQuery = searchQuery,
+                            currentScopePath = path,
+                            onClick = {
+                                if (isSelecting) {
+                                    selectionManager.toggleSelection(file.path)
+                                } else {
+                                    FileActionHandler.handleFileClick(
+                                        context = context,
+                                        file = file,
+                                        navController = navController,
+                                        archiveManager = archiveManager,
+                                        scope = scope,
+                                        notificationHostState = snackbarHostState,
+                                        onApkClick = { pendingApk = it }
+                                    )
+                                }
+                            },
+                            onLongClick = {
+                                if (!isSelecting) {
+                                    selectionManager.toggleSelection(file.path)
+                                }
+                            }
+                        )
+                    }
+                    item {
+                        ExplorerSearchDeepSearchFooter(
+                            secondaryTextColor = secondaryTextColor,
+                            accentColor = miuixBlue,
+                            onDeepSearchClick = onTriggerDeepSearch
+                        )
+                    }
                 }
-            } else if (filteredFiles.isEmpty()) {
+
                 item {
-                    MiuixEmptyFolderState(
-                        isSearch = searchQuery.isNotEmpty(),
-                        searchQuery = searchQuery,
-                        isDark = isDark,
-                        primaryColor = miuixBlue,
-                        primaryTextColor = primaryTextColor,
-                        secondaryTextColor = secondaryTextColor
-                    )
-                }
-            } else {
-                itemsIndexed(
-                    items = filteredFiles,
-                    key = { _, file -> file.path },
-                    contentType = { _, file -> if (file.isDirectory) "folder" else "file" }
-                ) { _, file ->
-                    MiuixFileItemCard(
-                        file = file,
-                        isSelected = selectionManager.isSelected(file.path),
-                        isSelectionMode = isSelecting,
-                        isDark = isDark,
-                        cardBgColor = cardBgColor,
-                        cardBorderColor = cardBorderColor,
-                        primaryTextColor = primaryTextColor,
-                        secondaryTextColor = secondaryTextColor,
-                        primaryAccentColor = miuixBlue,
-                        onClick = {
-                            if (isSelecting) {
-                                selectionManager.toggleSelection(file.path)
-                            } else {
-                                FileActionHandler.handleFileClick(
-                                    context = context,
-                                    file = file,
-                                    navController = navController,
-                                    archiveManager = archiveManager,
-                                    scope = scope,
-                                    notificationHostState = snackbarHostState,
-                                    onApkClick = { pendingApk = it }
-                                )
-                            }
-                        },
-                        onLongClick = {
-                            if (!isSelecting) {
-                                selectionManager.toggleSelection(file.path)
-                            }
-                        }
-                    )
+                    Spacer(Modifier.height(88.dp))
                 }
             }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .layerBackdrop(backdrop),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (isLoading) {
+                    items(7) {
+                        MiuixFileSkeleton(isDark = isDark, cardBgColor = cardBgColor, cardBorderColor = cardBorderColor)
+                    }
+                } else if (filteredFiles.isEmpty()) {
+                    item {
+                        MiuixEmptyFolderState(
+                            isSearch = false,
+                            searchQuery = "",
+                            isDark = isDark,
+                            primaryColor = miuixBlue,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = filteredFiles,
+                        key = { _, file -> file.path },
+                        contentType = { _, file -> if (file.isDirectory) "folder" else "file" }
+                    ) { _, file ->
+                        MiuixFileItemCard(
+                            file = file,
+                            isSelected = selectionManager.isSelected(file.path),
+                            isSelectionMode = isSelecting,
+                            isDark = isDark,
+                            cardBgColor = cardBgColor,
+                            cardBorderColor = cardBorderColor,
+                            primaryTextColor = primaryTextColor,
+                            secondaryTextColor = secondaryTextColor,
+                            primaryAccentColor = miuixBlue,
+                            onClick = {
+                                if (isSelecting) {
+                                    selectionManager.toggleSelection(file.path)
+                                } else {
+                                    FileActionHandler.handleFileClick(
+                                        context = context,
+                                        file = file,
+                                        navController = navController,
+                                        archiveManager = archiveManager,
+                                        scope = scope,
+                                        notificationHostState = snackbarHostState,
+                                        onApkClick = { pendingApk = it }
+                                    )
+                                }
+                            },
+                            onLongClick = {
+                                if (!isSelecting) {
+                                    selectionManager.toggleSelection(file.path)
+                                }
+                            }
+                        )
+                    }
+                }
 
-            item {
-                Spacer(Modifier.height(88.dp))
+                item {
+                    Spacer(Modifier.height(88.dp))
+                }
             }
         }
     }

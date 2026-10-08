@@ -35,6 +35,7 @@ import id.xms.xarchiver.R
 import id.xms.xarchiver.core.FileItem
 import id.xms.xarchiver.core.humanReadable
 import id.xms.xarchiver.ui.explorer.utils.FileTypeDetector
+import id.xms.xarchiver.ui.explorer.search.buildHighlightedText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -251,6 +252,9 @@ fun MaterialFileListItem(
     primaryTextColor: Color = MaterialTheme.colorScheme.onSurface,
     secondaryTextColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     dividerColor: Color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+    highlightQuery: String? = null,
+    highlightColor: Color = MaterialTheme.colorScheme.primary,
+    currentScopePath: String? = null,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -261,15 +265,25 @@ fun MaterialFileListItem(
         } else null
     }
 
-    val subtitleText = remember(file, displayItemCount) {
+    val relativeLocation = remember(file.path, currentScopePath) {
+        if (currentScopePath.isNullOrEmpty()) null
+        else {
+            val parent = File(file.path).parent ?: ""
+            if (parent == currentScopePath || parent.isEmpty()) null
+            else parent.removePrefix(currentScopePath).trimStart('/', '\\')
+        }
+    }
+
+    val subtitleText = remember(file, displayItemCount, relativeLocation) {
         val dateStr = formatFileDate(file.lastModified)
-        if (file.isDirectory) {
+        val base = if (file.isDirectory) {
             val count = displayItemCount ?: 0
             if (dateStr.isNotEmpty()) "$count item  |  $dateStr" else "$count item"
         } else {
             val sizeStr = file.size.humanReadable()
             if (dateStr.isNotEmpty()) "$sizeStr  |  $dateStr" else sizeStr
         }
+        if (!relativeLocation.isNullOrEmpty()) "$base  •  $relativeLocation" else base
     }
 
     Column(modifier = modifier.fillMaxWidth()) {
@@ -292,14 +306,29 @@ fun MaterialFileListItem(
             Spacer(Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = file.name,
-                    color = primaryTextColor,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (highlightQuery.isNullOrBlank()) {
+                    Text(
+                        text = file.name,
+                        color = primaryTextColor,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    Text(
+                        text = buildHighlightedText(
+                            text = file.name,
+                            query = highlightQuery,
+                            normalColor = primaryTextColor,
+                            highlightColor = highlightColor
+                        ),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = subtitleText,

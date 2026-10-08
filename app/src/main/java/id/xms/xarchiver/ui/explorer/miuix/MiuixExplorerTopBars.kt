@@ -114,66 +114,16 @@ fun MiuixSearchTopBar(
     miuixBlue: Color,
     onCloseSearch: () -> Unit
 ) {
-    Surface(
-        color = pageBgColor,
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(inputBgColor)
-                .border(0.5.dp, cardBorderColor, RoundedCornerShape(24.dp))
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = null,
-                tint = secondaryTextColor,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            BasicTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                modifier = Modifier.weight(1f),
-                textStyle = TextStyle(color = primaryTextColor, fontSize = 16.sp),
-                singleLine = true,
-                cursorBrush = SolidColor(miuixBlue),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { /* done */ }),
-                decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        if (searchQuery.isEmpty()) {
-                            Text(
-                                text = stringResource(R.string.explorer_search_files),
-                                color = secondaryTextColor,
-                                fontSize = 15.sp
-                            )
-                        }
-                        innerTextField()
-                    }
-                }
-            )
-            if (searchQuery.isNotEmpty()) {
-                IconButton(onClick = { onSearchQueryChange("") }) {
-                    Icon(Icons.Default.Clear, contentDescription = "Clear", tint = secondaryTextColor)
-                }
-            }
-            IconButton(onClick = onCloseSearch) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = stringResource(R.string.action_close),
-                    tint = primaryTextColor
-                )
-            }
-        }
-    }
+    id.xms.xarchiver.ui.explorer.search.ExplorerSearchTopBar(
+        searchQuery = searchQuery,
+        onSearchQueryChange = onSearchQueryChange,
+        onCancelSearch = onCloseSearch,
+        primaryTextColor = primaryTextColor,
+        secondaryTextColor = secondaryTextColor,
+        inputBgColor = inputBgColor,
+        cancelButtonBgColor = inputBgColor,
+        accentColor = miuixBlue
+    )
 }
 
 /**

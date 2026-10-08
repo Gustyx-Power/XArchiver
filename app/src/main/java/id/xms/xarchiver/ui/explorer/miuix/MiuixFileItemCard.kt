@@ -31,6 +31,7 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.*
+import id.xms.xarchiver.ui.explorer.search.buildHighlightedText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -51,14 +52,32 @@ fun MiuixFileItemCard(
     primaryTextColor: Color,
     secondaryTextColor: Color,
     primaryAccentColor: Color,
+    highlightQuery: String? = null,
+    currentScopePath: String? = null,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val fileIcon = remember(file.name, file.isDirectory) { getFileIconMiuix(file) }
     val badgeColor = remember(file) { getFileBadgeColorMiuix(file) }
-    val formattedSubtitle = remember(file.isDirectory, file.size, file.lastModified) {
-        if (file.isDirectory) "Folder • ${miuixDateFormatter.format(Date(file.lastModified))}"
-        else "${file.size.humanReadable()} • ${miuixDateFormatter.format(Date(file.lastModified))}"
+
+    val relativeLocation = remember(file.path, currentScopePath) {
+        if (currentScopePath.isNullOrEmpty()) null
+        else {
+            val parent = File(file.path).parent ?: ""
+            if (parent == currentScopePath || parent.isEmpty()) null
+            else parent.removePrefix(currentScopePath).trimStart('/', '\\')
+        }
+    }
+
+    val formattedSubtitle = remember(file.isDirectory, file.size, file.lastModified, file.itemCount, relativeLocation) {
+        val dateStr = miuixDateFormatter.format(Date(file.lastModified))
+        val base = if (file.isDirectory) {
+            val count = file.itemCount
+            if (count != null) "$count item • $dateStr" else "Folder • $dateStr"
+        } else {
+            "${file.size.humanReadable()} • $dateStr"
+        }
+        if (!relativeLocation.isNullOrEmpty()) "$base • $relativeLocation" else base
     }
 
     val isImage = remember(file.name) { FileTypeDetector.isImageExtension(file.name.substringAfterLast('.', "").lowercase()) }
@@ -182,14 +201,29 @@ fun MiuixFileItemCard(
 
             // File Name & Details
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = file.name,
-                    color = primaryTextColor,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                if (highlightQuery.isNullOrBlank()) {
+                    Text(
+                        text = file.name,
+                        color = primaryTextColor,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else {
+                    androidx.compose.material3.Text(
+                        text = buildHighlightedText(
+                            text = file.name,
+                            query = highlightQuery,
+                            normalColor = primaryTextColor,
+                            highlightColor = primaryAccentColor
+                        ),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = formattedSubtitle,
