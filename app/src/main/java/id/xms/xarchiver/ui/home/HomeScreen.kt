@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.filled.*
+import androidx.compose.material.icons.automirrored.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -115,39 +117,67 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    shadowElevation = 8.dp,
+                    shadowElevation = 6.dp,
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
                     ) {
                         val isRecent = currentTab == HomeTab.Recent
-                        TextButton(
-                            onClick = { currentTab = HomeTab.Recent },
-                            colors = ButtonDefaults.textButtonColors(
-                                containerColor = if (isRecent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                contentColor = if (isRecent) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
+                        Surface(
                             shape = CircleShape,
-                            modifier = Modifier.padding(end = 4.dp)
+                            color = if (isRecent) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { currentTab = HomeTab.Recent }
                         ) {
-                            Icon(if (isRecent) Icons.Filled.History else Icons.Outlined.History, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-                            Text(stringResource(R.string.fab_recent), fontWeight = if (isRecent) FontWeight.Bold else FontWeight.Normal)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isRecent) Icons.Filled.AccessTime else Icons.Outlined.AccessTime,
+                                    contentDescription = null,
+                                    tint = if (isRecent) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.fab_recent),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (isRecent) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isRecent) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
-                        
+
                         val isFiles = currentTab == HomeTab.Files
-                        TextButton(
-                            onClick = { currentTab = HomeTab.Files },
-                            colors = ButtonDefaults.textButtonColors(
-                                containerColor = if (isFiles) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                contentColor = if (isFiles) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
+                        Surface(
                             shape = CircleShape,
-                            modifier = Modifier.padding(start = 4.dp)
+                            color = if (isFiles) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable { currentTab = HomeTab.Files }
                         ) {
-                            Icon(if (isFiles) Icons.Filled.Folder else Icons.Outlined.Folder, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-                            Text(stringResource(R.string.fab_files), fontWeight = if (isFiles) FontWeight.Bold else FontWeight.Normal)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isFiles) Icons.Filled.Folder else Icons.Outlined.Folder,
+                                    contentDescription = null,
+                                    tint = if (isFiles) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.fab_files),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (isFiles) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isFiles) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
@@ -311,7 +341,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                                 bucketName.contains("kamera", ignoreCase = true) || bucketName.contains("camera", ignoreCase = true) -> Icons.Filled.CameraAlt
                                                 bucketName.contains("pictures", ignoreCase = true) || bucketName.contains("gambar", ignoreCase = true) -> Icons.Filled.Image
                                                 bucketName.contains("download", ignoreCase = true) || bucketName.contains("unduhan", ignoreCase = true) -> Icons.Filled.Download
-                                                bucketName.contains("whatsapp", ignoreCase = true) -> Icons.Filled.Chat
+                                                bucketName.contains("whatsapp", ignoreCase = true) -> Icons.AutoMirrored.Filled.Chat
                                                 else -> Icons.Filled.Folder
                                             }
                                             Icon(
@@ -339,7 +369,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                         Spacer(modifier = Modifier.height(12.dp))
                                         
                                         val allMedia = files.all { f ->
-                                            val lower = f.name.lowercase()
+                                             val lower = f.name.lowercase()
                                             lower.endsWith(".jpg") || lower.endsWith(".png") || lower.endsWith(".jpeg") || lower.endsWith(".webp") || lower.endsWith(".gif") || lower.endsWith(".mp4")
                                         }
                                         
@@ -437,7 +467,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
                                                                 isDir -> Icon(Icons.Filled.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                                 isApk -> Icon(Icons.Filled.Android, contentDescription = null, tint = Color(0xFF4CAF50))
                                                                 isArchive -> Icon(Icons.Filled.Archive, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                                                                else -> Icon(Icons.Filled.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                                else -> Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                                             }
                                                         }
                                                         
@@ -587,7 +617,7 @@ private fun StorageSection(
         Box(modifier = Modifier.padding(horizontal = 20.dp)) {
             SectionHeader(
                 title = stringResource(R.string.home_storage),
-                icon = Icons.Outlined.Storage,
+                icon = Icons.AutoMirrored.Outlined.List,
                 trailing = {
                     if (isRefreshing) {
                         @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
@@ -656,7 +686,7 @@ private fun CategoriesSection(
     ) {
         SectionHeader(
             title = stringResource(R.string.home_categories),
-            icon = Icons.Outlined.Category
+            icon = Icons.Outlined.GridView
         )
         
         CategoryGrid(
@@ -677,7 +707,7 @@ private fun QuickAccessSection(
     ) {
         SectionHeader(
             title = stringResource(R.string.home_quick_access),
-            icon = Icons.Outlined.FolderOpen
+            icon = Icons.Outlined.Folder
         )
         
         ShortcutList(
