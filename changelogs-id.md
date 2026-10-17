@@ -21,6 +21,21 @@ Semua perubahan penting pada XArchiver akan didokumentasikan dalam berkas ini.
 - **Lokalisasi Multibahasa Penuh (i18n)**:
   - Seluruh teks pencarian dan penjelajah berkas telah dipindahkan secara bersih ke `res/values/strings.xml` (Bahasa Inggris) dan `res/values-in/strings.xml` (Bahasa Indonesia) tanpa teks hardcoded, sehingga teks berubah secara konsisten saat bahasa sistem diubah ke bahasa Inggris maupun Indonesia.
 
+### Desain Ulang Tata Letak - Beranda Tema Material (Material Home UI Layout)
+- **Tata Letak Kartu Penyimpanan yang Ditingkatkan (StorageCard)**:
+  - Menyusun ulang posisi elemen kartu penyimpanan: badge tipe filesystem (seperti F2FS) dan indikator status kesehatan di sisi kiri atas, dengan tombol aksi kapsul `> Buka` di sisi kanan atas.
+  - Ikon perangkat dan nama penyimpanan internal kini berdampingan secara horizontal di bagian tengah kartu.
+  - Informasi rincian kapasitas terpakai dan persentase penggunaan ditempatkan rapi di atas indikator progres linier berujung membulat di bagian bawah.
+- **Tata Letak Kategori Bertingkat Cerdas (CategoryGrid)**:
+  - Baris pertama menampilkan 2 kartu horizontal lebar untuk kategori utama (**Images** dan **APK**) dengan kontainer ikon di kiri serta nama dan jumlah file di kanan.
+  - Baris kedua menampilkan 4 kartu vertikal kompak dalam satu baris untuk kategori **Videos**, **Audio**, **Documents**, dan **Archives**.
+- **Grid 2 Kolom untuk Akses Cepat (ShortcutList)**:
+  - Menyusun ulang daftar shortcut akses cepat (Bluetooth, Unduhan, WhatsApp, Telegram, dll.) ke dalam tata letak kisi 2 kolom kartu horizontal dengan ikon di sisi kiri dan label teks di sisi kanan.
+- **Bilah Navigasi Mengambang Kapsul (Floating Capsule Bar)**:
+  - Bilah tab bawah mengambang bergaya pill capsule yang elegan dengan indikator aktif yang menonjol untuk beralih antara tab **Terbaru** dan **File**.
+- **Kepatuhan Desain Material You Murni**:
+  - Seluruh penyesuaian posisi tata letak tetap mematuhi sistem warna dinamis Monet dan Material 3 murni tanpa bergantung pada warna gelap statis atau efek blur.
+
 ### Desain Ulang & Fitur Baru - Material Explorer UI Modern & Mode Tampilan Dinamis
 - **Tiga Mode Tampilan Berkas Dinamis**: Menghadirkan opsi tampilan fleksibel yang dapat diubah secara instan melalui menu titik tiga (`⋮`) dan disimpan otomatis di DataStore:
   - **Tampilan Daftar (Default)**: Tata letak vertikal lengkap dengan detail jumlah item folder atau ukuran berkas serta tanggal modifikasi.

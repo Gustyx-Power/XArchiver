@@ -44,6 +44,12 @@ object ChangelogRepository {
             badgeRes = R.string.changelog_badge_latest,
             items = listOf(
                 ChangelogItem(
+                    titleRes = R.string.changelog_item_2_1_9_home_ui_title,
+                    descRes = R.string.changelog_item_2_1_9_home_ui_desc,
+                    category = ChangelogCategory.UI,
+                    tags = listOf("Material 3", "Home Screen", "StorageCard", "CategoryGrid", "Quick Access", "Floating Bar")
+                ),
+                ChangelogItem(
                     titleRes = R.string.changelog_item_2_1_9_search_title,
                     descRes = R.string.changelog_item_2_1_9_search_desc,
                     category = ChangelogCategory.FEATURES,

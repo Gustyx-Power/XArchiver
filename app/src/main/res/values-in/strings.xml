@@ -256,12 +256,14 @@
     <string name="changelog_date_2_0_0">19 Agustus 2026</string>
     <string name="changelog_date_1_1_0">26 Februari 2026</string>
     <string name="changelog_date_1_0_0">Rilis Perdana</string>
-    <string name="changelog_summary_2_1_9">Pembaruan besar Explorer menghadirkan sistem pencarian terlingkup gaya ColorOS 17 dengan XArcDeep, filter kategori instan berbasis chip, penyorotan kata kunci kueri, 3 mode tampilan dinamis (Daftar, Kisi, Air Terjun), TopBar tombol lingkaran, navigasi breadcrumb, dan palet dinamis Monet.</string>
+    <string name="changelog_summary_2_1_9">Pembaruan besar Explorer dan Beranda menghadirkan tata letak baru Material Home, sistem pencarian terlingkup gaya ColorOS 17 dengan XArcDeep, filter kategori instan berbasis chip, penyorotan kata kunci kueri, 3 mode tampilan dinamis (Daftar, Kisi, Air Terjun), TopBar tombol lingkaran, navigasi breadcrumb, dan palet dinamis Monet.</string>
     <string name="changelog_summary_2_1_3">Penambahan enkripsi kata sandi untuk ZIP (AES-256 &amp; ZipCrypto), desain ulang seluruh popup dialog agar rapi dan proporsional, serta perbaikan crash pada arsip berpassword.</string>
     <string name="changelog_summary_2_1_0">Pembaruan mandiri OTA via GitHub Releases, antarmuka MIUIX HyperOS, pengelola Berkas Terkini, runner HTML dalam aplikasi, peningkatan SDK Minimum ke Android 10, dan lokalisasi lengkap.</string>
     <string name="changelog_summary_2_0_0">Akses istimewa Shizuku &amp; Root, pager horizontal multi-penyimpanan, parser payload native Rust, dan perombakan Material 3.</string>
     <string name="changelog_summary_1_1_0">Dukungan awal ekstraksi Android OTA Payload.bin dengan Protocol Buffers, dan dekompresi streaming XZ/BZIP2.</string>
     <string name="changelog_summary_1_0_0">Rilis perdana XArchiver dengan penanganan arsip inti dan pengelola berkas Material Design 3.</string>
+    <string name="changelog_item_2_1_9_home_ui_title">Desain Ulang Tata Letak Beranda Material</string>
+    <string name="changelog_item_2_1_9_home_ui_desc">Pembaruan tata letak kartu Penyimpanan (badge status di atas, judul berdampingan horizontal, rincian kapasitas, dan progress bar linier), grid kategori bertingkat (2 kartu lebar Images &amp; APK, 4 kartu kompak), kisi 2 kolom Akses Cepat, dan bilah navigasi floating kapsul dengan tema Material You murni.</string>
     <string name="changelog_item_2_1_9_search_title">Pencarian Terlingkup &amp; Mesin XArcDeep</string>
     <string name="changelog_item_2_1_9_search_desc">Pencarian cerdas terlingkup direktori aktif yang secara eksklusif hanya menelusuri folder saat ini, filter kategori geser instan (Gambar, Video, Audio, Dokumen, Arsip, APK), penyorotan kata kunci kueri, dan opsi XArcDeep untuk memperluas pencarian ke seluruh perangkat secara instan.</string>
     <string name="changelog_item_2_1_9_viewmodes_title">Mode Tampilan Dinamis (Daftar, Kisi, Air Terjun)</string>

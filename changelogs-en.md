@@ -21,6 +21,21 @@ All notable changes to XArchiver will be documented in this file.
 - **Comprehensive Multilingual Localization (i18n)**:
   - Extracted and centralized all search and explorer strings into `res/values/strings.xml` (English) and `res/values-in/strings.xml` (Indonesian), eliminating hardcoded strings and delivering an authentic native experience across both languages.
 
+### Layout Redesign - Material Theme Home Screen (Material Home UI Layout)
+- **Enhanced Storage Card Layout (StorageCard)**:
+  - Reorganized storage card elements: filesystem type badge (e.g. F2FS) and health status indicator on the top-left, with the `> Open` action capsule button on the top-right.
+  - Device icon and internal storage title are now positioned side-by-side horizontally across the middle of the card.
+  - Capacity usage breakdown and percentage used are neatly aligned above a sleek rounded linear progress bar at the bottom.
+- **Tiered Category Grid Layout (CategoryGrid)**:
+  - First row features 2 wide horizontal cards for primary categories (**Images** and **APK**) with an icon container on the left and category title plus item count on the right.
+  - Second row displays 4 compact vertical cards in a single row for **Videos**, **Audio**, **Documents**, and **Archives**.
+- **2-Column Grid for Quick Access (ShortcutList)**:
+  - Restructured quick access shortcuts (Bluetooth, Downloads, WhatsApp, Telegram, etc.) into a clean 2-column grid of horizontal cards with icons on the left and text labels on the right.
+- **Floating Capsule Navigation Bar**:
+  - Sleek pill-shaped floating bottom bar with prominent active pill capsule styling for fluid switching between **Recent** and **Files** tabs.
+- **Pure Material You Theming Integrity**:
+  - All positional and layout enhancements strictly adhere to native dynamic Monet and Material 3 design tokens without static hardcoded dark palettes or blur effects.
+
 ### Redesign & New Features - Modern Material Explorer UI & Dynamic View Modes
 - **Three Dynamic Explorer View Modes**: Introduced flexible layout switching accessible directly from the overflow menu (`⋮`) with persistent DataStore state:
   - **List View (Default)**: Full-width vertical list showing direct directory item counts or file sizes alongside localized modification dates.

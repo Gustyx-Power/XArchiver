@@ -256,12 +256,14 @@
     <string name="changelog_date_2_0_0">August 19, 2026</string>
     <string name="changelog_date_1_1_0">February 26, 2026</string>
     <string name="changelog_date_1_0_0">Initial Release</string>
-    <string name="changelog_summary_2_1_9">Major Explorer upgrade featuring ColorOS 17-style scoped search with XArcDeep, instant horizontal category filter chips, search query keyword highlighting, 3 dynamic layout modes (List, Grid, Waterfall), circular action TopBars, interactive breadcrumbs, and full Material You Monet theming.</string>
+    <string name="changelog_summary_2_1_9">Major Explorer and Home update featuring a redesigned Material Home layout, ColorOS 17-style scoped search with XArcDeep, instant category filter chips, search query keyword highlighting, 3 dynamic layout modes (List, Grid, Waterfall), circular action TopBars, interactive breadcrumbs, and full Material You Monet theming.</string>
     <string name="changelog_summary_2_1_3">Added password encryption support for ZIP (AES-256 &amp; ZipCrypto), redesigned all popup dialogs to be clean and proportional, and fixed crash when viewing encrypted archives.</string>
     <string name="changelog_summary_2_1_0">Standalone OTA updates via GitHub Releases, MIUIX HyperOS UI mode, Recent Files manager, in-app HTML runner, raised Min SDK to Android 10, and comprehensive localization.</string>
     <string name="changelog_summary_2_0_0">Shizuku &amp; Root privileged access, multi-storage horizontal pager, native Rust payload parser, and Material 3 overhaul.</string>
     <string name="changelog_summary_1_1_0">Initial Android OTA Payload.bin extraction with Protocol Buffers, and streaming XZ/BZIP2 decompression.</string>
     <string name="changelog_summary_1_0_0">Initial release of XArchiver with essential archive handling and Material Design 3 file explorer.</string>
+    <string name="changelog_item_2_1_9_home_ui_title">Material Home Layout Redesign</string>
+    <string name="changelog_item_2_1_9_home_ui_desc">Overhauled home screen layout with rearranged StorageCard (top badges, horizontal title, usage breakdown, and bottom progress bar), tiered category grid (2 wide cards for Images &amp; APK, 4 compact cards), 2-column Quick Access grid, and floating pill capsule navigation bar adhering to native Material You theming.</string>
     <string name="changelog_item_2_1_9_search_title">Scoped Search &amp; XArcDeep Engine</string>
     <string name="changelog_item_2_1_9_search_desc">Directory-scoped intelligent search that strictly scans only the current folder, instant category filter chips (Images, Videos, Audio, Documents, Archives, APK), search query keyword highlighting, and one-tap XArcDeep to effortlessly expand search across the entire device.</string>
     <string name="changelog_item_2_1_9_viewmodes_title">Dynamic View Modes (List, Grid, Waterfall)</string>
