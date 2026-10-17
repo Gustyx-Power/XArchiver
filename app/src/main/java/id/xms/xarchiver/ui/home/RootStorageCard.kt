@@ -116,84 +116,137 @@ private fun RootRequiredCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
+            // Row 1: Badges on left, action on right
             Row(
-                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Icon
-                Surface(
-                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.size(52.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
+                    Surface(
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                        shape = androidx.compose.foundation.shape.CircleShape
                     ) {
-                        if (busy) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        } else {
-                            Icon(
-                                Icons.Outlined.AdminPanelSettings,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(26.dp)
+                        Text(
+                            text = "ROOT",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    Surface(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.error,
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                modifier = Modifier.size(6.dp)
+                            ) {}
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = stringResource(R.string.root_required),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
                     }
                 }
 
-                // Status badge
                 Surface(
-                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(12.dp)
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.15f),
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    modifier = Modifier.clickable { onClick() }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
                         Icon(
-                            Icons.Filled.Lock,
+                            Icons.Filled.ChevronRight,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(2.dp))
                         Text(
-                            stringResource(R.string.root_required),
+                            text = stringResource(R.string.action_request_permission),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.error,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
-            Text(
-                stringResource(R.string.root_privileged_explorer),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier.basicMarquee()
-            )
+            // Row 2: Icon + Title side-by-side
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (busy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        strokeWidth = 3.dp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else {
+                    Icon(
+                        Icons.Outlined.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.root_privileged_explorer),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(20.dp))
 
-            Text(
-                if (busy) stringResource(R.string.root_requesting_access) else stringResource(R.string.root_tap_to_grant),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
-            )
+            // Row 3: Status / prompt text
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = if (busy) stringResource(R.string.root_requesting_access) else stringResource(R.string.root_tap_to_grant),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f),
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
-            Spacer(Modifier.height(44.dp)) // To match StorageCard height roughly
+            Spacer(Modifier.height(10.dp))
+
+            // Row 4: Track indicator
+            Surface(
+                color = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                shape = androidx.compose.foundation.shape.CircleShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+            ) {}
         }
     }
 }

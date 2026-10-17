@@ -88,145 +88,173 @@ fun StorageCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
+            // Row 1: Badges on left, "> Buka" action on right
             Row(
-                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Storage icon
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.size(52.dp)
+                // Left badges: fsType & status
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier.size(26.dp)
-                        )
-                    }
-                }
-
-                // Usage percentage badge and FS Type
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (info.fsType.isNotEmpty()) {
                         Surface(
                             color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = CircleShape
                         ) {
                             Text(
-                                info.fsType.uppercase(),
+                                text = info.fsType.uppercase(Locale.getDefault()),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
                     }
-                    
+
+                    // Health / Status Badge
                     Surface(
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        shape = RoundedCornerShape(12.dp)
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                        shape = CircleShape
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Icon(
-                                Icons.Filled.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(4.dp))
+                            Surface(
+                                color = statusColor,
+                                shape = CircleShape,
+                                modifier = Modifier.size(6.dp)
+                            ) {}
+                            Spacer(Modifier.width(6.dp))
                             Text(
-                                stringResource(R.string.storage_open),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                fontWeight = FontWeight.SemiBold
+                                text = when {
+                                    percent < 0.5f -> stringResource(R.string.storage_healthy)
+                                    percent < 0.8f -> stringResource(R.string.storage_moderate)
+                                    else -> stringResource(R.string.storage_low_space)
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                    }
+                }
+
+                // Right button: "> Buka"
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable { onClick() }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            Icons.Filled.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(2.dp))
+                        Text(
+                            stringResource(R.string.storage_open),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
-            // Storage label
+            // Row 2: Icon + Storage Name side-by-side
             val displayTitle = if (title == "Internal Storage") stringResource(R.string.storage_internal) else title
-            Text(
-                displayTitle,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                modifier = Modifier.basicMarquee()
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(32.dp)
+                )
+                Text(
+                    text = displayTitle,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Usage text
-            Text(
-                stringResource(R.string.storage_usage_format, info.used.humanReadable(), info.total.commercialStorageSize()),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
-            )
+            // Row 3: "7,6 GB dari 256 GB" on left, "3,5% terpakai" on right
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val usedStr = info.used.humanReadable()
+                val totalStr = info.total.commercialStorageSize()
+                val fullUsage = stringResource(R.string.storage_usage_format, usedStr, totalStr)
+                val startIndex = fullUsage.indexOf(usedStr)
 
-            Spacer(Modifier.height(16.dp))
+                val annotatedUsage = remember(fullUsage, usedStr) {
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        if (startIndex != -1) {
+                            val before = fullUsage.substring(0, startIndex)
+                            val after = fullUsage.substring(startIndex + usedStr.length)
+                            append(before)
+                            pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold))
+                            append(usedStr)
+                            pop()
+                            append(after)
+                        } else {
+                            pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold))
+                            append(fullUsage)
+                            pop()
+                        }
+                    }
+                }
 
-            // Wavy progress bar (Material 3 Expressive API)
-            @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
-            LinearWavyProgressIndicator(
+                Text(
+                    text = annotatedUsage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+
+                Text(
+                    text = stringResource(R.string.storage_percent_used_format, percent * 100),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Row 4: Progress Bar
+            LinearProgressIndicator(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .clip(CircleShape),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primaryContainer
+                trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
             )
-
-            Spacer(Modifier.height(12.dp))
-
-            // Bottom row with percentage and status
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    stringResource(R.string.storage_percent_used_format, percent * 100),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-
-                // Status indicator
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Surface(
-                        color = statusColor,
-                        shape = CircleShape,
-                        modifier = Modifier.size(8.dp)
-                    ) {}
-                    Text(
-                        when {
-                            percent < 0.5f -> stringResource(R.string.storage_healthy)
-                            percent < 0.8f -> stringResource(R.string.storage_moderate)
-                            else -> stringResource(R.string.storage_low_space)
-                        },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.9f)
-                    )
-                }
-            }
         }
     }
 }
@@ -254,41 +282,65 @@ fun StoragePlaceholderCard(title: String, modifier: Modifier = Modifier) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(20.dp)
         ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.size(52.dp)
+            // Row 1 badges placeholder
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Icon(
-                        Icons.Outlined.Storage,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
+                Surface(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(width = 60.dp, height = 24.dp)
+                ) {}
+
+                Surface(
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(width = 50.dp, height = 24.dp)
+                ) {}
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Medium
-            )
+            // Row 2 icon + title
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    shape = CircleShape,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Outlined.Storage,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+            }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Loading dots
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            // Row 3: loading dots
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 repeat(3) { index ->
                     val dotAlpha by infiniteTransition.animateFloat(
                         initialValue = 0.3f,
@@ -306,6 +358,16 @@ fun StoragePlaceholderCard(title: String, modifier: Modifier = Modifier) {
                     ) {}
                 }
             }
+
+            Spacer(Modifier.height(10.dp))
+
+            Surface(
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                shape = CircleShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+            ) {}
         }
     }
 }
